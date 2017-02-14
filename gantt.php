@@ -5,7 +5,6 @@
 	dol_include_once('/projet/class/task.class.php');
 	
 	
-	
 ?><!DOCTYPE HTML>
 <html>
 <head>
@@ -30,7 +29,7 @@
   <script src="lib/jquerygantt/libs/dateField/jquery.dateField.js"></script>
   <script src="lib/jquerygantt/libs/JST/jquery.JST.js"></script>
 
-  <link rel="stylesheet" type="text/css" href="libs/jquery.svg.css">
+  <link rel="stylesheet" type="text/css" href="lib/jquerygantt/libs/jquery.svg.css">
   <script type="text/javascript" src="lib/jquerygantt/libs/jquery.svg.min.js"></script>
 
   <!--In case of jquery 1.7-->
@@ -69,13 +68,13 @@
 		$collapsed = false;
 	}
 	
-	$TData = array('tasks'=>array(),"selectedRow"=>0,"canWrite"=>'true',"canWriteOnParent"=>'true');
+	$TData = array('tasks'=>array(),"selectedRow"=>0,"canWrite"=>'false',"canWriteOnParent"=>'true');
 	
 	foreach($TProjectId as $fk_project) { 
 	
 		$project=new Project($db);
 		$project->fetch($fk_project);
-		
+	//	var_dump(dol_print_date($project->date_start),dol_print_date($project->date_end),_get_nb_days($project->date_start,$project->date_end));exit;
 		$taskstatic=new Task($db);
 	
 		$TTask = $taskstatic->getTasksArray(0, 0, $taskstatic->id, $project->socid, 0);
@@ -97,17 +96,21 @@
 		   		,"collapsed"=>$collapsed
 		   		,"assigs"=>array()
 		   		,"hasChild"=>false
-		   	
+		   		
 		   	
 		   );
 		  
 		   foreach($TTask as &$task) {
 				  
+		   		$level = (!empty($task->fk_task_parent) ? 2 : 1);
+		   	
+		   		if($level === 1) $last_level1 = count($TData['tasks'])-1; 
+		   		
 		   		$TData['tasks'][]=array(
 		   				"id"=>'T'.$task->id
 		   				,"name"=>$task->label
 		   				,"code"=>$task->ref
-		   				,"level"=>1
+		   				,"level"=>$level
 		   				,"status"=>_get_status($project->statut, $task->percent)
 		   				,"canWrite"=>true
 		   				,"start"=>$task->date_start * 1000
@@ -118,8 +121,9 @@
 		   				,"collapsed"=>false
 		   				,"assigs"=>array()
 		   				,"hasChild"=>false
-		   				
-		   				
+		   				,'progress'=>$task->progress
+		   				,'description'=>$task->description
+		   				,'depends'=>( $level>1 ? "$last_level1" :  '' )
 		   		);
 		   	
 		   }
@@ -145,7 +149,11 @@
   // var_dump($TData);exit;
 function _get_nb_days($t_start, $t_end) {
 	
-	return ceil( ($t_end - $t_start) / (3600 * 7) ); // travail 7h par jours à conf
+	$nb = ceil( ($t_end - $t_start) / 86400 ); 
+	
+	if($nb < 1) $nb = 1;
+	
+	return $nb;
 	
 }
 
@@ -281,55 +289,19 @@ function saveGanttOnServer() {
   if(!ge.canWrite)
     return;
 
-
-  //this is a simulation: save data to the local storage or to the textarea
-  saveInLocalStorage();
-
-
-  /*
   var prj = ge.saveProject();
-
   delete prj.resources;
   delete prj.roles;
 
-  var prof = new Profiler("saveServerSide");
-  prof.reset();
-
-  if (ge.deletedTaskIds.length>0) {
-    if (!confirm("TASK_THAT_WILL_BE_REMOVED\n"+ge.deletedTaskIds.length)) {
-      return;
-    }
-  }
-
-  $.ajax("ganttAjaxController.jsp", {
-    dataType:"json",
-    data: {CM:"SVPROJECT",prj:JSON.stringify(prj)},
-    type:"POST",
-
-    success: function(response) {
-      if (response.ok) {
-        prof.stop();
-        if (response.project) {
-          ge.loadProject(response.project); //must reload as "tmp_" ids are now the good ones
-        } else {
-          ge.reset();
-        }
-      } else {
-        var errMsg="Errors saving project\n";
-        if (response.message) {
-          errMsg=errMsg+response.message+"\n";
-        }
-
-        if (response.errorMessages.length) {
-          errMsg += response.errorMessages.join("\n");
-        }
-
-        alert(errMsg);
-      }
-    }
-
+  $.ajax({
+		url:"<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>"
+		,type:'POST'
+		,data:{
+			'put':'projects'
+			,TProject:prj
+		}
   });
-  */
+  
 }
 
 
@@ -435,7 +407,7 @@ function loadFromLocalStorage() {
 
 function saveInLocalStorage() {
   var prj = ge.saveProject();
-  if (localStorage) {
+  if (localStorage) {save
     localStorage.setObject("teamworkGantDemo", prj);
   } else {
     $("#ta").val(JSON.stringify(prj));
@@ -526,6 +498,8 @@ function editResources(){
     <button onclick="$('#workSpace').trigger('moveDownCurrentTask.gantt');" class="button textual" title="move down"><span class="teamworkIcon">j</span></button>
     <span class="ganttButtonSeparator"></span>
     <button onclick="print();" class="button textual" title="print"><span class="teamworkIcon">p</span></button>
+    <span class="ganttButtonSeparator"></span>
+    <button onclick="saveGanttOnServer();" class="button first big" title="save"><?php echo $langs->trans('Save') ?></button>
     </div></div>
   --></div>
 
@@ -535,14 +509,14 @@ function editResources(){
     <tr style="height:40px">
       <th class="gdfColHeader" style="width:35px;"></th>
       <th class="gdfColHeader" style="width:25px;"></th>
-      <th class="gdfColHeader gdfResizable" style="width:30px;">code/short name</th>
+      <th class="gdfColHeader gdfResizable" style="width:100px;"><?php echo $langs->trans('Ref') ?></th>
 
-      <th class="gdfColHeader gdfResizable" style="width:300px;">name</th>
-      <th class="gdfColHeader gdfResizable" style="width:80px;">start</th>
-      <th class="gdfColHeader gdfResizable" style="width:80px;">end</th>
-      <th class="gdfColHeader gdfResizable" style="width:50px;">dur.</th>
+      <th class="gdfColHeader gdfResizable" style="width:300px;"><?php echo $langs->trans('Title') ?></th>
+      <th class="gdfColHeader gdfResizable" style="width:80px;"><?php echo $langs->trans('StartDate') ?></th>
+      <th class="gdfColHeader gdfResizable" style="width:80px;"><?php echo $langs->trans('EndDate') ?></th>
+      <th class="gdfColHeader gdfResizable" style="width:50px;"><?php echo $langs->trans('Duration') ?></th>
       <th class="gdfColHeader gdfResizable" style="width:50px;">dep.</th>
-      <th class="gdfColHeader gdfResizable" style="width:200px;">assignees</th>
+      <th class="gdfColHeader gdfResizable" style="width:200px;"><?php echo $langs->trans('Ressources') ?></th>
     </tr>
     </thead>
   </table>
@@ -552,15 +526,15 @@ function editResources(){
   <tr taskId="(#=obj.id#)" class="taskEditRow" level="(#=level#)">
     <th class="gdfCell edit" align="right" style="cursor:pointer;"><span class="taskRowIndex">(#=obj.getRow()+1#)</span> <span class="teamworkIcon" style="font-size:12px;" >e</span></th>
     <td class="gdfCell noClip" align="center"><div class="taskStatus cvcColorSquare" status="(#=obj.status#)"></div></td>
-    <td class="gdfCell"><input type="text" name="code" value="(#=obj.code?obj.code:''#)"></td>
+    <td class="gdfCell">(#=obj.code?obj.code:''#)</td>
     <td class="gdfCell indentCell" style="padding-left:(#=obj.level*10#)px;">
       <div class="(#=obj.isParent()?'exp-controller expcoll exp':'exp-controller'#)" align="center"></div>
-      <input type="text" name="name" value="(#=obj.name#)">
+      (#=obj.name#)
     </td>
 
     <td class="gdfCell"><input type="text" name="start"  value="" class="date"></td>
     <td class="gdfCell"><input type="text" name="end" value="" class="date"></td>
-    <td class="gdfCell"><input type="text" name="duration" value="(#=obj.duration#)"></td>
+    <td class="gdfCell">(#=obj.duration#)</td>
     <td class="gdfCell"><input type="text" name="depends" value="(#=obj.depends#)" (#=obj.hasExternalDep?"readonly":""#)></td>
     <td class="gdfCell taskAssigs">(#=obj.getAssigsString()#)</td>
   </tr>
