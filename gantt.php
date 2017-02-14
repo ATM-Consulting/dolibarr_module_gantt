@@ -4,14 +4,7 @@
 	dol_include_once('/projet/class/project.class.php');
 	dol_include_once('/projet/class/task.class.php');
 	
-	$fk_project = GETPOST('fk_project') or die('fk_project ?');
-
-	$project=new Project($db);
-	$project->fetch($fk_project);
 	
-	$taskstatic=new Task($db);
-	
-	$TTask = $taskstatic->getTasksArray(0, 0, $taskstatic->id, $taskstatic->socid, 0);
 	
 ?><!DOCTYPE HTML>
 <html>
@@ -59,50 +52,95 @@
 <div id="workSpace" style="padding:0px; overflow-y:auto; overflow-x:hidden;border:1px solid #e5e5e5;position:relative;margin:0 5px"></div>
 <?php
    
-   $TData = array('tasks'=>array(),"selectedRow"=>0,"canWrite"=>'true',"canWriteOnParent"=>'true');
-  // exit(dol_print_date($project->date_end));
-  $TData['tasks'][]=array(
-   		"id"=>-$project->id
-   		,"name"=>$project->title
-   		,"code"=>$project->ref
-   		,"level"=>0
-   		,"status"=>"STATUS_ACTIVE"
-   		,"canWrite"=>true
-   		,"start"=>$project->date_start * 1000
-   		,"duration"=>_get_nb_days($project->date_start,$project->date_end)
-   		,"end"=>$project->date_end * 1000
-   		,"startIsMilestone"=>true
-   		,"endIsMilestone"=>true
-   		,"collapsed"=>false
-   		,"assigs"=>array()
-   		,"hasChild"=>false
-   	
-   	
-   );
-   
-   foreach($TTask as &$task) {
-		  
-   		$TData['tasks'][]=array(
-   				"id"=>$task->id
-   				,"name"=>$task->label
-   				,"code"=>$task->ref
-   				,"level"=>1
-   				,"status"=>"STATUS_ACTIVE"
-   				,"canWrite"=>true
-   				,"start"=>$task->date_start * 1000
-   				,"duration"=>_get_nb_days($task->date_start,$task->date_end)
-   				,"end"=>$task->date_end * 1000
-   				,"startIsMilestone"=>false
-   				,"endIsMilestone"=>false
-   				,"collapsed"=>false
-   				,"assigs"=>array()
-   				,"hasChild"=>false
-   				
-   				
-   		);
-   	
-   }
+	$fk_project = GETPOST('fk_project');
 
+	if(empty($fk_project)) {
+		$TProjectId=array();
+		
+		$resultset = $db->query("SELECT rowid FROM ".MAIN_DB_PREFIX."projet WHERE fk_statut=1");
+		while($obj=$db->fetch_object($resultset)) {
+			$TProjectId[] = $obj->rowid;
+		}
+		
+		$collapsed = true;
+	}
+	else{
+		$TProjectId = array($fk_project);
+		$collapsed = false;
+	}
+	
+	$TData = array('tasks'=>array(),"selectedRow"=>0,"canWrite"=>'true',"canWriteOnParent"=>'true');
+	
+	foreach($TProjectId as $fk_project) { 
+	
+		$project=new Project($db);
+		$project->fetch($fk_project);
+		
+		$taskstatic=new Task($db);
+	
+		$TTask = $taskstatic->getTasksArray(0, 0, $taskstatic->id, $project->socid, 0);
+
+		
+		  // exit(dol_print_date($project->date_end));
+		  $TData['tasks'][]=array(
+		   		"id"=>'P'.$project->id
+		   		,"name"=>$project->title
+		   		,"code"=>$project->ref
+		   		,"level"=>0
+		   		,"status"=>_get_status($project->statut)
+		   		,"canWrite"=>true
+		   		,"start"=>$project->date_start * 1000
+		   		,"duration"=>_get_nb_days($project->date_start,$project->date_end)
+		   		,"end"=>$project->date_end * 1000
+		   		,"startIsMilestone"=>true
+		   		,"endIsMilestone"=>true
+		   		,"collapsed"=>$collapsed
+		   		,"assigs"=>array()
+		   		,"hasChild"=>false
+		   	
+		   	
+		   );
+		  
+		   foreach($TTask as &$task) {
+				  
+		   		$TData['tasks'][]=array(
+		   				"id"=>'T'.$task->id
+		   				,"name"=>$task->label
+		   				,"code"=>$task->ref
+		   				,"level"=>1
+		   				,"status"=>_get_status($project->statut, $task->percent)
+		   				,"canWrite"=>true
+		   				,"start"=>$task->date_start * 1000
+		   				,"duration"=>_get_nb_days($task->date_start,$task->date_end)
+		   				,"end"=>$task->date_end * 1000
+		   				,"startIsMilestone"=>false
+		   				,"endIsMilestone"=>false
+		   				,"collapsed"=>false
+		   				,"assigs"=>array()
+		   				,"hasChild"=>false
+		   				
+		   				
+		   		);
+		   	
+		   }
+
+	}
+   
+  function _get_status($status, $percent) {
+  	
+  		if($status == 1) {
+  			
+  			if($percent===100) return "STATUS_DONE";
+  				
+  				
+  			return "STATUS_ACTIVE";
+  			
+  			
+  			
+  		}
+  		else return "STATUS_UNDEFINED";
+  	
+  }
    
   // var_dump($TData);exit;
 function _get_nb_days($t_start, $t_end) {
@@ -478,9 +516,6 @@ function editResources(){
   <div class="__template__" type="GANTBUTTONS"><!--
   <div class="ganttButtonBar noprint">
     <div class="buttons">
-    <button onclick="$('#workSpace').trigger('undo.gantt');" class="button textual" title="undo"><span class="teamworkIcon">&#39;</span></button>
-    <button onclick="$('#workSpace').trigger('redo.gantt');" class="button textual" title="redo"><span class="teamworkIcon">&middot;</span></button>
-    <span class="ganttButtonSeparator"></span>
     <button onclick="$('#workSpace').trigger('addAboveCurrentTask.gantt');" class="button textual" title="insert above"><span class="teamworkIcon">l</span></button>
     <button onclick="$('#workSpace').trigger('addBelowCurrentTask.gantt');" class="button textual" title="insert below"><span class="teamworkIcon">X</span></button>
     <span class="ganttButtonSeparator"></span>
@@ -490,18 +525,7 @@ function editResources(){
     <button onclick="$('#workSpace').trigger('moveUpCurrentTask.gantt');" class="button textual" title="move up"><span class="teamworkIcon">k</span></button>
     <button onclick="$('#workSpace').trigger('moveDownCurrentTask.gantt');" class="button textual" title="move down"><span class="teamworkIcon">j</span></button>
     <span class="ganttButtonSeparator"></span>
-    <button onclick="$('#workSpace').trigger('zoomMinus.gantt');" class="button textual" title="zoom out"><span class="teamworkIcon">)</span></button>
-    <button onclick="$('#workSpace').trigger('zoomPlus.gantt');" class="button textual" title="zoom in"><span class="teamworkIcon">(</span></button>
-    <span class="ganttButtonSeparator"></span>
-    <button onclick="$('#workSpace').trigger('deleteCurrentTask.gantt');" class="button textual" title="delete"><span class="teamworkIcon">&cent;</span></button>
-    <span class="ganttButtonSeparator"></span>
     <button onclick="print();" class="button textual" title="print"><span class="teamworkIcon">p</span></button>
-    <span class="ganttButtonSeparator"></span>
-    <button onclick="ge.gantt.showCriticalPath=!ge.gantt.showCriticalPath; ge.redraw();" class="button textual" title="Critical Path"><span class="teamworkIcon">&pound;</span></button>
-    <span class="ganttButtonSeparator"></span>
-    <button onclick="editResources();" class="button textual" title="edit resources"><span class="teamworkIcon">M</span></button>
-      &nbsp; &nbsp; &nbsp; &nbsp;
-      <button onclick="saveGanttOnServer();" class="button first big" title="save"><?php echo $langs->trans('Save') ?></button>
     </div></div>
   --></div>
 
