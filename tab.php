@@ -53,7 +53,12 @@
 
 		$window = $(window);
 	    $('iframe').height(function(){
-	        return $window.height()-$(this).offset().top;   
+
+			var h = $window.height()-$(this).offset().top;
+
+			if(h<1000) h = 1000;
+		    
+	        return h;   
 	    });
 		
 	});

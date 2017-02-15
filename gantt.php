@@ -109,6 +109,10 @@
 		   	
 		   		if($level === 1) $last_level1 = count($TData['tasks'])-1; 
 		   		
+		   		if(empty($task->date_end)) {
+		   			$task->date_end = $task->date_start + ($task->planned_workload / 7 * 24 );
+		   		}
+		   		
 		   		$TData['tasks'][]=array(
 		   				"id"=>'T'.$task->id
 		   				,"name"=>$task->label
@@ -127,6 +131,7 @@
 		   				,'progress'=>$task->progress
 		   				,'description'=>$task->description
 		   				,'depends'=>( $level>1 ? "$last_level1" :  '' )
+		   				,'times'=>dol_print_date( $task->planned_workload, 'hourduration')
 		   		);
 		   	
 		   }
@@ -135,7 +140,7 @@
 
 	}
    
-  function _get_status($status, $percent) {
+  function _get_status($status, $percent=0) {
   	
   		if($status == 1) {
   			
@@ -518,7 +523,8 @@ function editResources(){
       <th class="gdfColHeader" style="width:25px;"></th>
       <th class="gdfColHeader gdfResizable" style="width:100px;"><?php echo $langs->trans('Ref') ?></th>
 
-      <th class="gdfColHeader gdfResizable" style="width:300px;"><?php echo $langs->trans('Title') ?></th>
+      <th class="gdfColHeader gdfResizable" style="width:200px;"><?php echo $langs->trans('Title') ?></th>
+      <th class="gdfColHeader gdfResizable" style="width:100px;"><?php echo $langs->trans('Times') ?></th>
       <th class="gdfColHeader gdfResizable" style="width:80px;"><?php echo $langs->trans('StartDate') ?></th>
       <th class="gdfColHeader gdfResizable" style="width:80px;"><?php echo $langs->trans('EndDate') ?></th>
       <th class="gdfColHeader gdfResizable" style="width:50px;"><?php echo $langs->trans('Duration') ?></th>
@@ -538,7 +544,8 @@ function editResources(){
       <div class="(#=obj.isParent()?'exp-controller expcoll exp':'exp-controller'#)" align="center"></div>
       (#=obj.name#)
     </td>
-
+	<td class="gdfCell">(#=obj.times#)</td>
+    
     <td class="gdfCell"><input type="text" name="start"  value="" class="date"></td>
     <td class="gdfCell"><input type="text" name="end" value="" class="date"></td>
     <td class="gdfCell">(#=obj.duration#)</td>
