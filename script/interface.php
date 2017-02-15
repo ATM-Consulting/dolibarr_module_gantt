@@ -12,6 +12,8 @@
 			
 			_put_projects($_POST['TProject']);
 			
+			echo 1;
+			
 			break;
 		
 		

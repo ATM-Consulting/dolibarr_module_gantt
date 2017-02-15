@@ -136,7 +136,10 @@ class modGantt extends DolibarrModules
 		// 'stock'            to add a tab in stock view
 		// 'thirdparty'       to add a tab in third party view
 		// 'user'             to add a tab in user view
-        $this->tabs = array();
+        $this->tabs = array(
+        		'project:+anotherGantt:Gantt:gantt@gantt::/gantt/tab.php?fk_project=__ID__'
+        		,'project:-gantt'
+        );
 
         // Dictionaries
 	    if (! isset($conf->gantt->enabled))

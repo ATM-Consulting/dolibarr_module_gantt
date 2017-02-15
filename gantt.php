@@ -62,10 +62,12 @@
 		}
 		
 		$collapsed = true;
+		$with_task = false;
 	}
 	else{
 		$TProjectId = array($fk_project);
 		$collapsed = false;
+		$with_task = true;
 	}
 	
 	$TData = array('tasks'=>array(),"selectedRow"=>0,"canWrite"=>'false',"canWriteOnParent"=>'true');
@@ -76,10 +78,9 @@
 		$project->fetch($fk_project);
 	//	var_dump(dol_print_date($project->date_start),dol_print_date($project->date_end),_get_nb_days($project->date_start,$project->date_end));exit;
 		$taskstatic=new Task($db);
-	
-		$TTask = $taskstatic->getTasksArray(0, 0, $taskstatic->id, $project->socid, 0);
-
+		$TTask = $taskstatic->getTasksArray(0, 0, $taskstatic->id, $project->socid, 0); 
 		
+		//TODO loop with TTask for project progress
 		  // exit(dol_print_date($project->date_end));
 		  $TData['tasks'][]=array(
 		   		"id"=>'P'.$project->id
@@ -100,6 +101,8 @@
 		   	
 		   );
 		  
+		if($with_task) {
+		   
 		   foreach($TTask as &$task) {
 				  
 		   		$level = (!empty($task->fk_task_parent) ? 2 : 1);
@@ -127,6 +130,8 @@
 		   		);
 		   	
 		   }
+		   
+		}
 
 	}
    
@@ -300,6 +305,8 @@ function saveGanttOnServer() {
 			'put':'projects'
 			,TProject:prj
 		}
+  }).done(function(data) {
+		alert('<?php echo $langs->trans('Done') ?>');
   });
   
 }

@@ -106,7 +106,7 @@ print '<td align="center" width="100">'.$langs->trans("Value").'</td>'."\n";
 
 
 // Example with a yes / no select
-$var=!$var;
+/*$var=!$var;
 print '<tr '.$bc[$var].'>';
 print '<td>'.$langs->trans("ParamLabel").'</td>';
 print '<td align="center" width="20">&nbsp;</td>';
@@ -118,6 +118,15 @@ print $form->selectyesno("CONSTNAME",$conf->global->CONSTNAME,1);
 print '<input type="submit" class="button" value="'.$langs->trans("Modify").'">';
 print '</form>';
 print '</td></tr>';
+*/
+// Example with a yes / no select
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("BasedOn").'</td>';
+print '<td align="center" colspan="3" style="background:rgb(10, 168, 203)"><img src="../img/twGantt.png" alt="Twproject jQuery Gantt" border="0" />';
+
+print '</td></tr>';
+
 
 print '</table>';
 
