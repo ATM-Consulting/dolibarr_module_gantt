@@ -8,6 +8,12 @@
 	$put = GETPOST('put');
 	switch ($put) {
 		
+		case 'gantt':
+			
+			echo _put_gantt($_POST);
+			
+			break;
+		
 		case 'projects':
 			
 			_put_projects($_POST['TProject']);
@@ -16,6 +22,26 @@
 			
 			break;
 		
+		
+	}
+	
+	function _put_gantt($data) {
+		global $db, $user;
+		
+		switch($data['ganttid'][0]) {
+			case 'T':
+				
+				$o=new Task($db);
+				$o->fetch(substr($data['ganttid'],1));
+				$o->date_start = $data['start'] / 1000;
+				$o->date_end = $data['end'] / 1000;
+				$o->progress = $data['progress'] * 100;
+				return $o->update($user);
+				
+				break;
+			
+			
+		}
 		
 	}
 	

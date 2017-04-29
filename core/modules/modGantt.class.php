@@ -137,7 +137,7 @@ class modGantt extends DolibarrModules
 		// 'thirdparty'       to add a tab in third party view
 		// 'user'             to add a tab in user view
         $this->tabs = array(
-        		'project:+anotherGantt:Gantt:gantt@gantt::/gantt/tab.php?fk_project=__ID__'
+        		'project:+anotherGantt:Gantt:gantt@gantt::/gantt/gantt-prod.php?fk_project=__ID__'
         		,'project:-gantt'
         );
 

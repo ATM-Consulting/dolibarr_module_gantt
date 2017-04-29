@@ -8,20 +8,73 @@
 	dol_include_once('/of/class/ordre_fabrication_asset.class.php');
 	
 	// Project -> Order -> OF -> Task
+	//<script src="../../codebase/locale/locale_fr.js" charset="utf-8"></script>
 	
-	llxHeader('', $langs->trans('GanttProd') , '', '', 0, 0, array('/gantt/lib/dhx/codebase/dhtmlxgantt.js'), array('/gantt/lib/dhx/codebase/dhtmlxgantt.css') );
-	dol_fiche_head();
 	
-	$TElement = _get_task_for_of();
+	llxHeader('', $langs->trans('GanttProd') , '', '', 0, 0, array('/gantt/lib/dhx/codebase/dhtmlxgantt.js','/gantt/lib/dhx/codebase/locale/locale_fr.js'), array('/gantt/lib/dhx/codebase/dhtmlxgantt.css') );
+	
+	dol_include_once('/core/lib/project.lib.php');
+
+	$langs->load("users");
+	$langs->load("projects");
+	
+	$fk_project = GETPOST('fk_project');
+	
+	if($fk_project>0) {
+		
+		$object = new Project($db);
+		$object->fetch($fk_project);
+		
+		// Security check
+		$socid=0;
+		if ($user->societe_id > 0) $socid=$user->societe_id;
+		$result = restrictedArea($user, 'projet', $id,'projet&project');
+	
+		$head=project_prepare_head($object);
+		dol_fiche_head($head, 'anotherGantt', $langs->trans("Project"),0,($object->public?'projectpub':'project'));
+		$linkback = '<a href="'.DOL_URL_ROOT.'/projet/list.php">'.$langs->trans("BackToList").'</a>';
+		
+		$morehtmlref='<div class="refidno">';
+		// Title
+		$morehtmlref.=$object->title;
+		// Thirdparty
+		if ($object->thirdparty->id > 0)
+		{
+			$morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . $object->thirdparty->getNomUrl(1, 'project');
+		}
+		$morehtmlref.='</div>';
+		
+		// Define a complementary filter for search of next/prev ref.
+		if (! $user->rights->projet->all->lire)
+		{
+			$objectsListId = $object->getProjectsAuthorizedForUser($user,0,0);
+			$object->next_prev_filter=" rowid in (".(count($objectsListId)?join(',',array_keys($objectsListId)):'0').")";
+		}
+		
+		dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref);
+		
+	}
+	else {
+		
+		dol_fiche_head();
+		
+	}
+	
+	
+	$TElement = _get_task_for_of($fk_project);
 //	pre($TElement[1]['orders'][1]['ofs'][1],1);
 	?>
 	
 	<div id="gantt_here" style='width:100%; height:100%;'></div>
 	<script type="text/javascript">
 	function modSampleHeight(){
-		var headHeight = 100;
+
 		var sch = document.getElementById("gantt_here");
-		sch.style.height = (parseInt(document.body.offsetHeight)-headHeight)+"px";
+
+		var h = parseInt(document.body.offsetHeight);
+		if(h<500)h=500;
+		
+		sch.style.height = h+"px";
 	
 		gantt.setSizes();
 	}
@@ -29,68 +82,39 @@
 	    data:[
 	
 			<?php 
-			//$TTask[$project->id]['orders'][$order->id]['ofs'][$of->id]['ws'][$ws->id]['tasks'][$task->id] = $task;
-			
-			/*
-			 * 
-			 {"id":1, "text":"Office itinerancy", "type":gantt.config.types.project, "order":"10", progress: 0.4, open: false},
-
-		{"id":2, "text":"Office facing", "type":gantt.config.types.project, "start_date":"02-04-2013", "duration":"8", "order":"10", progress: 0.6, "parent":"1", open: true},
-		{"id":3, "text":"Furniture installation", "type":gantt.config.types.project, "start_date":"11-04-2013", "duration":"8", "order":"20", "parent":"1", progress: 0.6, open: true},
-		{"id":4, "text":"The employee relocation", "type":gantt.config.types.project, "start_date":"13-04-2013", "duration":"6", "order":"30", "parent":"1", progress: 0.5, open: true},
-
-        {"id":5, "text":"Interior office", "start_date":"02-04-2013", "duration":"7", "order":"3", "parent":"2", progress: 0.6, open: true},
-        {"id":6, "text":"Air conditioners check", "start_date":"03-04-2013", "duration":"7", "order":"3", "parent":"2", progress: 0.6, open: true},
-        {"id":7, "text":"Workplaces preparation", "start_date":"11-04-2013", "duration":"8", "order":"3", "parent":"3", progress: 0.6, open: true},
-        {"id":8, "text":"Preparing workplaces", "start_date":"14-04-2013", "duration":"5", "order":"3", "parent":"4", progress: 0.5, open: true},
-        {"id":9, "text":"Workplaces importation", "start_date":"14-04-2013", "duration":"4", "order":"3", "parent":"4", progress: 0.5, open: true},
-        {"id":10, "text":"Workplaces exportation", "start_date":"14-04-2013", "duration":"3", "order":"3", "parent":"4", progress: 0.5, open: true},
-
-        {"id":11, "text":"Product launch", "type":gantt.config.types.project, "order":"5", progress: 0.6, open: true},
-
-        {"id":12, "text":"Perform Initial testing", "start_date":"03-04-2013", "duration":"5", "order":"3", "parent":"11", progress: 1, open: true},
-        {"id":13, "text":"Development", "type":gantt.config.types.project, "start_date":"02-04-2013", "duration":"7", "order":"3", "parent":"11", progress: 0.5, open: true},
-        {"id":14, "text":"Analysis", "start_date":"02-04-2013", "duration":"6", "order":"3", "parent":"11", progress: 0.8, open: true},
-        {"id":15, "text":"Design", "type":gantt.config.types.project, "start_date":"02-04-2013", "duration":"5", "order":"3", "parent":"11", progress: 0.2, open: false},
-        {"id":16, "text":"Documentation creation", "start_date":"02-04-2013", "duration":"7", "order":"3", "parent":"11", progress: 0, open: true},
-
-        {"id":17, "text":"Develop System", "start_date":"03-04-2013", "duration":"2", "order":"3", "parent":"13", progress: 1, open: true},
-
-		{"id":25, "text":"Beta Release", "start_date":"06-04-2013", "order":"3","type":gantt.config.types.milestone, "parent":"13", progress: 0, open: true},
-
-        {"id":18, "text":"Integrate System", "start_date":"08-04-2013", "duration":"2", "order":"3", "parent":"13", progress: 0.8, open: true},
-        {"id":19, "text":"Test", "start_date":"10-04-2013", "duration":"4", "order":"3", "parent":"13", progress: 0.2, open: true},
-        {"id":20, "text":"Marketing", "start_date":"10-04-2013", "duration":"4", "order":"3", "parent":"13", progress: 0, open: true},
-
-        {"id":21, "text":"Design database", "start_date":"03-04-2013", "duration":"4", "order":"3", "parent":"15", progress: 0.5, open: true},
-        {"id":22, "text":"Software design", "start_date":"03-04-2013", "duration":"4", "order":"3", "parent":"15", progress: 0.1, open: true},
-        {"id":23, "text":"Interface setup", "start_date":"03-04-2013", "duration":"5", "order":"3", "parent":"15", progress: 0, open: true},
-        {"id":24, "text":"Release v1.0", "start_date":"15-04-2013", "order":"3","type":gantt.config.types.milestone, "parent":"11", progress: 0, open: true}
-			 * 
-			 */
 			$TData=array(); $TWS=array(); $TLink=array();
+			
+			$t_start  = $t_end = 0;
+			
 			foreach($TElement as &$projectData ) {
 				$project = &$projectData['project'];
 				
-				$TData[] = ' {"id":"P'.$project->id.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: true}';
+				if($fk_project>0)null;
+				else $TData[] = ' {"id":"P'.$project->id.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: true}';
 				
 				foreach($projectData['orders'] as &$orderData) {
 					$order = &$orderData['order'];
-					$TData[] = ' {"id":"O'.$order->id.'", "text":"'.$order->ref.'", "type":gantt.config.types.project, parent:"P'.$project->id.'", open: true}';
+					if($fk_project>0)null;
+					else $TData[] = ' {"id":"O'.$order->id.'", "text":"'.$order->ref.'", "type":gantt.config.types.project, parent:"P'.$project->id.'", open: true}';
 					
 					foreach($orderData['ofs'] as &$ofData) {
 						$of = $ofData['of'];	
-						$TData[] = ' {"id":"OF'.$of->id.'", "text":"'.$of->numero.'", "type":gantt.config.types.project, parent:"O'.$order->id.'", open: true}';
+						$TData[] = ' {"id":"M'.$of->id.'", "text":"'.$of->numero.'", "type":gantt.config.types.project, parent:"O'.$order->id.'", open: true}';
 						
 						foreach($ofData['workstations'] as &$wsData) {
 							
 							$ws = $wsData['ws'];
 							$TWS[$ws->id] = $ws;
-							//$TData[] = ' {"id":"WS'.$ws->id.'", "text":"'.$ws->name.'", "type":gantt.config.types.project, parent:"OF'.$of->id.'", open: true}';
+							//$TData[] = ' {"id":"WS'.$ws->id.'", "text":"'.$ws->name.'", "type":gantt.config.types.project, parent:"M'.$of->id.'", open: true}';
 							
 							foreach($wsData['tasks'] as &$task) {
-							//	var_dump(ceil($task->planned_duration / (3600 * 7)),$task);
-								$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.ceil($task->planned_workload / (3600 * 7)).'", "order":"3", "parent":"OF'.$of->id.'", progress: '.($task->progress / 100).', open: "true",owner:"'.$ws->id.'"}';
+
+								if(empty($t_start) || $task->date_start<$t_start)$t_start=$task->date_start;
+								if(empty($t_end) || $t_end<$task->date_end)$t_end=$task->date_end;
+								
+								$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
+								
+								$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'", "order":"3", "parent":"M'.$of->id.'", progress: '.($task->progress / 100).', open: "true",owner:"'.$ws->id.'"}';
 								
 								if($task->fk_task_parent>0) {
 									$TLink[] = ' {id:'.(count($TLink)+1).', source:"T'.$task->fk_task_parent.'", target:"T'.$task->id.'", type:"0"}';
@@ -181,19 +205,29 @@
 	});
 	gantt.attachEvent("onBeforeTaskChanged", function(id, mode, old_event){
 		var task = gantt.getTask(id);
-		/*if(mode == gantt.config.drag_mode.progress){
-			if(task.progress < old_event.progress){
-				gantt.message(task.text + " progress can't be undone!");
-				return false;
-			}
-		}*/
 
-console.log(task);
+		var progress = task.progress;
+		//var date_start = task.start_date.toISOString().substring(0,10);
+		//var date_end = task.end_date.toISOString().substring(0,10);
+
+		var start = task.start_date.getTime();
+		var end = task.end_date.getTime();		
+
+		$.ajax({
+			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1); ?>"
+			,data:{
+				ganttid:id
+				,start:start
+				,end:end
+				,put:"gantt"
+			}
+			,method:"post"
+		});
 		
 		return true;
 	});
 	
-	gantt.init("gantt_here");
+	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $t_start) ?>"), new Date("<?php echo date('Y-m-d', $t_end+864000) ?>"));
 	modSampleHeight();
 	gantt.parse(tasks);
 	</script>
@@ -260,7 +294,7 @@ console.log(task);
 		
 		return $return;
 	}
-	function _get_task_for_of() {
+	function _get_task_for_of($fk_project = 0) {
 		
 		global $db;
 		
@@ -269,12 +303,17 @@ console.log(task);
 		
 		$PDOdb=new TPDOdb;
 		
-		$res = $db->query("SELECT t.rowid 
+		$sql = "SELECT t.rowid
 		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
 			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
-		WHERE tex.fk_of IS NOT NULL AND t.progress<100
+		WHERE "; 
+		
+		if($fk_project>0) $sql.= " fk_projet=".$fk_project;
+		else $sql.= "tex.fk_of IS NOT NULL AND t.progress<100
 			AND p.fk_statut = 1
-		");
+		";
+		
+		$res = $db->query($sql);
 		
 		if($res===false) {
 			var_dump($db);exit;
@@ -288,8 +327,19 @@ console.log(task);
 			$task->fetch($obj->rowid);
 			$task->fetch_optionals($task->id);
 			
-			$of=new TAssetOF();
-			$of->load($PDOdb, $task->array_options['options_fk_of']);
+			if($task->array_options['options_fk_of']>0) {
+				
+				$of=new TAssetOF();
+				$of->load($PDOdb, $task->array_options['options_fk_of']);
+			
+			}
+			else{
+				
+				$of=new stdClass;
+				$of->id = 0;
+				$of->numero = 'None';
+				
+			}
 			
 			if($of->fk_commande>0) {
 				
