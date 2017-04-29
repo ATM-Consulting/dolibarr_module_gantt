@@ -18,7 +18,7 @@
 	$langs->load("users");
 	$langs->load("projects");
 	
-	$fk_project = GETPOST('fk_project');
+	$fk_project = (int)GETPOST('fk_project');
 	
 	if($fk_project>0) {
 		
@@ -85,21 +85,34 @@
 			$TData=array(); $TWS=array(); $TLink=array();
 			
 			$t_start  = $t_end = 0;
-			
 			foreach($TElement as &$projectData ) {
 				$project = &$projectData['project'];
 				
-				if($fk_project>0)null;
-				else $TData[] = ' {"id":"P'.$project->id.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: true}';
+				$fk_parent_project = null;
 				
+				if($fk_project==0){
+					$TData[] = ' {"id":"P'.$project->id.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: true}';
+					$fk_parent_project= 'P'.$project->id;
+				}
+					
 				foreach($projectData['orders'] as &$orderData) {
 					$order = &$orderData['order'];
-					if($fk_project>0)null;
-					else $TData[] = ' {"id":"O'.$order->id.'", "text":"'.$order->ref.'", "type":gantt.config.types.project, parent:"P'.$project->id.'", open: true}';
+					
+					$fk_parent_order = null;
+					
+					if($order->id >0 ){
+						$TData[] = ' {"id":"O'.$order->id.'", "text":"'.$order->ref.'", "type":gantt.config.types.project'.(!is_null($fk_parent_project) ? ' ,parent:"'.$fk_parent_project.'" ' : '' ).', open: true}';
+						$fk_parent_order = 'O'.$order->id;
+					}
 					
 					foreach($orderData['ofs'] as &$ofData) {
 						$of = $ofData['of'];	
-						$TData[] = ' {"id":"M'.$of->id.'", "text":"'.$of->numero.'", "type":gantt.config.types.project, parent:"O'.$order->id.'", open: true}';
+						$fk_parent_of = null;
+						
+						if(!empty($conf->of->enabled) && $of->id>0) {
+							$TData[] = ' {"id":"M'.$of->id.'", "text":"'.$of->numero.'", "type":gantt.config.types.project'.(!is_null($fk_parent_order) ? ' ,parent:"'.$fk_parent_order.'" ' : '' ).', open: true}';
+							$fk_parent_of= 'M'.$of->id;
+						}
 						
 						foreach($ofData['workstations'] as &$wsData) {
 							
@@ -114,7 +127,7 @@
 								
 								$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
 								
-								$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'", "order":"3", "parent":"M'.$of->id.'", progress: '.($task->progress / 100).', open: "true",owner:"'.$ws->id.'"}';
+								$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'", "order":"3"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).', open: "true",owner:"'.$ws->id.'"}';
 								
 								if($task->fk_task_parent>0) {
 									$TLink[] = ' {id:'.(count($TLink)+1).', source:"T'.$task->fk_task_parent.'", target:"T'.$task->id.'", type:"0"}';
@@ -309,7 +322,7 @@
 		WHERE "; 
 		
 		if($fk_project>0) $sql.= " fk_projet=".$fk_project;
-		else $sql.= "tex.fk_of IS NOT NULL AND t.progress<100
+		else $sql.= "tex.fk_of IS NOT NULL AND tex.fk_of>0 AND t.progress<100
 			AND p.fk_statut = 1
 		";
 		
