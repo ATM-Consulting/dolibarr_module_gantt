@@ -143,7 +143,19 @@
 				
 			}
 			
-			echo implode(',',$TData);
+			$TWorkload=array();
+			if(false && $fk_project == 0) {
+				$TWorkload[] = ' {"id":"WL", "text":"'.$langs->trans('Worstations').'", "type":gantt.config.types.project, open: true}';
+
+				$duration = ceil($t_end - $t_start);
+				
+				foreach($TWS as &$ws) {
+					$TWorkload[] = '{id:"L'.(count($TWorkload)+1).'", text:"0/'.$ws->nb_hour_capacity.' ", "start_date":"'.date('d-m-Y',$t_cur).'", "duration":"'.$duration.'", "order":"2" ,parent:"WL", progress: 0, open: "true" }';
+				}
+				
+			}
+			
+			echo implode(',',array_merge($TWorkload,$TData) );
 			
 			?>
 		       

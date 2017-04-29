@@ -188,39 +188,19 @@ class modGantt extends DolibarrModules
 		$this->menu = array();			// List of menus to add
 		$r=0;
 
-		// Add here entries to declare new menus
-		//
-		// Example to declare a new Top Menu entry and its Left menu entry:
-		// $this->menu[$r]=array(	'fk_menu'=>0,			                // Put 0 if this is a top menu
-		//							'type'=>'top',			                // This is a Top menu entry
-		//							'titre'=>'Gantt top menu',
-		//							'mainmenu'=>'gantt',
-		//							'leftmenu'=>'gantt',
-		//							'url'=>'/gantt/pagetop.php',
-		//							'langs'=>'mylangfile@gantt',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-		//							'position'=>100,
-		//							'enabled'=>'$conf->gantt->enabled',	// Define condition to show or hide menu entry. Use '$conf->gantt->enabled' if entry must be visible if module is enabled.
-		//							'perms'=>'1',			                // Use 'perms'=>'$user->rights->gantt->level1->level2' if you want your menu with a permission rules
-		//							'target'=>'',
-		//							'user'=>2);				                // 0=Menu for internal users, 1=external users, 2=both
-		// $r++;
-		//
-		// Example to declare a Left Menu entry into an existing Top menu entry:
-		// $this->menu[$r]=array(	'fk_menu'=>'fk_mainmenu=xxx',		    // Use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-		//							'type'=>'left',			                // This is a Left menu entry
-		//							'titre'=>'Gantt left menu',
-		//							'mainmenu'=>'xxx',
-		//							'leftmenu'=>'gantt',
-		//							'url'=>'/gantt/pagelevel2.php',
-		//							'langs'=>'mylangfile@gantt',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-		//							'position'=>100,
-		//							'enabled'=>'$conf->gantt->enabled',  // Define condition to show or hide menu entry. Use '$conf->gantt->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-		//							'perms'=>'1',			                // Use 'perms'=>'$user->rights->gantt->level1->level2' if you want your menu with a permission rules
-		//							'target'=>'',
-		//							'user'=>2);				                // 0=Menu for internal users, 1=external users, 2=both
-		// $r++;
-
-
+		$this->menu[$r]=array(	'fk_menu'=>'fk_mainmenu=of',			// Put 0 if this is a top menu
+				'type'=>'left',			// This is a Top menu entry
+				'titre'=>'Gantt',
+				'mainmenu'=>'of',
+				'leftmenu'=>'gantt',		// Use 1 if you also want to add left menu entries using this descriptor. Use 0 if left menu entries are defined in a file pre.inc.php (old school).
+				'url'=>'/gantt/gantt-prod.php',
+				'position'=>711,
+				'enabled'=>'$conf->gantt->enabled',			// Define condition to show or hide menu entry. Use '$conf->mymodule->enabled' if entry must be visible if module is enabled.
+				//'perms'=>'',			// Use 'perms'=>'$user->rights->mymodule->level1->level2' if you want your menu with a permission rules
+				'target'=>'',
+				'user'=>2);
+		$r++;
+		
 		// Exports
 		$r=1;
 
