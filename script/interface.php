@@ -4,7 +4,7 @@
 	dol_include_once('/projet/class/project.class.php');
 	dol_include_once('/projet/class/task.class.php');
 	
-	
+	$get=GETPOST('get');
 	$put = GETPOST('put');
 	switch ($put) {
 		
@@ -22,6 +22,15 @@
 			
 			break;
 		
+		
+	}
+	
+	switch ($get) {
+		
+		case 'workstation-capacity':
+			__out(_get_ws_capactiy(  GETPOST('wsid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
+			
+			break;
 		
 	}
 	
@@ -45,47 +54,69 @@
 		
 	}
 	
-function _put_projects(&$TProject) {
-	global $db,$langs,$conf,$user;
-	
-	foreach($TProject['tasks'] as &$data ) {
+	function _get_ws_capactiy($wsid, $t_start, $t_end) {
 		
-		$type = $data['id'][0];
-		$id = substr($data['id'],1);
+		dol_include_once('/workstation/class/workstation.class.php');
 		
+		$PDOdb=new TPDOdb;
 		
-		if($type=='P') {
+		$t_cur = $t_start ;
+		
+		$ws=new TWorkstation;
+		$ws->load($PDOdb, $wsid);
+		
+		$Tab = array();
+		while($t_cur<=$t_end) {
+			$date = date('Y-m-d', $t_cur);
+			$Tab[$date] = $ws->getCapacityLeft($PDOdb, $date);
 			
-			$project = new Project($db);
-			$project->fetch($id);
-			
-			$project->date_start = $data['start'] / 1000;
-			$project->date_end = $data['end'] / 1000;
-			
-			$project->update($user);
+			$t_cur = strtotime('+1day', $t_cur);
 		}
-		else{
 		
-			$task=new Task($db);
-			$task->fetch($id);
+		return $Tab;
+	}
+		
+	function _put_projects(&$TProject) {
+		global $db,$langs,$conf,$user;
+		
+		foreach($TProject['tasks'] as &$data ) {
 			
-			$task->date_start = $data['start'] / 1000;
-			$task->date_end = $data['end'] / 1000;
-				//var_dump($data['depends']);
-			if(!empty($data['depends'])) {
+			$type = $data['id'][0];
+			$id = substr($data['id'],1);
+			
+			
+			if($type=='P') {
 				
-				list($d1) = explode(',', $data['depends']);
+				$project = new Project($db);
+				$project->fetch($id);
 				
-				$task->fk_task_parent = (int)substr($TProject['tasks'][$d1-1]['id'],1);
-			//	var_dump($d1,$TProject['tasks'][$d1]['id'],$task->fk_task_parent );
+				$project->date_start = $data['start'] / 1000;
+				$project->date_end = $data['end'] / 1000;
+				
+				$project->update($user);
+			}
+			else{
+			
+				$task=new Task($db);
+				$task->fetch($id);
+				
+				$task->date_start = $data['start'] / 1000;
+				$task->date_end = $data['end'] / 1000;
+					//var_dump($data['depends']);
+				if(!empty($data['depends'])) {
+					
+					list($d1) = explode(',', $data['depends']);
+					
+					$task->fk_task_parent = (int)substr($TProject['tasks'][$d1-1]['id'],1);
+				//	var_dump($d1,$TProject['tasks'][$d1]['id'],$task->fk_task_parent );
+				}
+				
+				$task->update($user);
+				
 			}
 			
-			$task->update($user);
+			
 			
 		}
 		
-		
-		
 	}
-	
-}

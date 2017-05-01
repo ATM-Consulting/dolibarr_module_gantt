@@ -127,7 +127,7 @@
 								
 								$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
 								
-								$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'", "order":"3"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).', open: "true",owner:"'.$ws->id.'"}';
+								$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.' '.dol_print_date($task->planned_workload,'hour').'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'", "order":"3"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).', open: "true",owner:"'.$ws->id.'"}';
 								
 								if($task->fk_task_parent>0) {
 									$TLink[] = ' {id:'.(count($TLink)+1).', source:"T'.$task->fk_task_parent.'", target:"T'.$task->id.'", type:"0"}';
@@ -142,20 +142,9 @@
 				}
 				
 			}
+			echo implode(',',$TData);
 			
-			$TWorkload=array();
-			if(false && $fk_project == 0) {
-				$TWorkload[] = ' {"id":"WL", "text":"'.$langs->trans('Worstations').'", "type":gantt.config.types.project, open: true}';
-
-				$duration = ceil($t_end - $t_start);
-				
-				foreach($TWS as &$ws) {
-					$TWorkload[] = '{id:"L'.(count($TWorkload)+1).'", text:"0/'.$ws->nb_hour_capacity.' ", "start_date":"'.date('d-m-Y',$t_cur).'", "duration":"'.$duration.'", "order":"2" ,parent:"WL", progress: 0, open: "true" }';
-				}
-				
-			}
-			
-			echo implode(',',array_merge($TWorkload,$TData) );
+			$t_end = $t_end+864000; // on ajoute 10jours de rab
 			
 			?>
 		       
@@ -237,7 +226,6 @@
 
 		var start = task.start_date.getTime();
 		var end = task.end_date.getTime();		
-
 		$.ajax({
 			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1); ?>"
 			,data:{
@@ -248,13 +236,99 @@
 			}
 			,method:"post"
 		});
+
+		if(start>old_event.start_date.getTime()) start = old_event.start_date.getTime();
+		if(end<old_event.end_date.getTime()) start = old_event.end_date.getTime();
+			
 		
 		return true;
 	});
 	
-	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $t_start) ?>"), new Date("<?php echo date('Y-m-d', $t_end+864000) ?>"));
+	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $t_start) ?>"), new Date("<?php echo date('Y-m-d', $t_end) ?>"));
 	modSampleHeight();
 	gantt.parse(tasks);
+
+	function updateWSCapacity(wsid, t_start, t_end, nb_hour_capacity) {
+
+
+		$.ajax({
+			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>"
+			,data:{
+				get:"workstation-capacity"
+				,t_start:t_start
+				,t_end:t_end
+				,wsid:wsid
+			}
+		,dataType:"json"
+		}).done(function(data) {
+
+			for(d in data) {
+				c = data[d];
+
+				var p; 
+				var bg = '#fff';
+				
+				if(c == 0) { p='N/A'; bg='#000'; }
+				else {
+					p = Math.round(((nb_hour_capacity - c) / nb_hour_capacity)*100);
+
+					if(p>=100) bg='#ff0000';
+					else if(p>=90) bg='#ffa500';
+					else if(p>=50) bg='#7cec43';
+					
+					p+='%';
+				}
+
+				$('div.gantt_bars_area div#workstations_'+wsid+' div[date='+d+']').html(p).css({'background-color':bg});
+				
+			}
+
+		});
+	}
+	
+	<?php 
+	if($fk_project == 0) {
+		
+		?>
+		var w_workstation = $('div.gantt_bars_area').width();
+		var w_workstation_title = $('div.gantt_grid_data').width();
+		var w_cell = $('div.gantt_task_bg div.gantt_task_cell').first().outerWidth();
+
+		$('style[rel=drawLine]').remove();
+		        
+        var html_style = '<style rel="drawLine" type="text/css">'
+                           +' div.gantt_bars_area div.workstation div.gantt_task_cell { width:'+w_cell+'px; text-align:center; } '
+                           +' div.gantt_bars_area div.workstation { height:20px; font-size:10px; } '
+                         +'</style>';
+                                                  
+        $(html_style).appendTo("head");
+		
+		<?php 
+		
+		$cells = '';
+		$t_cur = $t_start;
+		while($t_cur<=$t_end) {
+			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">N/A</div>';
+			$t_cur = strtotime('+1day',$t_cur);
+		}
+		
+		foreach($TWS as &$ws) {
+		
+			?>
+			$('div.gantt_grid_data').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:20px;padding-right:5px;"><?php echo $ws->name . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
+			$('div.gantt_bars_area').append('<div class="workstation gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
+
+			updateWSCapacity(<?php echo $ws->id ?>, <?php echo $t_start ?>, <?php echo $t_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>);
+			 
+				
+			<?php 	
+			
+		}
+		
+	}
+	
+	?>
+
 	</script>
 	
 	
