@@ -210,8 +210,8 @@
 	gantt.attachEvent("onTaskDblClick", function(id){
 
 		if(id[0] == 'T') {
-		
-			document.location.href="<?php echo dol_buildpath('/projet/tasks/task.php',1) ?>?id="+id.substring(1)+"&withproject=1";
+			pop_edit_task(id.substring(1));
+			//document.location.href="<?php echo dol_buildpath('/projet/tasks/task.php',1) ?>?id="+id.substring(1)+"&withproject=1";
 		}
 		else {
 			return false;
@@ -248,6 +248,59 @@
 	modSampleHeight();
 	gantt.parse(tasks);
 
+	var url_in_pop = '';var pop_callback = null;
+	function pop_edit_task(fk_task, callback) {
+
+		pop_callback = callback;
+		
+		if($('#dialog-edit-task').length==0) {
+			$('body').append('<div id="dialog-edit-task"></div>');
+		}
+		var url_in_pop ="<?php echo  dol_buildpath('/projet/tasks/task.php?action=edit&id=',1) ?>"+fk_task
+			
+		$('#dialog-edit-task').load(url_in_pop+" div.fiche form",pop_event);
+		
+	}
+
+	function pop_event(callback) {
+
+		$('a').click(function(){
+			url_in_pop = $(this).attr('href');
+			$('#dialog-edit-task').load(url_in_pop+" div.fiche", pop_event);
+			
+			return false;
+			
+		});
+		
+		$('#dialog-edit-task input[name=cancel]').remove();
+		$('#dialog-edit-task form').unbind().submit(function() {
+
+			$.post($(this).attr('action'), $(this).serialize(), function() {
+				
+				if(pop_callback) {
+					eval(pop_callback);
+				}
+				
+				$('#dialog-edit-task').load(url_in_pop+" div.fiche", pop_event);
+				
+								
+			});
+		
+			//$('#dialog-edit-task').dialog('close');			
+			
+			return false;
+	
+			
+		});
+		
+		$(this).dialog({
+			title: "<?php echo $langs->trans('EditTask') ?>"
+			,width:"80%"
+			,modal:true
+		});
+		
+	}
+	
 	function updateWSCapacity(wsid, t_start, t_end, nb_hour_capacity) {
 
 
