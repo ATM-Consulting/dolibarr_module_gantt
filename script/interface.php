@@ -45,6 +45,7 @@
 				$o->date_start = $data['start'] / 1000;
 				$o->date_end = ($data['end'] / 1000) - 1; //Pour que cela soit à 23:59:59 de la vieille
 				$o->progress = $data['progress'] * 100;
+				
 				return $o->update($user);
 				
 				break;

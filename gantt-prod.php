@@ -220,7 +220,7 @@
 	gantt.attachEvent("onBeforeTaskChanged", function(id, mode, old_event){
 		var task = gantt.getTask(id);
 
-		var progress = task.progress;
+		var progress = task.progress ;
 		//var date_start = task.start_date.toISOString().substring(0,10);
 		//var date_end = task.end_date.toISOString().substring(0,10);
 
@@ -232,6 +232,7 @@
 				ganttid:id
 				,start:start
 				,end:end
+				,progress:progress
 				,put:"gantt"
 			}
 			,method:"post"
@@ -281,12 +282,12 @@
 					eval(pop_callback);
 				}
 				
-				$('#dialog-edit-task').load(url_in_pop+" div.fiche", pop_event);
+			//	$('#dialog-edit-task').load(url_in_pop+" div.fiche", pop_event);
 				
 								
 			});
 		
-			//$('#dialog-edit-task').dialog('close');			
+			$('#dialog-edit-task').dialog('close');			
 			
 			return false;
 	
