@@ -117,7 +117,7 @@
 						foreach($ofData['workstations'] as &$wsData) {
 							
 							$ws = $wsData['ws'];
-							$TWS[$ws->id] = $ws;
+							if($ws->id>0) $TWS[$ws->id] = $ws;
 							//$TData[] = ' {"id":"WS'.$ws->id.'", "text":"'.$ws->name.'", "type":gantt.config.types.project, parent:"M'.$of->id.'", open: true}';
 							
 							foreach($wsData['tasks'] as &$task) {
@@ -371,7 +371,7 @@
 			$('div.gantt_grid_data').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:20px;padding-right:5px;"><?php echo $ws->name . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
 			$('div.gantt_bars_area').append('<div class="workstation gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
 
-			updateWSCapacity(<?php echo $ws->id ?>, <?php echo $t_start ?>, <?php echo $t_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>);
+			updateWSCapacity(<?php echo $ws->id ?>, <?php echo (int)$t_start ?>, <?php echo (int)$t_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>);
 			 
 				
 			<?php 	
