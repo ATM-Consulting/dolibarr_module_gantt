@@ -237,6 +237,8 @@
 				,put:"gantt"
 			}
 			,method:"post"
+		}).done( function() {
+			updateAllCapacity();
 		});
 
 		if(start>old_event.start_date.getTime()) start = old_event.start_date.getTime();
@@ -374,11 +376,23 @@ console.log(nb_hour_capacity, data);
 			$('div.gantt_bars_area').append('<div class="workstation gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
 
 			updateWSCapacity(<?php echo $ws->id ?>, <?php echo (int)$t_start ?>, <?php echo (int)$t_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>);
-			 
-				
+
 			<?php 	
 			
 		}
+		
+		echo 'function updateAllCapacity() { ';
+
+		foreach($TWS as &$ws) {
+			
+			?>
+			updateWSCapacity(<?php echo $ws->id ?>, <?php echo (int)$t_start ?>, <?php echo (int)$t_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>);
+			<?php 	
+			
+		}
+		
+		echo ' } ';
+		
 		
 	}
 	
