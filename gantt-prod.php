@@ -62,7 +62,7 @@
 	
 	
 	$TElement = _get_task_for_of($fk_project);
-//	pre($TElement[1]['orders'][1]['ofs'][1],1);
+//	pre($TElement,1);
 	?>
 	
 	<div id="gantt_here" style='width:100%; height:100%;'></div>
@@ -126,6 +126,7 @@
 								if(empty($t_end) || $t_end<$task->date_end)$t_end=$task->date_end;
 								
 								$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
+								if($duration<1)$duration = 1;
 								
 								$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.' '.dol_print_date($task->planned_workload,'hour').'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'", "order":"3"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).', open: "true",owner:"'.$ws->id.'"}';
 								
@@ -315,7 +316,7 @@
 			}
 		,dataType:"json"
 		}).done(function(data) {
-
+console.log(nb_hour_capacity, data);
 			for(d in data) {
 				c = data[d];
 
@@ -462,12 +463,11 @@
 		WHERE "; 
 		
 		if($fk_project>0) $sql.= " fk_projet=".$fk_project;
-		else $sql.= "tex.fk_of IS NOT NULL AND tex.fk_of>0 AND t.progress<100
+		else $sql.= "tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
 			AND p.fk_statut = 1
 		";
 		
 		$res = $db->query($sql);
-		
 		if($res===false) {
 			var_dump($db);exit;
 		}
