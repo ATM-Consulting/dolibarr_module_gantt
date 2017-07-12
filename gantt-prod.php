@@ -62,7 +62,7 @@
 	
 	
 	$TElement = _get_task_for_of($fk_project);
-//	pre($TElement,1);
+	//pre($TElement,1);
 	?>
 	
 	<div id="gantt_here" style='width:100%; height:100%;'></div>
@@ -90,9 +90,16 @@
 				
 				$fk_parent_project = null;
 				
-				if($fk_project==0){
-					$TData[] = ' {"id":"P'.$project->id.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: true}';
-					$fk_parent_project= 'P'.$project->id;
+				if(empty($fk_project)) {
+					if($project->id>0){
+						$TData[] = ' {"id":"P'.$project->id.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: '.(empty($fk_project) ? 'false': 'true').'}';
+						$fk_parent_project= 'P'.$project->id;
+					}
+					else {
+						$TData[] = ' {"id":"P0", "text":"'.$langs->trans('UndefinedProject').'", "type":gantt.config.types.project, open: false}';
+						$fk_parent_project= 'P0';
+					}
+					
 				}
 					
 				foreach($projectData['orders'] as &$orderData) {
@@ -104,14 +111,27 @@
 						$TData[] = ' {"id":"O'.$order->id.'", "text":"'.$order->ref.'", "type":gantt.config.types.project'.(!is_null($fk_parent_project) ? ' ,parent:"'.$fk_parent_project.'" ' : '' ).', open: true}';
 						$fk_parent_order = 'O'.$order->id;
 					}
+					else{
+						$TData[] = ' {"id":"O0", "text":"'.$langs->trans('UndefinedOrder').'", "type":gantt.config.types.project'.(!is_null($fk_parent_project) ? ' ,parent:"'.$fk_parent_project.'" ' : '' ).', open: true}';
+						$fk_parent_order = 'O0';
+					}
 					
 					foreach($orderData['ofs'] as &$ofData) {
 						$of = $ofData['of'];	
 						$fk_parent_of = null;
 						
-						if(!empty($conf->of->enabled) && $of->id>0) {
-							$TData[] = ' {"id":"M'.$of->id.'", "text":"'.$of->numero.'", "type":gantt.config.types.project'.(!is_null($fk_parent_order) ? ' ,parent:"'.$fk_parent_order.'" ' : '' ).', open: true}';
-							$fk_parent_of= 'M'.$of->id;
+						if(!empty($conf->of->enabled)) {
+							if($of->id>0) {
+								$TData[] = ' {"id":"M'.$of->id.'", "text":"'.$of->numero.'", "type":gantt.config.types.project'.(!is_null($fk_parent_order) ? ' ,parent:"'.$fk_parent_order.'" ' : '' ).', open: true}';
+								$fk_parent_of= 'M'.$of->id;
+							}
+							else{
+								$TData[] = ' {"id":"M0", "text":"'.$langs->trans('UndefinedMakingOrder').'", "type":gantt.config.types.project'.(!is_null($fk_parent_order) ? ' ,parent:"'.$fk_parent_order.'" ' : '' ).', open: true}';
+								$fk_parent_of= 'M0';
+							}
+						}
+						else{
+							$fk_parent_of = $fk_parent_order;
 						}
 						
 						foreach($ofData['workstations'] as &$wsData) {
@@ -208,6 +228,13 @@
 		return false;
 	});
 
+	gantt.attachEvent("onTaskOpened", function(id){
+		updateAllCapacity();
+	});
+	gantt.attachEvent("onTaskClosed", function(id){
+		updateAllCapacity();
+	});
+	
 	gantt.attachEvent("onTaskDblClick", function(id){
 
 		if(id[0] == 'T') {
@@ -318,7 +345,7 @@
 			}
 		,dataType:"json"
 		}).done(function(data) {
-console.log(nb_hour_capacity, data);
+//console.log(nb_hour_capacity, data);
 			for(d in data) {
 				c = data[d];
 
@@ -369,29 +396,26 @@ console.log(nb_hour_capacity, data);
 			$t_cur = strtotime('+1day',$t_cur);
 		}
 		
-		foreach($TWS as &$ws) {
-		
-			?>
-			$('div.gantt_grid_data').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:20px;padding-right:5px;"><?php echo $ws->name . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
-			$('div.gantt_bars_area').append('<div class="workstation gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
-
-			updateWSCapacity(<?php echo $ws->id ?>, <?php echo (int)$t_start ?>, <?php echo (int)$t_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>);
-
-			<?php 	
-			
-		}
-		
 		echo 'function updateAllCapacity() { ';
 
 		foreach($TWS as &$ws) {
-			
+
 			?>
+			if($("div#workstations_<?php echo $ws->id; ?>.gantt_row").length == 0 ) {
+			
+				$('div.gantt_grid_data').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:20px;padding-right:5px;"><?php echo $ws->name . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
+				$('div.gantt_bars_area').append('<div class="workstation gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
+
+			}
+			
 			updateWSCapacity(<?php echo $ws->id ?>, <?php echo (int)$t_start ?>, <?php echo (int)$t_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>);
 			<?php 	
 			
 		}
 		
-		echo ' } ';
+		echo ' }
+
+		updateAllCapacity(); ';
 		
 		
 	}
@@ -518,7 +542,7 @@ console.log(nb_hour_capacity, data);
 				else{
 					$order=new Commande($db);
 					$order->fetch($of->fk_commande);
-					$TCacheOrder[$order->id] = $order;
+					$TCacheOrder[(int)$order->id] = $order;
 				}
 				
 				
@@ -553,7 +577,6 @@ console.log(nb_hour_capacity, data);
 				
 			}
 			
-			
 			if(empty($TTask[$project->id])) {
 				
 				$TTask[$project->id]=array(
@@ -562,6 +585,8 @@ console.log(nb_hour_capacity, data);
 				);
 				
 			}
+			
+			$order->id=(int)$order->id;
 			
 			if(empty($TTask[$project->id]['orders'][$order->id])) {
 				
