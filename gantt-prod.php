@@ -11,7 +11,7 @@
 	//<script src="../../codebase/locale/locale_fr.js" charset="utf-8"></script>
 	
 	
-	llxHeader('', $langs->trans('GanttProd') , '', '', 0, 0, array('/gantt/lib/dhx/codebase/dhtmlxgantt.js','/gantt/lib/dhx/codebase/locale/locale_fr.js'), array('/gantt/lib/dhx/codebase/dhtmlxgantt.css') );
+	llxHeader('', $langs->trans('GanttProd') , '', '', 0, 0, array('/gantt/lib/dhx/codebase/dhtmlxgantt.js','/gantt/lib/dhx/codebase/ext/dhtmlxgantt_smart_rendering.js','/gantt/lib/dhx/codebase/ext/dhtmlxgantt_tooltip.js','/gantt/lib/dhx/codebase/locale/locale_fr.js'), array('/gantt/lib/dhx/codebase/dhtmlxgantt.css') );
 	
 	dol_include_once('/core/lib/project.lib.php');
 
@@ -148,7 +148,13 @@
 								$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
 								if($duration<1)$duration = 1;
 								
-								$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.' '.dol_print_date($task->planned_workload,'hour').'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'", "order":"3"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).', open: "true",owner:"'.$ws->id.'"}';
+								if($task->planned_workload == 0) {
+									$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":0'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).',owner:"'.$ws->id.'"}';
+									
+								}
+								else {
+									$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.' '.dol_print_date($task->planned_workload,'hour').'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$ws->id.'"}';
+								}
 								
 								if($task->fk_task_parent>0) {
 									$TLink[] = ' {id:'.(count($TLink)+1).', source:"T'.$task->fk_task_parent.'", target:"T'.$task->id.'", type:"0"}';
@@ -201,23 +207,38 @@
 	    {name:"text",       label:"<?php echo $langs->transnoentities('Label') ?>",  width:"*", tree:true },
 	    {name:"start_time",   label:"<?php echo $langs->transnoentities('DateStart') ?>",  template:function(obj){
 			return gantt.templates.date_grid(obj.start_date);
-	    }, align: "center", width:60 },
+	    }, align: "center", width:70 },
 	    /*{name:"progress",   label:"<?php echo $langs->transnoentities('Progression') ?>",  template:function(obj){
 			return obj.progress ? Math.round(obj.progress*100)+"%" : "";
 	    }, align: "center", width:60 },*/
 	    {name:"duration",   label:"<?php echo $langs->transnoentities('Duration') ?>", align:"center", width:60},
 	    
-	    /*{name:"add",        label:"",           width:44 }*/
+	    {name:"add",        label:"",           width:44 }
 	];
 
 	gantt.config.grid_width = 390;
 	gantt.config.date_grid = "%F %d"
 
 	gantt.config.scale_height  = 40;
-	gantt.config.subscales = [
-		{ unit:"week", step:1, date:"<?php echo $langs->transnoentities('Week') ?> #%W"}
-	];
+	
+	<?php
+	
+	if(GETPOST('scale')=='week') {
+		echo 'gantt.config.scale_unit = "week"; gantt.config.date_scale = "'.$langs->trans('WeekShort').' %W";';	
+	}
+	else {
+		echo 'gantt.config.subscales = [
+				{ unit:"week", step:1, date:"'.$langs->transnoentities('Week').' %W"}
+			];
+		';	
+	}
+	
+	?>
 
+	gantt.templates.tooltip_text = function(start,end,task){
+	    return "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?>";
+	};
+	
 	gantt.attachEvent("onBeforeLinkAdd", function(id,link){
 		
 		return false; // on empêche d'ajouter du lien
@@ -295,7 +316,7 @@
 
 	function pop_event(callback) {
 
-		$('a').click(function(){
+		$('#dialog-edit-task a').click(function(){
 			url_in_pop = $(this).attr('href');
 			$('#dialog-edit-task').load(url_in_pop+" div.fiche", pop_event);
 			
@@ -354,15 +375,16 @@
 				
 				if(c == 0) { p='N/A'; bg='#000'; }
 				else {
-					p = Math.round(((nb_hour_capacity - c) / nb_hour_capacity)*100);
+					//p = Math.round(((nb_hour_capacity - c) / nb_hour_capacity)*100);
+					p = Math.round(c * 10) / 10;
 
-					if(p>=100) bg='#ff0000';
-					else if(p>=90) bg='#ffa500';
-					else if(p>=50) bg='#7cec43';
+					if(p<0) bg='#ff0000';
+					else if(p<=nb_hour_capacity/10) bg='#ffa500';
+					else if(p>nb_hour_capacity/2) bg='#7cec43';
 					
-					p+='%';
+					//p+='%';
 				}
-
+				
 				$('div.gantt_bars_area div#workstations_'+wsid+' div[date='+d+']').html(p).css({'background-color':bg});
 				
 			}
