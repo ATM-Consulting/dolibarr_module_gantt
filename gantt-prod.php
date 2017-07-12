@@ -92,7 +92,7 @@
 				
 				if(empty($fk_project)) {
 					if($project->id>0){
-						$TData[] = ' {"id":"P'.$project->id.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: '.(empty($fk_project) ? 'false': 'true').'}';
+						$TData[] = ' {"id":"P'.$project->id.'", "text":"'.$project->ref.' '.$project->title.'", "type":gantt.config.types.project, open: '.(empty($fk_project) ? 'false': 'true').'}';
 						$fk_parent_project= 'P'.$project->id;
 					}
 					else {
