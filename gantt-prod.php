@@ -9,7 +9,7 @@
 	
 	// Project -> Order -> OF -> Task
 	//<script src="../../codebase/locale/locale_fr.js" charset="utf-8"></script>
-	
+	$row_height = 20;
 	
 	llxHeader('', $langs->trans('GanttProd') , '', '', 0, 0, array('/gantt/lib/dhx/codebase/dhtmlxgantt.js','/gantt/lib/dhx/codebase/ext/dhtmlxgantt_smart_rendering.js','/gantt/lib/dhx/codebase/ext/dhtmlxgantt_tooltip.js','/gantt/lib/dhx/codebase/locale/locale_fr.js'), array('/gantt/lib/dhx/codebase/dhtmlxgantt.css') );
 	
@@ -66,7 +66,52 @@
 	?>
 	
 	<div id="gantt_here" style='width:100%; height:100%;'></div>
+	<style type="text/css">
+	.gantt_task_line.gantt_milestone {
+	    visibility: hidden;
+	    background-color: #d33daf;
+	    border: 0 solid #61164f;
+	    box-sizing: content-box;
+	    -moz-box-sizing: content-box;
+	    height: 30px;
+		line-height: 30px;
+		width: 30px;
+		font-size: 1px;
+	    content:'';
+	}
+	
+	.gantt_task_line.gantt_of {
+	    background-color: #d3af3d;
+	    border: 0 solid #d3af3d;
+	    box-sizing: content-box;
+	    -moz-box-sizing: content-box;
+	    
+	}
+			
+	.gantt_task_line.gantt_order {
+	    background-color: #d3d13a;
+	    border: 0 solid #d3d13a;
+	    box-sizing: content-box;
+	    -moz-box-sizing: content-box;
+	    
+	}
+			
+	#gantt_here div.gantt_task {
+		overflow: scroll;
+	}	
+		
+	</style>
 	<script type="text/javascript">
+
+	gantt.config.types.of = "of";
+	gantt.locale.labels.type_of = "<?php echo $langs->trans('OF'); ?>";
+	
+	gantt.config.types.order = "order";
+	gantt.locale.labels.type_order = "<?php echo $langs->trans('Order'); ?>";
+	
+	gantt.config.types.milestone = "milestone";
+	gantt.locale.labels.type_milestone = "<?php echo $langs->trans('Release'); ?>";
+	
 	function modSampleHeight(){
 
 		var sch = document.getElementById("gantt_here");
@@ -92,7 +137,7 @@
 				
 				if(empty($fk_project)) {
 					if($project->id>0){
-						$TData[] = ' {"id":"P'.$project->id.'", "text":"'.$project->ref.' '.$project->title.'", "type":gantt.config.types.project, open: '.(empty($fk_project) ? 'false': 'true').'}';
+						$TData[] = ' {"id":"P'.$project->id.'", "text":"P '.$project->ref.' '.$project->title.'", "type":gantt.config.types.project, open: '.(empty($fk_project) ? 'false': 'true').'}';
 						$fk_parent_project= 'P'.$project->id;
 					}
 					else {
@@ -108,11 +153,11 @@
 					$fk_parent_order = null;
 					
 					if($order->id >0 ){
-						$TData[] = ' {"id":"O'.$order->id.'", "text":"'.$order->ref.'", "type":gantt.config.types.project'.(!is_null($fk_parent_project) ? ' ,parent:"'.$fk_parent_project.'" ' : '' ).', open: true}';
+						$TData[] = ' {"id":"O'.$order->id.'", "text":"O '.$order->ref.'", "type":gantt.config.types.order'.(!is_null($fk_parent_project) ? ' ,parent:"'.$fk_parent_project.'" ' : '' ).', open: true}';
 						$fk_parent_order = 'O'.$order->id;
 					}
 					else{
-						$TData[] = ' {"id":"O0", "text":"'.$langs->trans('UndefinedOrder').'", "type":gantt.config.types.project'.(!is_null($fk_parent_project) ? ' ,parent:"'.$fk_parent_project.'" ' : '' ).', open: true}';
+						$TData[] = ' {"id":"O0", "text":"'.$langs->trans('UndefinedOrder').'", "type":gantt.config.types.order'.(!is_null($fk_parent_project) ? ' ,parent:"'.$fk_parent_project.'" ' : '' ).', open: true}';
 						$fk_parent_order = 'O0';
 					}
 					
@@ -122,11 +167,11 @@
 						
 						if(!empty($conf->of->enabled)) {
 							if($of->id>0) {
-								$TData[] = ' {"id":"M'.$of->id.'", "text":"'.$of->numero.'", "type":gantt.config.types.project'.(!is_null($fk_parent_order) ? ' ,parent:"'.$fk_parent_order.'" ' : '' ).', open: true}';
+								$TData[] = ' {"id":"M'.$of->id.'", "text":"OF '.$of->numero.'", "type":gantt.config.types.of'.(!is_null($fk_parent_order) ? ' ,parent:"'.$fk_parent_order.'" ' : '' ).', open: true}';
 								$fk_parent_of= 'M'.$of->id;
 							}
 							else{
-								$TData[] = ' {"id":"M0", "text":"'.$langs->trans('UndefinedMakingOrder').'", "type":gantt.config.types.project'.(!is_null($fk_parent_order) ? ' ,parent:"'.$fk_parent_order.'" ' : '' ).', open: true}';
+								$TData[] = ' {"id":"M0", "text":"'.$langs->trans('UndefinedMakingOrder').'", "type":gantt.config.types.of'.(!is_null($fk_parent_order) ? ' ,parent:"'.$fk_parent_order.'" ' : '' ).', open: true}';
 								$fk_parent_of= 'M0';
 							}
 						}
@@ -148,12 +193,12 @@
 								$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
 								if($duration<1)$duration = 1;
 								
-								if($task->planned_workload == 0) {
-									$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":0'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).',owner:"'.$ws->id.'"}';
+								if($task->planned_workload == 0) { // c'est un milestone
+									$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.'", "start_date":"'.date('d-m-Y',$task->date_start).'", type:gantt.config.types.milestone '.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).',owner:"'.$ws->id.'"}';
 									
 								}
 								else {
-									$TData[] = ' {"id":"T'.$task->id.'", "text":"'.$task->label.' '.dol_print_date($task->planned_workload,'hour').'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$ws->id.'"}';
+									$TData[] = ' {"id":"T'.$task->id.'", "text":"T '.$task->label.' '.dol_print_date($task->planned_workload,'hour').'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$ws->id.'", type:gantt.config.types.task}';
 								}
 								
 								if($task->fk_task_parent>0) {
@@ -181,8 +226,27 @@
 	    ]
 	};
 
+	gantt.templates.task = function(obj1){
+		console.log(obj1);
+	}
+		
 	gantt.templates.task_class = function(start, end, obj){
-		return "workstation_"+obj.owner;
+
+
+		if(obj.type == gantt.config.types.of){
+			return "gantt_of";
+		}
+		if(obj.type == gantt.config.types.order){
+			return "gantt_order";
+		}
+		else if(obj.type == gantt.config.types.milestone){
+			return "gantt_milestone";
+		}
+		else if(obj.owner) {
+			return "workstation_"+obj.owner;
+		}
+
+		return '';
 	}
 	
 	gantt.templates.scale_cell_class = function(date){
@@ -195,7 +259,13 @@
 	        return "weekend" ;
 	    }
 	};
-
+	
+	gantt.templates.task_text = function(start, end, task){
+		if(task.type == gantt.config.types.milestone){
+			return "";
+		}
+		return task.text;
+	}
 	gantt.templates.rightside_text = function(start, end, task){
 		if(task.type == gantt.config.types.milestone){
 			return task.text;
@@ -220,6 +290,7 @@
 	gantt.config.date_grid = "%F %d"
 
 	gantt.config.scale_height  = 40;
+	gantt.config.row_height = <?php echo $row_height; ?>;
 	
 	<?php
 	
@@ -236,7 +307,13 @@
 	?>
 
 	gantt.templates.tooltip_text = function(start,end,task){
-	    return "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?>";
+
+		if(task.text) {
+	    	return "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?>";
+		}
+		else{
+			return '';
+		}
 	};
 	
 	gantt.attachEvent("onBeforeLinkAdd", function(id,link){
@@ -254,6 +331,31 @@
 	});
 	gantt.attachEvent("onTaskClosed", function(id){
 		updateAllCapacity();
+	});
+	gantt.attachEvent("onGanttScroll", function (left, top) {
+		updateAllCapacity();
+
+	});
+
+	
+	gantt.attachEvent("onAfterTaskAdd", function(id,task){
+		//console.log('createTask',id, task);
+		var start = task.start_date.getTime();
+		var end = task.end_date.getTime();		
+		$.ajax({
+			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1); ?>"
+			,data:{
+				ganttid:id
+				,start:start
+				,end:end
+				,progress:progress
+				,put:"task"
+			}
+			,method:"post"
+		}).done( function(newid) {
+			gantt.changeTaskId(id, newid); 
+			updateAllCapacity();
+		});
 	});
 	
 	gantt.attachEvent("onTaskDblClick", function(id){
@@ -286,6 +388,7 @@
 			}
 			,method:"post"
 		}).done( function() {
+			gantt.refreshTask(id);
 			updateAllCapacity();
 		});
 
@@ -295,11 +398,45 @@
 		
 		return true;
 	});
+
+	gantt.config.autoscroll = true;
+	//gantt.config.autosize = "x";
 	
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $t_start) ?>"), new Date("<?php echo date('Y-m-d', $t_end) ?>"));
 	modSampleHeight();
 	gantt.parse(tasks);
 
+//TODO add scrollbar locked at top or bottom
+	
+/*	(function() {
+	function scrollHorizontally(e) {
+	    e = window.event || e;
+
+	    var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
+	
+	    var sPos = gantt.getScrollState(); 
+	    
+	    gantt.scrollTo(sPos.x - delta*40, null);
+	    
+	    e.preventDefault();
+	}
+	if (window.addEventListener) {
+	    // IE9, Chrome, Safari, Opera
+	    window.addEventListener("mousewheel", scrollHorizontally, false);
+	    // Firefox
+	    window.addEventListener("DOMMouseScroll", scrollHorizontally, false);
+	} else {
+	    // IE 6/7/8
+	    window.attachEvent("onmousewheel", scrollHorizontally);
+	}
+	})();
+*/
+
+	/*$divScroll = $('<div />');
+	$divScroll.width(  );
+
+	$("#gantt_here").before($divScroll);
+	*/
 	var url_in_pop = '';var pop_callback = null;
 	function pop_edit_task(fk_task, callback) {
 
@@ -434,6 +571,11 @@
 			<?php 	
 			
 		}
+
+		echo '$(".gantt_task_line.gantt_milestone").css({
+			width:"'.$row_height.'px"
+			,height:"'.$row_height.'px"
+		});';
 		
 		echo ' }
 
@@ -453,9 +595,9 @@
 			background:#FFF3A1 !important;
 		}
 		
-		.gantt_dependent_task .gantt_task_content {
+		/*.gantt_dependent_task .gantt_task_content {
 			background:#006600 ;
-		}
+		}*/
 		
 		<?php 
 		foreach($TWS as &$ws) {
@@ -538,7 +680,7 @@
 			
 			$task = new Task($db);
 			$task->fetch($obj->rowid);
-			$task->fetch_optionals($task->id);
+			$task->fetch_optionals($gantt_milestonetask->id);
 			
 			if($task->array_options['options_fk_of']>0) {
 				

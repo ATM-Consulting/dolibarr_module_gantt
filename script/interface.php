@@ -13,7 +13,13 @@
 			echo _put_gantt($_POST);
 			
 			break;
-		
+			
+		case 'task':
+			
+			echo _create_task($_POST['task']);
+			
+			break;
+			
 		case 'projects':
 			
 			_put_projects($_POST['TProject']);
@@ -31,6 +37,38 @@
 			__out(_get_ws_capactiy(  GETPOST('wsid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
 			
 			break;
+		
+	}
+	
+	function _create_task($data) {
+		global $db, $user, $langs;
+		
+		$p=new Project($db);
+		if($p->fetch(0,'PREVI')<=0) {
+			
+			$p->ref='PREVI';
+			$p->title = $langs->trans('Provisionnal');
+			
+		}
+		
+		
+		$o=new Task($db);
+		
+		$o->fk_project = $p->id;
+		
+		$o->date_start = $data['start'] / 1000;
+		$o->date_end = ($data['end'] / 1000) - 1; //Pour que cela soit à 23:59:59 de la vieille
+		$o->progress = $data['progress'] * 100;
+		
+		//TODO set Gantt parent
+		
+		$r = $o->create($user);
+		
+		if($r>0) return 'T'.$r;
+		else {
+			
+			var_dump($r, $o);
+		}
 		
 	}
 	
