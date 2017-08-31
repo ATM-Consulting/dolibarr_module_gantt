@@ -16,7 +16,7 @@
 			
 		case 'task':
 			
-			echo _create_task($_POST['task']);
+			echo _create_task($_REQUEST);
 			
 			break;
 			
@@ -41,7 +41,7 @@
 	}
 	
 	function _create_task($data) {
-		global $db, $user, $langs;
+		global $db, $user, $langs,$conf;
 		
 		$p=new Project($db);
 		if($p->fetch(0,'PREVI')<=0) {
@@ -49,18 +49,39 @@
 			$p->ref='PREVI';
 			$p->title = $langs->trans('Provisionnal');
 			
+			$p->create($user);
 		}
 		
 		
 		$o=new Task($db);
 		
+		$defaultref='';
+		$obj = empty($conf->global->PROJECT_TASK_ADDON)?'mod_task_simple':$conf->global->PROJECT_TASK_ADDON;
+		if (! empty($conf->global->PROJECT_TASK_ADDON) && is_readable(DOL_DOCUMENT_ROOT ."/core/modules/project/task/".$conf->global->PROJECT_TASK_ADDON.".php"))
+		{
+			require_once DOL_DOCUMENT_ROOT ."/core/modules/project/task/".$conf->global->PROJECT_TASK_ADDON.'.php';
+			$modTask = new $obj;
+			$defaultref = $modTask->getNextValue($p->thirdparty,null);
+		}
+		
+		if (is_numeric($defaultref) && $defaultref <= 0) $defaultref='';
+		
+		$o->ref = $defaultref;
+		
+		$o->date_c = time();
+		
 		$o->fk_project = $p->id;
+		
+		$o->label = $data['label'];
 		
 		$o->date_start = $data['start'] / 1000;
 		$o->date_end = ($data['end'] / 1000) - 1; //Pour que cela soit à 23:59:59 de la vieille
 		$o->progress = $data['progress'] * 100;
 		
+		$o->planned_workload = $data['duration'] * 3600 * 7; //7h par jour, à revoir
+
 		//TODO set Gantt parent
+		$o->fk_task_parent = 0;
 		
 		$r = $o->create($user);
 		

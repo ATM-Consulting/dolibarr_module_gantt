@@ -137,7 +137,7 @@
 				
 				if(empty($fk_project)) {
 					if($project->id>0){
-						$TData[] = ' {"id":"P'.$project->id.'", "text":"P '.$project->ref.' '.$project->title.'", "type":gantt.config.types.project, open: '.(empty($fk_project) ? 'false': 'true').'}';
+						$TData[] = ' {"id":"P'.$project->id.'", "text":"P '.$project->ref.' '.$project->title.'", "type":gantt.config.types.project, open: '.(empty($fk_project) ? 'true': 'true').'}';
 						$fk_parent_project= 'P'.$project->id;
 					}
 					else {
@@ -333,13 +333,17 @@
 		updateAllCapacity();
 	});
 	gantt.attachEvent("onGanttScroll", function (left, top) {
-		updateAllCapacity();
+//		updateAllCapacity();
+console.log($("div.gantt_task_line[task_id^=T]"));
+		$("div.gantt_task_line[task_id^=T]").each(function(i,item) {
+			
+		});
 
 	});
 
 	
 	gantt.attachEvent("onAfterTaskAdd", function(id,task){
-		//console.log('createTask',id, task);
+		//console.log('createTask',id, task);return 0;
 		var start = task.start_date.getTime();
 		var end = task.end_date.getTime();		
 		$.ajax({
@@ -348,7 +352,9 @@
 				ganttid:id
 				,start:start
 				,end:end
-				,progress:progress
+				,label:task.text
+				,duration:task.duration
+				,progress:0
 				,put:"task"
 			}
 			,method:"post"
@@ -654,6 +660,9 @@
 		
 		global $db;
 		
+		$projet_previ=new Project($db);
+		$projet_previ->fetch(0,'PREVI');
+		$fk_projet_previ = $projet_previ->id;
 		
 		$TCacheProject = $TCacheOrder  = $TCacheWS = array();
 		
