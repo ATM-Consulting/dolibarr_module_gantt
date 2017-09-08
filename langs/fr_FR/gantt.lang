@@ -6,6 +6,6 @@ ATMAbout = Ce module a été développé par <a href="http://www.atm-consulting.
 GanttSetup = Configuration du module Gantt
 GanttAbout = A propos du module Gantt
 
-UndefinedMakingOrder=Tâches sans OF
 UndefinedOrder=OFs sans Commande
+UndefinedMakingOrder=Tâches sans OF
 UndefinedProject=Sans Projet
