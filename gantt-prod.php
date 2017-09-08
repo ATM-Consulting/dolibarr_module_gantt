@@ -199,7 +199,7 @@
 									
 								}
 								else {*/
-									$TData[] = ' {"id":"'.$task->ganttid.'", "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$ws->id.'", type:gantt.config.types.task}';
+								$TData[] = ' {"id":"'.$task->ganttid.'", workstation:'.$ws->id.', ws_nb_hour_capacity:'.$ws->nb_hour_capacity.' , "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$ws->id.'", type:gantt.config.types.task}';
 								//}
 								
 								if($task->fk_task_parent>0) {
@@ -244,7 +244,7 @@
 			return "gantt_milestone";
 		}
 		else if(obj.owner) {
-			return "workstation_"+obj.owner;
+			return "workstation_"+obj.workstation;
 		}
 
 		return '';
@@ -377,6 +377,19 @@
 			return false;
 		}
 	});
+
+	var start_task_drag = 0;
+	var end_task_drag =  0;
+	
+	gantt.attachEvent("onBeforeTaskDrag", function(sid, parent, tindex){
+		var task = gantt.getTask(sid);
+
+		start_task_drag = task.start_date.getTime()
+		end_task_drag = task.end_date.getTime();
+
+		return true;
+	});
+	
 	gantt.attachEvent("onBeforeTaskChanged", function(id, mode, old_event){
 		var task = gantt.getTask(id);
 
@@ -385,7 +398,8 @@
 		//var date_end = task.end_date.toISOString().substring(0,10);
 
 		var start = task.start_date.getTime();
-		var end = task.end_date.getTime();		
+		var end = task.end_date.getTime();
+				
 		$.ajax({
 			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1); ?>"
 			,data:{
@@ -398,7 +412,12 @@
 			,method:"post"
 		}).done( function() {
 			gantt.refreshTask(id);
-			updateAllCapacity();
+			/*updateAllCapacity();*/
+			if(start>start_task_drag && start_task_drag>0)start = start_task_drag;
+			if(end<end_task_drag) end = end_task_drag;
+						
+			updateWSCapacity(task.workstation, start / 1000, end / 1000, task.ws_nb_hour_capacity);
+			
 		});
 
 		if(start>old_event.start_date.getTime()) start = old_event.start_date.getTime();
