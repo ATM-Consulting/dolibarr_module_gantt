@@ -104,16 +104,14 @@
 	    
 	}
 			
-	#gantt_here div.gantt_task {
-		overflow: scroll;
-	}	
-		
 	div.ws_container,div.ws_container_label {
 		position: fixed;
-		bottom:0;
+		bottom:0px;
 		overflow: hidden;
 	}
-	
+	div.ws_container {
+		overflow: scroll;
+	}
 	div.ws_container div.gantt_task_cell {
 		width:70px;
 	}
@@ -135,7 +133,7 @@
 		var sch = document.getElementById("gantt_here");
 
 		var h = parseInt(document.body.offsetHeight);
-		if(h<500)h=500;
+		if(h<2000)h=2000;
 		
 		sch.style.height = h+"px";
 	
@@ -342,10 +340,8 @@
 			
 		});
 */
-
-		$('div.ws_container > div.workstation').css( "left", -$('div.gantt_hor_scroll').scrollLeft() );
-
-
+//console.log('onGanttScroll',$('div.gantt_hor_scroll').scrollLeft());
+		$('div.ws_container ').scrollLeft( $('div.gantt_hor_scroll').scrollLeft() );
 	});
 
 	
@@ -412,7 +408,7 @@
 		return true;
 	});
 
-	gantt.config.autoscroll = true;
+	gantt.config.autoscroll = false;
 	//gantt.config.autosize = "x";
 	
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $t_start) ?>"), new Date("<?php echo date('Y-m-d', $t_end) ?>"));
@@ -581,19 +577,12 @@
 
 		if($("div.ws_container_label").length == 0) {
 			$("body").append(\'<div class="ws_container_label"></div>\');
-			$("body").append(\'<div class="ws_container"></div>\');
+			$("body").append(\'<div class="ws_container"><div></div></div>\');
 
-			$("div.ws_container_label").css({
-				left:$("#gantt_here div.gantt_grid").offset().left
-				,width:$("#gantt_here div.gantt_grid").width()
+			$("div.ws_container").scroll(function(e) {
+/*console.log($(this).scrollLeft(),e);*/
+				gantt.scrollTo($(this).scrollLeft(),null);
 			});
-			
-			$("div.ws_container").css({
-				width : $("#gantt_here div.gantt_task").width() 
-				, left:$("#gantt_here div.gantt_task").offset().left
-			});
-
-
 		}
 
 		';
@@ -604,7 +593,7 @@
 			if($("div#workstations_<?php echo $ws->id; ?>.gantt_row").length == 0 ) {
 			
 				$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:20px;padding-right:5px;"><?php echo $ws->name . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
-				$('div.ws_container').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
+				$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
 
 			}
 			
@@ -612,12 +601,24 @@
 			<?php 	
 			
 		}
-
+		echo '
+		$("div.ws_container").css({
+			width : $("#gantt_here div.gantt_task").width()
+			, left:$("#gantt_here div.gantt_task").offset().left
+		});
+			
+		$("div.ws_container_label").css({
+			left:$("#gantt_here div.gantt_grid").offset().left
+			,width:$("#gantt_here div.gantt_grid").width()
+			,height : $("div.ws_container").outerHeight()
+		}); ';
+		
+		/*
 		echo '$(".gantt_task_line.gantt_milestone").css({
 			width:"'.$row_height.'px"
 			,height:"'.$row_height.'px"
 		});';
-		
+		*/
 		echo ' }
 
 		updateAllCapacity(); ';
@@ -626,7 +627,7 @@
 	}
 	
 	?>
-
+	
 	</script>
 	
 	
