@@ -103,6 +103,11 @@
 		overflow: scroll;
 	}	
 		
+	div.ws_container {
+		position: fixed;
+		bottom:0;
+		overflow: hidden;
+	}
 	</style>
 	<script type="text/javascript">
 
@@ -320,10 +325,14 @@
 	});
 	gantt.attachEvent("onGanttScroll", function (left, top) {
 //		updateAllCapacity();
-console.log($("div.gantt_task_line[task_id^=T]"));
-		$("div.gantt_task_line[task_id^=T]").each(function(i,item) {
+//console.log($("div.gantt_task_line[task_id^=T]"));
+	/*	$("div.gantt_task_line[task_id^=T]").each(function(i,item) {
 			
 		});
+*/
+
+		$('div.gantt_bars_area> div.ws_container > div.workstation').css( "left", -left );
+
 
 	});
 
@@ -556,15 +565,25 @@ console.log($("div.gantt_task_line[task_id^=T]"));
 			$t_cur = strtotime('+1day',$t_cur);
 		}
 		
-		echo 'function updateAllCapacity() { ';
+		echo 'function updateAllCapacity() { 
 
+		if($("div.gantt_grid_data > div.ws_container").length == 0) {
+			$("div.gantt_grid_data").append(\'<div class="ws_container"></div>\');
+			$("div.gantt_bars_area").append(\'<div class="ws_container"></div>\');
+
+			
+			$("div.gantt_bars_area> div.ws_container").css("width", $("#gantt_here div.gantt_task").width() );
+		}
+
+		';
+		
 		foreach($TWS as &$ws) {
 
 			?>
 			if($("div#workstations_<?php echo $ws->id; ?>.gantt_row").length == 0 ) {
 			
-				$('div.gantt_grid_data').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:20px;padding-right:5px;"><?php echo $ws->name . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
-				$('div.gantt_bars_area').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
+				$('div.gantt_grid_data> div.ws_container').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:20px;padding-right:5px;"><?php echo $ws->name . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
+				$('div.gantt_bars_area> div.ws_container').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
 
 			}
 			
@@ -681,7 +700,7 @@ console.log($("div.gantt_task_line[task_id^=T]"));
 		if($res===false) {
 			var_dump($db);exit;
 		}
-		
+		//echo $sql;
 		$TTask=array();
 		
 		while($obj = $db->fetch_object($res)) {
