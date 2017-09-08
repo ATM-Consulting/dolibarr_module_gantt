@@ -328,10 +328,10 @@
 	});
 
 	gantt.attachEvent("onTaskOpened", function(id){
-		updateAllCapacity();
+		/*updateAllCapacity();*/
 	});
 	gantt.attachEvent("onTaskClosed", function(id){
-		updateAllCapacity();
+		/*updateAllCapacity();*/
 	});
 	gantt.attachEvent("onGanttScroll", function (left, top) {
 //		updateAllCapacity();
@@ -363,7 +363,9 @@
 			,method:"post"
 		}).done( function(newid) {
 			gantt.changeTaskId(id, newid); 
-			updateAllCapacity();
+			/*updateAllCapacity();*/
+
+			// TODO set workstation and update capacity 
 		});
 	});
 	
@@ -377,7 +379,7 @@
 			return false;
 		}
 	});
-
+/*
 	var start_task_drag = 0;
 	var end_task_drag =  0;
 	
@@ -389,7 +391,7 @@
 
 		return true;
 	});
-	
+*/	
 	gantt.attachEvent("onBeforeTaskChanged", function(id, mode, old_event){
 		var task = gantt.getTask(id);
 
@@ -413,17 +415,12 @@
 		}).done( function() {
 			gantt.refreshTask(id);
 			/*updateAllCapacity();*/
-			if(start>start_task_drag && start_task_drag>0)start = start_task_drag;
-			if(end<end_task_drag) end = end_task_drag;
-						
+
 			updateWSCapacity(task.workstation, start / 1000, end / 1000, task.ws_nb_hour_capacity);
+			updateWSCapacity(task.workstation, old_event.start_date.getTime() / 1000, old_event.end_date.getTime() / 1000, task.ws_nb_hour_capacity);
 			
 		});
 
-		if(start>old_event.start_date.getTime()) start = old_event.start_date.getTime();
-		if(end<old_event.end_date.getTime()) start = old_event.end_date.getTime();
-			
-		
 		return true;
 	});
 
@@ -529,7 +526,7 @@
 	
 	function updateWSCapacity(wsid, t_start, t_end, nb_hour_capacity) {
 
-
+console.log('updateWSCapacity', wsid, t_start, t_end, nb_hour_capacity);
 		$.ajax({
 			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>"
 			,data:{
