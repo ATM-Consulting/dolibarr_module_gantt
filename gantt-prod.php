@@ -70,6 +70,11 @@
 	
 	<div id="gantt_here" style='width:100%; height:100%;'></div>
 	<style type="text/css">
+	
+	#gantt_here {
+		margin-bottom:500px;
+	}
+	
 	.gantt_task_line.gantt_milestone {
 	    visibility: hidden;
 	    background-color: #d33daf;
@@ -103,11 +108,16 @@
 		overflow: scroll;
 	}	
 		
-	div.ws_container {
+	div.ws_container,div.ws_container_label {
 		position: fixed;
 		bottom:0;
 		overflow: hidden;
 	}
+	
+	div.ws_container div.gantt_task_cell {
+		width:70px;
+	}
+	
 	</style>
 	<script type="text/javascript">
 
@@ -137,6 +147,8 @@
 			<?php 
 			$TData=array(); $TWS=array(); $TLink=array();
 			
+			$close_init_status = empty($fk_project) ? 'false': 'true';
+			
 			$t_start  = $t_end = 0;
 			foreach($TElement as &$projectData ) {
 				$project = &$projectData['project'];
@@ -145,7 +157,7 @@
 				
 				if(empty($fk_project)) {
 
-					$TData[] = ' {"id":"'.$project->ganttid.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: '.(empty($fk_project) ? 'false': 'true').'}';
+					$TData[] = ' {"id":"'.$project->ganttid.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: '.$close_init_status.'}';
 					$fk_parent_project= $project->ganttid;
 					
 				}
@@ -155,7 +167,7 @@
 					
 					$fk_parent_order = null;
 					
-					$TData[] = ' {"id":"'.$order->ganttid.'", "text":"'.$order->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_project) ? ' ,parent:"'.$fk_parent_project.'" ' : '' ).', open: true}';
+					$TData[] = ' {"id":"'.$order->ganttid.'", "text":"'.$order->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_project) ? ' ,parent:"'.$fk_parent_project.'" ' : '' ).', open: '.$close_init_status.'}';
 					$fk_parent_order = $order->ganttid;
 					
 					foreach($orderData['ofs'] as &$ofData) {
@@ -163,7 +175,7 @@
 						$fk_parent_of = null;
 						
 						if(!empty($conf->of->enabled)) {
-							$TData[] = ' {"id":"'.$of->ganttid.'", "text":"'.$of->title.'", "type":gantt.config.types.of'.(!is_null($fk_parent_order) ? ' ,parent:"'.$fk_parent_order.'" ' : '' ).', open: true}';
+							$TData[] = ' {"id":"'.$of->ganttid.'", "text":"'.$of->title.'", "type":gantt.config.types.of'.(!is_null($fk_parent_order) ? ' ,parent:"'.$fk_parent_order.'" ' : '' ).', open: '.$close_init_status.'}';
 							$fk_parent_of= $of->ganttid;
 						}
 						else{
@@ -184,13 +196,13 @@
 								$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
 								if($duration<1)$duration = 1;
 								
-								if($task->planned_workload == 0) { // c'est un milestone
+								/*if($task->planned_workload == 0) { // c'est un milestone
 									$TData[] = ' {"id":"'.$task->ganttid.'", "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", type:gantt.config.types.milestone '.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).',owner:"'.$ws->id.'"}';
 									
 								}
-								else {
+								else {*/
 									$TData[] = ' {"id":"'.$task->ganttid.'", "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$ws->id.'", type:gantt.config.types.task}';
-								}
+								//}
 								
 								if($task->fk_task_parent>0) {
 									$TLink[] = ' {id:'.(count($TLink)+1).', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
@@ -331,7 +343,7 @@
 		});
 */
 
-		$('div.gantt_bars_area> div.ws_container > div.workstation').css( "left", -left );
+		$('div.ws_container > div.workstation').css( "left", -$('div.gantt_hor_scroll').scrollLeft() );
 
 
 	});
@@ -532,7 +544,7 @@
 					//p+='%';
 				}
 				
-				$('div.gantt_bars_area div#workstations_'+wsid+' div[date='+d+']').html(p).css({'background-color':bg});
+				$('div#workstations_'+wsid+' div[date='+d+']').html(p).css({'background-color':bg});
 				
 			}
 
@@ -567,12 +579,21 @@
 		
 		echo 'function updateAllCapacity() { 
 
-		if($("div.gantt_grid_data > div.ws_container").length == 0) {
-			$("div.gantt_grid_data").append(\'<div class="ws_container"></div>\');
-			$("div.gantt_bars_area").append(\'<div class="ws_container"></div>\');
+		if($("div.ws_container_label").length == 0) {
+			$("body").append(\'<div class="ws_container_label"></div>\');
+			$("body").append(\'<div class="ws_container"></div>\');
 
+			$("div.ws_container_label").css({
+				left:$("#gantt_here div.gantt_grid").offset().left
+				,width:$("#gantt_here div.gantt_grid").width()
+			});
 			
-			$("div.gantt_bars_area> div.ws_container").css("width", $("#gantt_here div.gantt_task").width() );
+			$("div.ws_container").css({
+				width : $("#gantt_here div.gantt_task").width() 
+				, left:$("#gantt_here div.gantt_task").offset().left
+			});
+
+
 		}
 
 		';
@@ -582,8 +603,8 @@
 			?>
 			if($("div#workstations_<?php echo $ws->id; ?>.gantt_row").length == 0 ) {
 			
-				$('div.gantt_grid_data> div.ws_container').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:20px;padding-right:5px;"><?php echo $ws->name . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
-				$('div.gantt_bars_area> div.ws_container').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
+				$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:20px;padding-right:5px;"><?php echo $ws->name . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
+				$('div.ws_container').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
 
 			}
 			
