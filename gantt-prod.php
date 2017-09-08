@@ -114,6 +114,7 @@
 	}
 	div.ws_container div.gantt_task_cell {
 		width:70px;
+		text-align:center;
 	}
 	
 	</style>
@@ -416,9 +417,11 @@
 			gantt.refreshTask(id);
 			/*updateAllCapacity();*/
 
-			updateWSCapacity(task.workstation, start / 1000, end / 1000, task.ws_nb_hour_capacity);
-			updateWSCapacity(task.workstation, old_event.start_date.getTime() / 1000, old_event.end_date.getTime() / 1000, task.ws_nb_hour_capacity);
+			t_start = Math.min(start, old_event.start_date.getTime()) / 1000; 
+			t_end = Math.max(end, old_event.end_date.getTime()) / 1000;
 			
+			updateWSCapacity(task.workstation, t_start, t_end, task.ws_nb_hour_capacity);
+
 		});
 
 		return true;
@@ -526,7 +529,7 @@
 	
 	function updateWSCapacity(wsid, t_start, t_end, nb_hour_capacity) {
 
-console.log('updateWSCapacity', wsid, t_start, t_end, nb_hour_capacity);
+//console.log('updateWSCapacity', wsid, t_start, t_end, nb_hour_capacity);
 		$.ajax({
 			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>"
 			,data:{
@@ -544,10 +547,12 @@ console.log('updateWSCapacity', wsid, t_start, t_end, nb_hour_capacity);
 				var p; 
 				var bg = '#fff';
 				
-				if(c == 0) { p='N/A'; bg='#000'; }
+				if(c == 'NA') { 
+					p='N/A'; bg='#ccc'; 
+				}
 				else {
 					//p = Math.round(((nb_hour_capacity - c) / nb_hour_capacity)*100);
-					p = Math.round(c * 10) / 10;
+					p = Math.round(c * 100) / 100;
 
 					if(p<0) bg='#ff0000';
 					else if(p<=nb_hour_capacity/10) bg='#ffa500';

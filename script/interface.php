@@ -120,18 +120,10 @@
 		
 		$PDOdb=new TPDOdb;
 		
-		$t_cur = $t_start ;
-		
 		$ws=new TWorkstation;
 		$ws->load($PDOdb, $wsid);
 		
-		$Tab = array();
-		while($t_cur<=$t_end) {
-			$date = date('Y-m-d', $t_cur);
-			$Tab[$date] = $ws->getCapacityLeft($PDOdb, $date);
-			
-			$t_cur = strtotime('+1day', $t_cur);
-		}
+		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end);
 		
 		return $Tab;
 	}
