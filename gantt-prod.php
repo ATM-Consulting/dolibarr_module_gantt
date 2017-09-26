@@ -200,7 +200,7 @@
 
 								}
 								else {*/
-								$TData[] = ' {"id":"'.$task->ganttid.'", workstation:'.$ws->id.', ws_nb_hour_capacity:'.$ws->nb_hour_capacity.' , "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$ws->id.'", type:gantt.config.types.task}';
+								$TData[] = ' {"id":"'.$task->ganttid.'", workstation:'.(!empty($ws->id)?$ws->id : 0).', ws_nb_hour_capacity:'.$ws->nb_hour_capacity.' , "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$ws->id.'", type:gantt.config.types.task}';
 								//}
 
 								if($task->fk_task_parent>0) {
