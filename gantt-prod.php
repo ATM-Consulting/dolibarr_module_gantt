@@ -694,6 +694,7 @@
 	function adjustBrightness($hex, $steps) {
 		// Steps should be between -255 and 255. Negative = darker, positive = lighter
 		$steps = max(-255, min(255, $steps));
+		?>
 		asks = {
 			data:[
 
