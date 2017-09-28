@@ -202,7 +202,10 @@
 								else {*/
 								$TData[] = ' {"id":"'.$task->ganttid.'", workstation:'.$ws->rowid.', ws_nb_hour_capacity:'.$ws->nb_hour_capacity.' , "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$ws->rowid.'", type:gantt.config.types.task}';
 								//}
-
+								
+												
+								//$TData[] = ' {"id":"'.$task->ganttid.'double", workstation:'.$ws->rowid.', ws_nb_hour_capacity:'.$ws->nb_hour_capacity.' , "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$ws->rowid.'", type:gantt.config.types.task}';
+								
 								if($task->fk_task_parent>0) {
 									$TLink[] = ' {id:'.(count($TLink)+1).', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
 								}
@@ -347,7 +350,7 @@
 
 
 	gantt.attachEvent("onAfterTaskAdd", function(id,task){
-		//console.log('createTask',id, task);return 0;
+		console.log('createTask',id, task);
 		var start = task.start_date.getTime();
 		var end = task.end_date.getTime();
 		$.ajax({
@@ -359,6 +362,7 @@
 				,label:task.text
 				,duration:task.duration
 				,progress:0
+				,parent:task.parent
 				,put:"task"
 			}
 			,method:"post"
@@ -370,7 +374,7 @@
 		});
 	});
 
-	gantt.attachEvent("onTaskDblClick", function(id){
+	gantt.attachEvent("onTaskDblClick", function(id,e){
 
 		if(id[0] == 'T') {
 			pop_edit_task(id.substring(1));
@@ -380,6 +384,33 @@
 			return false;
 		}
 	});
+
+
+	/*gantt.attachEvent("onTaskCreated", function(task){
+
+		console.log('onTaskCreated',id, task);
+	    return true;
+	});*/
+/*
+	gantt.attachEvent("onTaskClick", function(id,e){
+		console.log('onTaskClick',id, e);
+		if(id[0] == 'T') {
+			
+		}
+		else {
+			return true;
+		}
+		
+	});*/
+
+	gantt.attachEvent("onBeforeLightbox", function(id) {
+	    var task = gantt.getTask(id);
+	    console.log('createTask',id, task);
+	    task.my_template = "<span id='title1'>Holders: </span>"+ task.users
+	    +"<span id='title2'>Progress: </span>"+ task.progress*100 +" %";
+	    return true;
+	});
+	
 /*
 	var start_task_drag = 0;
 	var end_task_drag =  0;
@@ -485,6 +516,30 @@
 		var url_in_pop ="<?php echo  dol_buildpath('/projet/tasks/task.php?action=edit&id=',1) ?>"+fk_task
 
 		$('#dialog-edit-task').load(url_in_pop+" div.fiche form",pop_event);
+
+	}
+	
+	function pop_new_child_task(fk_task, callback) {
+		pop_callback = callback;
+
+		if($('#dialog-add-child-task').length==0) {
+			$('body').append('<div id="dialog-add-child-task"></div>');
+		}
+		var url_in_pop ="<?php echo dol_buildpath('/gantt/script/interface.php?get=task_popin&id=',1) ?>"+fk_task
+
+		$('##dialog-add-child-task').load(url_in_pop+" div.fiche form",pop_event);
+	}
+	
+	function pop_open_task(fk_task, callback) {
+
+		pop_callback = callback;
+
+		if($('#dialog-edit-task').length==0) {
+			$('body').append('<div id="dialog-edit-task"></div>');
+		}
+		var url_in_pop ="<?php echo  dol_buildpath('/projet/tasks/task.php?id=',1) ?>"+fk_task
+
+		$('#dialog-edit-task').load(url_in_pop+"  div.fiche",pop_event);
 
 	}
 
@@ -744,7 +799,7 @@
 		";
 
 		$sql.=" AND t.dateo BETWEEN NOW() - INTERVAL ".$day_range." DAY AND NOW() + INTERVAL ".$day_range." DAY ";
-
+		
 		$res = $db->query($sql);
 		if($res===false) {
 			var_dump($db);exit;
@@ -884,6 +939,7 @@
 
 			$TTask[$project->id]['orders'][$order->id]['ofs'][$of->id]['workstations'][$ws->id]['tasks'][$task->id] = $task;
 
+			_load_child_tasks($task, $TTask[$project->id]['orders'][$order->id]['ofs'][$of->id]['workstations'][$ws->id]['tasks']);
 		}
 
 		return $TTask;
@@ -897,4 +953,40 @@
 	function _complete_task_array(&$TTask, $parentid) {
 
 
+	}
+	
+	
+	function _load_child_tasks($parent_task, &$TData, $level = 0, $maxDeep = 3) {
+		global $db;
+		
+		if($level>$maxDeep) return;
+
+		$sql = "SELECT t.rowid
+				FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
+				WHERE ";
+		
+		if($level > 0)
+		{
+			$sql.= " t.fk_task_parent = ".(int)$parent_task->id;
+		}
+		else
+		{
+			$sql.= " tex.fk_parent_task =".(int)$parent_task->id;
+		}
+		
+		$res = $db->query($sql);
+		if($res===false) {
+			var_dump($db);exit;
+		}
+		
+		while($obj = $db->fetch_object($res)) {
+			$task = new Task($db);
+			$task->fetch($obj->rowid);
+			$task->title = $task->ref.' '.$task->label;
+			$task->ganttid = 'T'.$task->id;
+			$task->fk_task_parent = $parent_task->id;
+			$TData[$task->id]= $task;
+			
+			_load_child_tasks($parent_task, $TData, ($level+1) , $maxDeep) ;
+		}
 	}

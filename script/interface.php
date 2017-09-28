@@ -27,8 +27,6 @@
 			echo 1;
 			
 			break;
-		
-		
 	}
 	
 	switch ($get) {
@@ -37,7 +35,6 @@
 			__out(_get_ws_capactiy(  GETPOST('wsid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
 			
 			break;
-		
 	}
 	
 	function _create_task($data) {
@@ -80,8 +77,23 @@
 		
 		$o->planned_workload = $data['duration'] * 3600 * 7; //7h par jour, à revoir
 
-		//TODO set Gantt parent
-		$o->fk_task_parent = 0;
+		//TODO check parent projet to set correct task parent 0 if parent comme from an other project and task id if parent if a PREVI Task
+		
+		$parenttaskId =(int) substr ( $data['parent'], 1);
+		$parenttask = new Task($db);
+		$parenttask->fetch($parenttaskId);
+		
+		if($parenttask->fk_project === $p->id)
+		{
+			$o->fk_task_parent = $parenttaskId;
+		}
+		else
+		{
+			$o->fk_task_parent = 0;
+		}
+		
+		$o->array_options['options_fk_parent_task'] = $parenttaskId;
+		
 		
 		$r = $o->create($user);
 		
@@ -172,3 +184,4 @@
 		}
 		
 	}
+	

@@ -239,7 +239,9 @@ class modGantt extends DolibarrModules
 		
 		$e=new ExtraFields($this->db);
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
-		$e->addExtraField('fk_parent_task', 'Tâche parente', 'sellist', 1, '', 'projet_task',0,0,'',$param);
+		$e->addExtraField('fk_parent_task', 'Tâche parente', 'int', 1, '', 'projet_task',0,0,'',$param);
+	
+		
 		
 		$result=$this->_load_tables('/gantt/sql/');
 
