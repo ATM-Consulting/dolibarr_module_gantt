@@ -987,6 +987,6 @@
 			$task->fk_task_parent = $parent_task->id;
 			$TData[$task->id]= $task;
 			
-			_load_child_tasks($parent_task, $TData, ($level+1) , $maxDeep) ;
+			_load_child_tasks($task, $TData, ($level+1) , $maxDeep) ;
 		}
 	}
