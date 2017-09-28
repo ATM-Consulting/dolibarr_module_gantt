@@ -27,6 +27,14 @@
 			echo 1;
 			
 			break;
+			
+		case 'delete_task':
+			
+			_delete_task();
+			
+			break;
+			
+			
 	}
 	
 	switch ($get) {
@@ -77,9 +85,8 @@
 		
 		$o->planned_workload = $data['duration'] * 3600 * 7; //7h par jour, à revoir
 
-		//TODO check parent projet to set correct task parent 0 if parent comme from an other project and task id if parent if a PREVI Task
-		
-		$parenttaskId =(int) substr ( $data['parent'], 1);
+		//check parent projet to set correct task parent. 0 if parent comme from an other project and task->id if parent comme from PREVI Project task
+		$parenttaskId = _get_task_id_from_task_gantt_id($data['parent']);
 		$parenttask = new Task($db);
 		$parenttask->fetch($parenttaskId);
 		
@@ -183,5 +190,35 @@
 			
 		}
 		
+	}
+	
+
+	function _delete_task ()
+	{
+		global $user,$db;
+		
+		$prevent_child_deletion = (bool)GETPOST('prevent_child_deletion');
+		$task_id = _get_task_id_from_task_gantt_id(GETPOST('task_id'));
+		
+		$retDatas= array('result' => false, 'msg' => '');
+		
+		$task=new Task($db);
+		if($task->fetch($task_id)>0)
+		{
+			if($prevent_child_deletion)
+			{
+				//TODO prevent_child_deletion // ne pas supprimer une tâche parente
+			}
+			
+			$retDatas['result'] = $task->delete($user);
+		}
+		
+		echo json_encode($retDatas);
+		exit;
+	}
+	
+	function _get_task_id_from_task_gantt_id($id)
+	{
+		return  (int) substr ( $id, 1);
 	}
 	

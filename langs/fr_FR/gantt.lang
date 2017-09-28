@@ -9,3 +9,4 @@ GanttAbout = A propos du module Gantt
 UndefinedOrder=OFs sans Commande
 UndefinedMakingOrder=Tâches sans OF
 UndefinedProject=Sans Projet
+DeleteTask=Supprimer la tâche ?

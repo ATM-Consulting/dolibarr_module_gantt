@@ -350,7 +350,7 @@
 
 
 	gantt.attachEvent("onAfterTaskAdd", function(id,task){
-		console.log('createTask',id, task);
+		//console.log('createTask',id, task);
 		var start = task.start_date.getTime();
 		var end = task.end_date.getTime();
 		$.ajax({
@@ -388,28 +388,30 @@
 
 	/*gantt.attachEvent("onTaskCreated", function(task){
 
-		console.log('onTaskCreated',id, task);
+		console.log('onTaskCreated',task);
 	    return true;
 	});*/
-/*
-	gantt.attachEvent("onTaskClick", function(id,e){
-		console.log('onTaskClick',id, e);
-		if(id[0] == 'T') {
-			
-		}
-		else {
-			return true;
-		}
-		
-	});*/
 
-	gantt.attachEvent("onBeforeLightbox", function(id) {
+
+	
+	gantt.attachEvent("onTaskClick", function(id,e){
+		if(id[0] == 'T') {
+
+			ask_delete_task(id);
+
+			
+		} 
+		return true;
+	});
+
+
+	/*gantt.attachEvent("onBeforeLightbox", function(id) {
 	    var task = gantt.getTask(id);
 	    console.log('createTask',id, task);
 	    task.my_template = "<span id='title1'>Holders: </span>"+ task.users
 	    +"<span id='title2'>Progress: </span>"+ task.progress*100 +" %";
 	    return true;
-	});
+	});*/
 	
 /*
 	var start_task_drag = 0;
@@ -519,16 +521,48 @@
 
 	}
 	
-	function pop_new_child_task(fk_task, callback) {
-		pop_callback = callback;
+	function ask_delete_task(id) {
+		var task = gantt.getTask(id);
 
-		if($('#dialog-add-child-task').length==0) {
-			$('body').append('<div id="dialog-add-child-task"></div>');
-		}
-		var url_in_pop ="<?php echo dol_buildpath('/gantt/script/interface.php?get=task_popin&id=',1) ?>"+fk_task
-
-		$('##dialog-add-child-task').load(url_in_pop+" div.fiche form",pop_event);
+		gantt.confirm({
+            text:"<?php echo $langs->trans('DeleteTask') ?>",
+            callback: function(res){
+                if(res){
+                    delete_task(task.id,1);
+                }
+            }
+        });
 	}
+
+	function delete_task(id,prevent_child_deletion) {
+		
+		$.ajax({
+		    url: "<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>",
+		    type: "POST",
+		    dataType: "json",
+		    data: {
+				put:"delete_task"
+					,task_id:id
+					,prevent_child_deletion:prevent_child_deletion
+				},
+		    success: function(data){
+		       console.log(data);
+		        if (data.result) {
+		        	 gantt.deleteTask(id);
+		        }
+		        else
+		        {
+		        	$.jnotify('Error: '+data.msg,"error");
+		        }
+		    },
+		    error: function(error){
+		    	$.jnotify('AjaxError ',"error");
+		    	console.log(error);
+		    }
+		});
+
+	}
+	
 	
 	function pop_open_task(fk_task, callback) {
 
