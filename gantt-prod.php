@@ -17,7 +17,7 @@
 	llxHeader('', $langs->trans('GanttProd') , '', '', 0, 0, array('/gantt/lib/dhx/codebase/dhtmlxgantt.js','/gantt/lib/dhx/codebase/ext/dhtmlxgantt_smart_rendering.js','/gantt/lib/dhx/codebase/ext/dhtmlxgantt_tooltip.js','/gantt/lib/dhx/codebase/locale/locale_fr.js'), array('/gantt/lib/dhx/codebase/dhtmlxgantt.css') );
 	
 	dol_include_once('/core/lib/project.lib.php');
-	dol_include_once('/class/color_tools.class.php');
+	dol_include_once('/gantt/class/color_tools.class.php');
 
 	$langs->load("users");
 	$langs->load("projects");
@@ -162,7 +162,7 @@
 					$projectColor='';
 					if(ColorTools::validate_color($project->array_options['options_gantt_color']))
 					{
-						$taskColor= ',color:"'.adjustBrightness($project->array_options['options_gantt_color'], -50).'"';
+						$taskColor= ',color:"'.ColorTools::adjustBrightness($project->array_options['options_gantt_color'], -50).'"';
 						$projectColor= ',color:"'.$project->array_options['options_gantt_color'].'"';
 					}
 					
@@ -809,8 +809,8 @@
 			$color = $ws->background;
 			if(strlen($color) == 7) {
 
-				$darkest = adjustBrightness($color, -30);
-				$border= adjustBrightness($color, -50);
+				$darkest = ColorTools::adjustBrightness($color, -30);
+				$border= ColorTools::adjustBrightness($color, -50);
 
 				echo '.workstation_'.$ws->id.'{
 					background:'.$color.';
@@ -831,31 +831,6 @@
 	dol_fiche_end();
 	llxFooter();
 
-	//pre($TTask,1);
-	function adjustBrightness($hex, $steps) {
-		// Steps should be between -255 and 255. Negative = darker, positive = lighter
-		$steps = max(-255, min(255, $steps));
-
-		$TData=array(); $TWS=array(); $TLink=array();
-
-		// Normalize into a six character long hex string
-		$hex = str_replace('#', '', $hex);
-		if (strlen($hex) == 3) {
-			$hex = str_repeat(substr($hex,0,1), 2).str_repeat(substr($hex,1,1), 2).str_repeat(substr($hex,2,1), 2);
-		}
-
-		// Split into three parts: R, G and B
-		$color_parts = str_split($hex, 2);
-		$return = '#';
-
-		foreach ($color_parts as $color) {
-			$color   = hexdec($color); // Convert to decimal
-			$color   = max(0,min(255,$color + $steps)); // Adjust color
-			$return .= str_pad(dechex($color), 2, '0', STR_PAD_LEFT); // Make two char hex code
-		}
-
-		return $return;
-	}
 	function _get_task_for_of($fk_project = 0) {
 
 		global $db,$langs;
