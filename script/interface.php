@@ -4,6 +4,8 @@
 	dol_include_once('/projet/class/project.class.php');
 	dol_include_once('/projet/class/task.class.php');
 	
+	$langs->load("gantt@gantt");
+	
 	$get=GETPOST('get');
 	$put = GETPOST('put');
 	switch ($put) {
@@ -99,7 +101,7 @@
 			$o->fk_task_parent = 0;
 		}
 		
-		$o->array_options['options_fk_parent_task'] = $parenttaskId;
+		$o->array_options['options_fk_gantt_parent_task'] = $data['parent'];
 		
 		
 		$r = $o->create($user);
@@ -195,7 +197,7 @@
 
 	function _delete_task ()
 	{
-		global $user,$db;
+		global $user,$db,$langs;
 		
 		$prevent_child_deletion = (bool)GETPOST('prevent_child_deletion');
 		$task_id = _get_task_id_from_task_gantt_id(GETPOST('task_id'));
@@ -205,12 +207,21 @@
 		$task=new Task($db);
 		if($task->fetch($task_id)>0)
 		{
-			if($prevent_child_deletion)
+			//TODO check user rights
+			
+			$deleteError = false;
+			
+			if ($prevent_child_deletion &&  ( $task->hasChildren() || $task->hasTimeSpent()) )
 			{
-				//TODO prevent_child_deletion // ne pas supprimer une tâche parente
+				$deleteError= true;
+				$retDatas['msg'] = $langs->trans('TaskHasChildrenOrHasTimeSpent');
 			}
 			
-			$retDatas['result'] = $task->delete($user);
+			if(!$deleteError)
+			{
+				$retDatas['result'] = $task->delete($user);
+			}
+			
 		}
 		
 		echo json_encode($retDatas);
@@ -219,6 +230,14 @@
 	
 	function _get_task_id_from_task_gantt_id($id)
 	{
-		return  (int) substr ( $id, 1);
+		if(substr ( $id, 0,1) === 'T')
+		{
+			return  (int) substr ( $id, 1);
+		}
+		else
+		{
+			return  0;
+		}
+		
 	}
 	

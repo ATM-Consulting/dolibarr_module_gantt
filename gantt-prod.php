@@ -15,11 +15,13 @@
 	$row_height = 20;
 
 	llxHeader('', $langs->trans('GanttProd') , '', '', 0, 0, array('/gantt/lib/dhx/codebase/dhtmlxgantt.js','/gantt/lib/dhx/codebase/ext/dhtmlxgantt_smart_rendering.js','/gantt/lib/dhx/codebase/ext/dhtmlxgantt_tooltip.js','/gantt/lib/dhx/codebase/locale/locale_fr.js'), array('/gantt/lib/dhx/codebase/dhtmlxgantt.css') );
-
+	
 	dol_include_once('/core/lib/project.lib.php');
+	dol_include_once('/class/color_tools.class.php');
 
 	$langs->load("users");
 	$langs->load("projects");
+	$langs->load("gantt@gantt");
 
 	$fk_project = (int)GETPOST('fk_project');
 
@@ -155,9 +157,30 @@
 				$fk_parent_project = null;
 
 				if(empty($fk_project)) {
-
-					$TData[] = ' {"id":"'.$project->ganttid.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: '.$close_init_status.'}';
+					
+					$taskColor='';
+					$projectColor='';
+					if(ColorTools::validate_color($project->array_options['options_gantt_color']))
+					{
+						$taskColor= ',color:"'.adjustBrightness($project->array_options['options_gantt_color'], -50).'"';
+						$projectColor= ',color:"'.$project->array_options['options_gantt_color'].'"';
+					}
+					
+					$TData[] = ' {"id":"'.$project->ganttid.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: '.$close_init_status.$projectColor.'}';
 					$fk_parent_project= $project->ganttid;
+					
+					
+					foreach($TElement[$project->id]['tasks'] as &$task) {
+						if(empty($t_start) || $task->date_start<$t_start)$t_start=$task->date_start;
+						if(empty($t_end) || $t_end<$task->date_end)$t_end=$task->date_end;
+						$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
+						if($duration<1)$duration = 1;
+						
+						$TData[] = ' {"id":"'.$task->ganttid.'", source:"'.$task->array_options['options_fk_gantt_parent_task'].'", "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($task->array_options['options_fk_gantt_parent_task']) ? ' ,parent:"'.$task->array_options['options_fk_gantt_parent_task'].'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$project->rowid.'", type:gantt.config.types.task'.$taskColor.'}';
+						if($task->fk_task_parent>0) {
+							$TLink[] = ' {id:'.(count($TLink)+1).', source:"'.$task->array_options['options_fk_gantt_parent_task'].'", target:"'.$task->ganttid.'", type:"0"'.$taskColor.'}';
+						}
+					}
 
 				}
 
@@ -169,6 +192,21 @@
 					$TData[] = ' {"id":"'.$order->ganttid.'", "text":"'.$order->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_project) ? ' ,parent:"'.$fk_parent_project.'" ' : '' ).', open: '.$close_init_status.'}';
 					$fk_parent_order = $order->ganttid;
 
+					// Add order child tasks
+					foreach($TElement[$project->id]['tasks'] as &$task) {
+						if(empty($t_start) || $task->date_start<$t_start)$t_start=$task->date_start;
+						if(empty($t_end) || $t_end<$task->date_end)$t_end=$task->date_end;
+						$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
+						if($duration<1)$duration = 1;
+						
+						$TData[] = ' {"id":"'.$task->ganttid.'", source:"'.$task->array_options['options_fk_gantt_parent_task'].'", "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($task->array_options['options_fk_gantt_parent_task']) ? ' ,parent:"'.$task->array_options['options_fk_gantt_parent_task'].'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$project->rowid.'", type:gantt.config.types.task'.$taskColor.'}';
+						if($task->fk_task_parent>0) {
+							$TLink[] = ' {id:'.(count($TLink)+1).', source:"'.$task->array_options['options_fk_gantt_parent_task'].'", target:"'.$task->ganttid.'", type:"0"'.$taskColor.'}';
+						}
+					}
+					
+					
+					
 					foreach($orderData['ofs'] as &$ofData) {
 						$of = $ofData['of'];
 						$fk_parent_of = null;
@@ -374,6 +412,8 @@
 		});
 	});
 
+
+	/*
 	gantt.attachEvent("onTaskDblClick", function(id,e){
 
 		if(id[0] == 'T') {
@@ -383,11 +423,10 @@
 		else {
 			return false;
 		}
-	});
+	});*/
 
 
 	/*gantt.attachEvent("onTaskCreated", function(task){
-
 		console.log('onTaskCreated',task);
 	    return true;
 	});*/
@@ -396,22 +435,18 @@
 	
 	gantt.attachEvent("onTaskClick", function(id,e){
 		if(id[0] == 'T') {
-
-			ask_delete_task(id);
-
-			
+			//ask_delete_task(id);
 		} 
 		return true;
 	});
 
+	gantt.attachEvent("onBeforeTaskDelete", function(id,item){
+		var task = gantt.getTask(id);
+		delete_task(task.id,1);
+		return false;
+	});
 
-	/*gantt.attachEvent("onBeforeLightbox", function(id) {
-	    var task = gantt.getTask(id);
-	    console.log('createTask',id, task);
-	    task.my_template = "<span id='title1'>Holders: </span>"+ task.users
-	    +"<span id='title2'>Progress: </span>"+ task.progress*100 +" %";
-	    return true;
-	});*/
+
 	
 /*
 	var start_task_drag = 0;
@@ -459,6 +494,23 @@
 
 		return true;
 	});
+
+
+// Add morre button to lightbox
+	gantt.config.buttons_left=["dhx_save_btn","dhx_cancel_btn","edit_task_button"];
+
+	gantt.locale.labels["edit_task_button"] = "Modifier la tâche";
+
+	gantt.attachEvent("onLightboxButton", function(button_id, node, e){
+	    if(button_id == "edit_task_button"){
+	        var id = gantt.getState().lightbox;
+	        gantt.getTask(id).progress = 1;
+	        gantt.updateTask(id);
+	        gantt.hideLightbox();
+	        pop_edit_task(id.substring(1));
+	    }
+	});
+
 
 	gantt.config.autoscroll = false;
 	//gantt.config.autosize = "x";
@@ -552,7 +604,7 @@
 		        }
 		        else
 		        {
-		        	$.jnotify('Error: '+data.msg,"error");
+		        	$.jnotify('Error: '+ data.msg,"error");
 		        }
 		    },
 		    error: function(error){
@@ -783,12 +835,8 @@
 	function adjustBrightness($hex, $steps) {
 		// Steps should be between -255 and 255. Negative = darker, positive = lighter
 		$steps = max(-255, min(255, $steps));
-		?>
-		asks = {
-			data:[
 
-					<?php
-					$TData=array(); $TWS=array(); $TLink=array();
+		$TData=array(); $TWS=array(); $TLink=array();
 
 		// Normalize into a six character long hex string
 		$hex = str_replace('#', '', $hex);
@@ -931,6 +979,7 @@
 			$ws->ganttid = 'W'.(int)$ws->id;
 
 			_complete_task_array($TTask, '');
+			
 
 			if(empty($TTask[$project->id])) {
 
@@ -939,8 +988,9 @@
 						,'project'=>$project
 				);
 
-				_complete_task_array($TTask[$project->id], $project->ganttid);
-
+				//_complete_task_array($TTask[$project->id], $project->ganttid);
+				_load_child_tasks( $TTask[$project->id] , $project );
+			
 			}
 
 			$order->id=(int)$order->id;
@@ -952,7 +1002,8 @@
 					,'order'=>$order
 				);
 
-				_complete_task_array($TTask[$project->id]['orders'][$order->id], $order->ganttid);
+				//_complete_task_array($TTask[$project->id]['orders'][$order->id], $order->ganttid);
+				_load_child_tasks( $TTask[$project->id]['orders'][$order->id], $order);
 			}
 
 			if(empty($TTask[$project->id]['orders'][$order->id]['ofs'][$of->id])) {
@@ -973,7 +1024,7 @@
 
 			$TTask[$project->id]['orders'][$order->id]['ofs'][$of->id]['workstations'][$ws->id]['tasks'][$task->id] = $task;
 
-			_load_child_tasks($task, $TTask[$project->id]['orders'][$order->id]['ofs'][$of->id]['workstations'][$ws->id]['tasks']);
+			_load_child_tasks( $TTask[$project->id]['orders'][$order->id]['ofs'][$of->id]['workstations'][$ws->id],$task);
 		}
 
 		return $TTask;
@@ -990,7 +1041,7 @@
 	}
 	
 	
-	function _load_child_tasks($parent_task, &$TData, $level = 0, $maxDeep = 3) {
+	function _load_child_tasks(&$TData, $gantt_parent_objet, $level = 0, $maxDeep = 3) {
 		global $db;
 		
 		if($level>$maxDeep) return;
@@ -1001,11 +1052,11 @@
 		
 		if($level > 0)
 		{
-			$sql.= " t.fk_task_parent = ".(int)$parent_task->id;
+			$sql.= " t.fk_task_parent = ".(int)$gantt_parent_objet->id;
 		}
 		else
 		{
-			$sql.= " tex.fk_parent_task =".(int)$parent_task->id;
+			$sql.= " tex.fk_gantt_parent_task = '".$gantt_parent_objet->ganttid."'";
 		}
 		
 		$res = $db->query($sql);
@@ -1016,11 +1067,15 @@
 		while($obj = $db->fetch_object($res)) {
 			$task = new Task($db);
 			$task->fetch($obj->rowid);
-			$task->title = $task->ref.' '.$task->label;
+			$task->title = 'PREVI '.$task->label;
 			$task->ganttid = 'T'.$task->id;
-			$task->fk_task_parent = $parent_task->id;
-			$TData[$task->id]= $task;
+			$task->fk_task_parent = $gantt_parent_objet->id;
 			
-			_load_child_tasks($task, $TData, ($level+1) , $maxDeep) ;
+			$TData['tasks'][$task->id] = $task;
+			
+			_load_child_tasks( $TData,$task,($level+1) , $maxDeep) ;
 		}
 	}
+	
+	
+	

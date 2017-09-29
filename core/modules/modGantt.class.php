@@ -235,12 +235,23 @@ class modGantt extends DolibarrModules
 
 		dol_include_once('/gantt/config.php');
 		dol_include_once('/gantt/script/create-maj-base.php');
-
 		
+		/*
 		$e=new ExtraFields($this->db);
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
 		$e->addExtraField('fk_parent_task', 'Tâche parente', 'int', 1, '', 'projet_task',0,0,'',$param);
-	
+		*/
+		
+		// Create link to parent gantt task
+		$e=new ExtraFields($this->db);
+		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
+		$e->addExtraField('fk_gantt_parent_task', 'Tâche parente Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);
+		
+		// add gantt color 
+		$e=new ExtraFields($this->db);
+		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
+		$e->addExtraField('gantt_color', '	Couleur Gantt', 'varchar', 1, 9, 'projet_task',0,0,'',$param);
+		$e->addExtraField('gantt_color', '	Couleur Gantt', 'varchar', 1, 9, 'projet',0,0,'',$param);
 		
 		
 		$result=$this->_load_tables('/gantt/sql/');
