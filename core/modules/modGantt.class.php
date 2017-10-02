@@ -247,7 +247,7 @@ class modGantt extends DolibarrModules
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
 		$e->addExtraField('fk_gantt_parent_task', 'Tâche parente Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);
 		
-		// add gantt color
+		// add gantt color // TODO : use scrumboard color
 		$e=new ExtraFields($this->db);
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
 		$e->addExtraField('gantt_color', '	Couleur Gantt', 'varchar', 1, 9, 'projet_task',0,0,'',$param);
@@ -258,10 +258,10 @@ class modGantt extends DolibarrModules
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
 		$e->addExtraField('fk_gantt_parent_task', 'Tâche parente Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);
 		
-		// add gantt link
-		$e=new ExtraFields($this->db);
+		// add gantt link 
+		/*$e=new ExtraFields($this->db);
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
-		$e->addExtraField('gantt_link', 'Couleur Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);
+		$e->addExtraField('gantt_link', 'Lien Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);*/
 		
 		
 		
