@@ -3,6 +3,7 @@
 	require '../config.php';
 	dol_include_once('/projet/class/project.class.php');
 	dol_include_once('/projet/class/task.class.php');
+	dol_include_once('/comm/action/class/actioncomm.class.php');
 	
 	$langs->load("gantt@gantt");
 	
@@ -117,14 +118,28 @@
 	function _put_gantt($data) {
 		global $db, $user;
 		
+		$description = preg_replace("/^(PREVI )/","",$data['description']);
+		
 		switch($data['ganttid'][0]) {
 			case 'T':
 				
 				$o=new Task($db);
 				$o->fetch(substr($data['ganttid'],1));
+				$o->label = $description;
 				$o->date_start = $data['start'] / 1000;
 				$o->date_end = ($data['end'] / 1000) - 1; //Pour que cela soit à 23:59:59 de la vieille
 				$o->progress = $data['progress'] * 100;
+				$o->array_options['options_fk_workstation'] = (int)$data['workstation'];
+				return $o->update($user);
+				
+				break;
+				
+			case 'A':
+				$o=new ActionComm($db);
+				$o->fetch(substr($data['ganttid'],1));
+				$o->label = $description;
+				$o->datep = $data['start'] / 1000;
+				$o->datef = ($data['end'] / 1000) - 1; //Pour que cela soit à 23:59:59 de la vieille
 				$o->array_options['options_fk_workstation'] = (int)$data['workstation'];
 				return $o->update($user);
 				
