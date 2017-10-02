@@ -359,7 +359,7 @@ $TElement = _get_task_for_of($fk_project);
 	
 	gantt.config.lightbox.sections = [
         //{name: "description", height: 26, map_to: "text", type: "textarea", focus: true},
-        {name: "workstation", label:"Workstation", height: 22, type: "select", options: [
+        {name: "workstation", label:"Workstation", height: 22, type: "select", map_to: "workstation",options: [
             <?php echo _get_workstation(); ?>
         ]},
         {name: "progress", height: 22, map_to: "progress", type: "select", options: [
@@ -447,7 +447,13 @@ $TElement = _get_task_for_of($fk_project);
 		$('div.ws_container ').scrollLeft( $('div.gantt_hor_scroll').scrollLeft() );
 	});
 
+	/*gantt.attachEvent("onBeforeLightbox", function(id) {
+	    var task = gantt.getTask(id);
 
+		gantt.getLightboxSection('workstation').setValue(task.workstation);
+	    return true;
+	});*/
+	
 	gantt.attachEvent("onAfterTaskAdd", function(id,task){
 		//console.log('createTask',id, task);
 		var start = task.start_date.getTime();
@@ -656,7 +662,9 @@ $TElement = _get_task_for_of($fk_project);
 
 		//to get the value
 		task.workstation = gantt.getLightboxSection('workstation').getValue();
-		console.log(gantt.getLightboxSection('workstation').getValue());
+		gantt.getLightboxSection('workstation').setValue(task.workstation);
+		
+		console.log(task);
 		$.ajax({
 			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1); ?>"
 			,data:{
