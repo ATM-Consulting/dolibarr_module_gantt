@@ -11,3 +11,6 @@ UndefinedMakingOrder=Tâches sans OF
 UndefinedProject=Sans Projet
 DeleteTask=Supprimer la tâche ?
 TaskHasChildrenOrHasTimeSpent=vous devez supprimer les tâches enfants ou supprimer le temps saisie sur cette tâche.
+Progress=Progession
+NotStarted=En attente
+Complete=Terminé
