@@ -166,6 +166,7 @@
 		
 		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end);
 		
+		// TODO Faire une PR sur le module workstation pour inclure cette fonction
 		_getCapacityLeftRangeAgenda($PDOdb,$ws,$Tab,$t_start, $t_end);
 		
 		return $Tab;
@@ -263,10 +264,9 @@
 		
 	}
 	
-	
+	// TODO Faire une PR sur le module workstation pour inclure cette fonction
 	function _getCapacityLeftRangeAgenda(&$PDOdb,&$ws,&$TDate,$t_start, $t_end){
 		
-
 		$t_cur = $t_start;
 		
 		while($t_cur<=$t_end) {
@@ -282,22 +282,9 @@
 				$sql.="'".$date."' BETWEEN a.datep AND a.datep2 ";
 				$sql.=' AND aex.fk_workstation = '.$ws->id.' ';
 
-				//echo $sql;exit;
-				
 				$Tab = $PDOdb->ExecuteASArray($sql);
-				//var_dump($Tab,$sql);exit;
+				
 				foreach($Tab as &$row) {
-					/*$task_end = strtotime($row->datee);
-					$task_start = strtotime($row->dateo>0 ? $row->dateo : $row->datee);
-					
-					$timeBetween = $task_end-$task_start;
-					$dayBetween = ceil($timeBetween / 86400);
-					$planned_workload = $dayBetween * 7; // 7 h par jour
-					
-					$nb_days = $ws->nbDaysWithCapacity($task_start, $task_end);
-					if($nb_days<=0) $nb_days= 1;
-					
-					$t_needs = $planned_workload/ $nb_days;*/
 					$capacity-= $row->needed_ressource;
 				}
 				
