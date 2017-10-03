@@ -32,6 +32,7 @@ $langs->load("gantt@gantt");
 
 $fk_project = (int)GETPOST('fk_project');
 
+
 if($fk_project>0) {
 	
 	$object = new Project($db);
@@ -137,6 +138,12 @@ $TElement = _get_task_for_of($fk_project);
 	</style>
 	<script type="text/javascript">
 
+
+	<?php
+	if(empty($workstationList)){ _get_workstation(); }
+		echo 'var workstation = '.json_encode($workstationList).';';
+	?>
+	
 	gantt.config.types.of = "of";
 	gantt.locale.labels.type_of = "<?php echo $langs->trans('OF'); ?>";
 
@@ -247,6 +254,13 @@ $TElement = _get_task_for_of($fk_project);
                 								$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
                 								if($duration<1)$duration = 1;
                 
+                								
+                								$needed_ressource= ',needed_ressource:0';
+                								if(!empty($event->array_options['options_needed_ressource']))
+                								{
+                									$needed_ressource= ',needed_ressource:'.$event->array_options['options_needed_ressource'];
+                								}
+                								
                 								/*if($task->planned_workload == 0) { // c'est un milestone
                 									$TData[] = ' {"id":"'.$task->ganttid.'", "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", type:gantt.config.types.milestone '.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).',owner:"'.$ws->id.'"}';
                 
@@ -361,13 +375,16 @@ $TElement = _get_task_for_of($fk_project);
 	// Define local lang
     gantt.locale.labels["section_progress"] = "<?php echo $langs->transnoentities('Progress') ?>";
     gantt.locale.labels["section_workstation"] = "<?php echo $langs->transnoentities('Workstation') ?>";
+    gantt.locale.labels["section_needed_ressource"] = "<?php echo $langs->transnoentities('needed_ressource') ?>";
 
 	
 	gantt.config.lightbox.sections = [
         {name: "description", height: 26, map_to: "text", type: "textarea", focus: true},
         {name: "workstation", label:"Workstation", height: 22, type: "select", map_to: "workstation",options: [
-            <?php echo _get_workstation(); ?>
+            <?php echo _get_workstation_list(); ?>
         ]},
+
+        {name: "needed_ressource", height: 26, map_to: "needed_ressource", type: "textarea"},
         {name: "progress", height: 22, map_to: "progress", type: "select", options: [
             {key:"0", label: "<?php echo $langs->transnoentities('NotStarted') ?>"},
             {key:"0.1", label: "10%"},
@@ -682,6 +699,7 @@ $TElement = _get_task_for_of($fk_project);
 				,workstation:task.workstation
 				,objElement:task.objElement
 				,description:task.text
+				,needed_ressource:task.needed_ressource
 			},
 			method:"post",
 		    success: function(data){
@@ -812,8 +830,19 @@ $TElement = _get_task_for_of($fk_project);
 	}
 
 	
-	function updateWSCapacity(wsid, t_start, t_end, nb_hour_capacity) {
+	function updateWSCapacity(wsid, t_start, t_end) { //, nb_hour_capacity = 0
 
+		if(workstation[wsid].nb_hour_capacity == "" || workstation[wsid].nb_hour_capacity == null)
+		{
+			var nb_hour_capacity = 0;
+		}
+		else
+		{
+			var nb_hour_capacity = workstation[wsid].nb_hour_capacity;
+		}
+		
+		
+		
 //console.log('updateWSCapacity', wsid, t_start, t_end, nb_hour_capacity);
 		$.ajax({
 			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>"
@@ -825,7 +854,7 @@ $TElement = _get_task_for_of($fk_project);
 			}
 		,dataType:"json"
 		}).done(function(data) {
-//console.log(nb_hour_capacity, data);
+//console.log('nb_hour_capacity', data);
 			for(d in data) {
 				c = data[d];
 
@@ -1192,7 +1221,9 @@ $TElement = _get_task_for_of($fk_project);
 		}
 	}
 	
-	
+	/*
+	 * @param taskColor		web hexa color format like #FFFFFF
+	 */
 	function _format_task_for_gantt(&$tasksList, &$TData,&$TLink,$owner=0,$t_start=false,$t_end=false, $taskColor=false)
 	{
 	    if(!empty($tasksList))
@@ -1226,7 +1257,13 @@ $TElement = _get_task_for_of($fk_project);
 	            	$workstation = ',workstation:'.$task->array_options['options_fk_workstation'];
 	            }
 	            
-	            $TData[] = ' {"id":"'.$task->ganttid.'",objId:"'.$task->id.'",objElement:"'.$task->element.'", source:"'.$task->array_options['options_fk_gantt_parent_task'].'", "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($task->array_options['options_fk_gantt_parent_task']) ? ' ,parent:"'.$task->array_options['options_fk_gantt_parent_task'].'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$owner.'" '.$type.' '.$taskColorCode.$workstation.'}';
+	            $needed_ressource= ',needed_ressource:0';
+	            if(!empty($event->array_options['options_needed_ressource']))
+	            {
+	            	$needed_ressource= ',needed_ressource:'.$event->array_options['options_needed_ressource'];
+	            }
+	            
+	            $TData[] = ' {"id":"'.$task->ganttid.'"'.$needed_ressource.',objId:"'.$task->id.'",objElement:"'.$task->element.'", source:"'.$task->array_options['options_fk_gantt_parent_task'].'", "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($task->array_options['options_fk_gantt_parent_task']) ? ' ,parent:"'.$task->array_options['options_fk_gantt_parent_task'].'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$owner.'" '.$type.' '.$taskColorCode.$workstation.'}';
 	            if($task->fk_task_parent>0) {
 	               // $TLink[] = ' {id:'.(count($TLink)+1).', source:"'.$task->array_options['options_fk_gantt_parent_task'].'", target:"'.$task->ganttid.'", type:"0"}';
 	            }
@@ -1234,28 +1271,53 @@ $TElement = _get_task_for_of($fk_project);
 	    }
 	}
 	
+	/*
+	 * stock les posts de travail dans une variable globale
+	 * return int 			count of result
+	 */
 	function _get_workstation()
 	{
-		global $db,$langs;
-		$sql = "SELECT w.rowid, w.name FROM ".MAIN_DB_PREFIX."workstation w  ";
-
+		global $db,$langs, $workstationList;
+		$sql = "SELECT w.rowid, w.name, w.nb_hour_capacity FROM ".MAIN_DB_PREFIX."workstation w  ";
+		
 		//echo $sql.$sqlWhere;
 		$res = $db->query($sql);
 		if($res===false) {
 			var_dump($db);exit;
 		}
 		
-		$TData= array();
+		$workstationList = array();
+		
+		while($obj = $db->fetch_object($res)) {
+			$workstationList[$obj->rowid] = array(
+					'name' => $obj->name,
+					'id' => $obj->rowid,
+					'nb_hour_capacity' => $obj->nb_hour_capacity,
+			);
+		}
+		return count($workstationList);
+	}
+	
+	/*
+	 * formate la liste des workstations pour le select de la lightbox
+	 */
+	function _get_workstation_list()
+	{
+		global $db,$langs,$workstationList;
+		
+		if(empty($workstationList)){ _get_workstation(); }
 		
 		$TData[] = '{key:"0", label: " "}';
-		while($obj = $db->fetch_object($res)) {
+		foreach($workstationList as $wordstation) {
 			
-			$TData[] = '{key:"'.$obj->rowid.'", label: "'.$obj->name.'"}';
+			$TData[] = '{key:"'.$wordstation['id'].'", label: "'.$wordstation['name'].'"}';
 
 		}
 		return implode(',',$TData);
 	}
-	
+	/*
+	 * Récuperation des evenements type agenda
+	 */
 	function _get_events( &$TData,&$TLink,$fk_project=0,$owner=0,$taskColor= '#f7d600')
 	{
 		global $db;
@@ -1329,8 +1391,15 @@ $TElement = _get_task_for_of($fk_project);
 				$parent = ',source:"P'.$fk_project.'"';
 				$source = ',parent:"P'.$fk_project.'"';
 			}
+			
+			$needed_ressource= ',needed_ressource:0';
+			if(!empty($event->array_options['options_needed_ressource']))
+			{
+				$needed_ressource= ',needed_ressource:'.$event->array_options['options_needed_ressource'];
+			}
+			
 					
-			$TData[] = ' {"id":"'.$event->ganttid.'",objId:"'.$event->id.'",objElement:"'.$event->element.'", "text":"'.$event->title.'", "start_date":"'.date('d-m-Y',$event->datep).'", "duration":"'.$duration.'" , progress:'.$event->percentage.' '.$type.' '.$taskColorCode.$workstation.$parent.$source.'}';
+			$TData[] = ' {"id":"'.$event->ganttid.'"'.$needed_ressource.',objId:"'.$event->id.'",objElement:"'.$event->element.'", "text":"'.$event->title.'", "start_date":"'.date('d-m-Y',$event->datep).'", "duration":"'.$duration.'" , progress:'.$event->percentage.' '.$type.' '.$taskColorCode.$workstation.$parent.$source.'}';
 				
 			
 		}

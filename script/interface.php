@@ -129,6 +129,7 @@
 				$o->date_end = ($data['end'] / 1000) - 1; //Pour que cela soit à 23:59:59 de la vieille
 				$o->progress = $data['progress'] * 100;
 				$o->array_options['options_fk_workstation'] = (int)$data['workstation'];
+				$o->array_options['options_needed_ressource'] = (int)$data['needed_ressource'];
 				return $o->update($user);
 				
 				break;
@@ -142,7 +143,9 @@
 				$o->datep = $data['start'] / 1000;
 				$o->datef = ($data['end'] / 1000) - 1; //Pour que cela soit à 23:59:59 de la vieille
 				$o->array_options['options_fk_workstation'] = (int)$data['workstation'];
-				var_dump($data);
+				$o->array_options['options_needed_ressource'] = (int)$data['needed_ressource'];
+				
+				//var_dump($data);
 				return $o->update($user);
 				
 				break;
@@ -162,6 +165,8 @@
 		$ws->load($PDOdb, $wsid);
 		
 		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end);
+		
+		_getCapacityLeftRangeAgenda($PDOdb,$ws,$Tab,$t_start, $t_end);
 		
 		return $Tab;
 	}
@@ -256,5 +261,51 @@
 			return  0;
 		}
 		
+	}
+	
+	
+	function _getCapacityLeftRangeAgenda(&$PDOdb,&$ws,&$TDate,$t_start, $t_end){
+		
+
+		$t_cur = $t_start;
+		
+		while($t_cur<=$t_end) {
+			$date=date('Y-m-d', $t_cur);
+			$capacity = $TDate[$date]; //$ws->dayCapacity($t_cur);
+			if($capacity===false || $capacity==='NA') $TDate[$date] = 'NA';
+			else {
+				
+				$sql = "SELECT a.id, aex.needed_ressource, a.datep AS dateo , a.datep2 AS datee
+							FROM ".MAIN_DB_PREFIX."actioncomm a
+								LEFT JOIN ".MAIN_DB_PREFIX."actioncomm_extrafields aex ON (aex.fk_object=a.id)
+							WHERE ";
+				$sql.="'".$date."' BETWEEN a.datep AND a.datep2 ";
+				$sql.=' AND aex.fk_workstation = '.$ws->id.' ';
+
+				//echo $sql;exit;
+				
+				$Tab = $PDOdb->ExecuteASArray($sql);
+				//var_dump($Tab,$sql);exit;
+				foreach($Tab as &$row) {
+					/*$task_end = strtotime($row->datee);
+					$task_start = strtotime($row->dateo>0 ? $row->dateo : $row->datee);
+					
+					$timeBetween = $task_end-$task_start;
+					$dayBetween = ceil($timeBetween / 86400);
+					$planned_workload = $dayBetween * 7; // 7 h par jour
+					
+					$nb_days = $ws->nbDaysWithCapacity($task_start, $task_end);
+					if($nb_days<=0) $nb_days= 1;
+					
+					$t_needs = $planned_workload/ $nb_days;*/
+					$capacity-= $row->needed_ressource;
+				}
+				
+				$TDate[$date] = $capacity;
+				
+			}
+			$t_cur=strtotime('+1day', $t_cur);
+		}
+		return $TDate;
 	}
 	
