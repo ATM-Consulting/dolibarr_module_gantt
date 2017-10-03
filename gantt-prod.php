@@ -143,6 +143,11 @@ $TElement = _get_task_for_of($fk_project);
 	if(empty($workstationList)){ _get_workstation(); }
 		echo 'var workstation = '.json_encode($workstationList).';';
 	?>
+
+	
+	//gantt.config.grid_resize = false;
+	//gantt.config.fit_tasks = false; 
+	//gantt.config.smart_scales = false;
 	
 	gantt.config.types.of = "of";
 	gantt.locale.labels.type_of = "<?php echo $langs->trans('OF'); ?>";
@@ -155,6 +160,7 @@ $TElement = _get_task_for_of($fk_project);
 	
 	gantt.config.types.actioncomm = "actioncomm";
 	gantt.locale.labels.type_milestone = "<?php echo $langs->trans('Agenda'); ?>";
+
 	
 	function modSampleHeight(){
 
@@ -962,7 +968,16 @@ $TElement = _get_task_for_of($fk_project);
 	}
 
 	?>
-
+ 
+	/*
+	*	Recalcul la taille des colonnes du workflow
+	*/
+	$( document ).ready(function(){
+		var colWidth = $( ".gantt_task_row .gantt_task_cell" ).first().width();
+		window.alert(colWidth);
+		$( ".ws_container .gantt_task_cell" ).width(colWidth);
+	}); 
+	
 	</script>
 
 
