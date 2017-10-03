@@ -118,11 +118,10 @@
 	function _put_gantt($data) {
 		global $db, $user;
 		
-		$description = preg_replace("/^(PREVI )/","",$data['description']);
 		
 		switch($data['ganttid'][0]) {
 			case 'T':
-				
+				$description = preg_replace("/^(PREVI )/","",$data['description']);
 				$o=new Task($db);
 				$o->fetch(substr($data['ganttid'],1));
 				$o->label = $description;
@@ -135,12 +134,15 @@
 				break;
 				
 			case 'A':
+				$description = preg_replace("/^(AGENDA )/","",$data['description']);
 				$o=new ActionComm($db);
 				$o->fetch(substr($data['ganttid'],1));
+				$o->fetch_optionals();
 				$o->label = $description;
 				$o->datep = $data['start'] / 1000;
 				$o->datef = ($data['end'] / 1000) - 1; //Pour que cela soit à 23:59:59 de la vieille
 				$o->array_options['options_fk_workstation'] = (int)$data['workstation'];
+				var_dump($data);
 				return $o->update($user);
 				
 				break;

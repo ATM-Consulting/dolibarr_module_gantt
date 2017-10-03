@@ -185,14 +185,12 @@ $TElement = _get_task_for_of($fk_project);
     						$projectColor= ',color:"'.$project->array_options['options_gantt_color'].'"';
     					}
     					
-    					
-    					
     					$TData[] = ' {"id":"'.$project->ganttid.'",objElement:"'.$project->element.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: '.$close_init_status.$projectColor.'}';
     					$fk_parent_project= $project->ganttid;
     					
     					
     					_format_task_for_gantt($projectData['tasks'], $TData,$TLink,$project->rowid,$t_start,$t_end, $taskColor);
-    					_get_events( $TData,$TLink,$project->rowid);
+    					_get_events( $TData,$TLink,$project->id);
     				}
     				
     				
@@ -576,6 +574,10 @@ $TElement = _get_task_for_of($fk_project);
     gantt.attachEvent("onLightboxSave", function(id, task, is_new){
         var old_event=gantt.getTask(id);
 
+
+		//to get the value
+		task.workstation = gantt.getLightboxSection('workstation').getValue();
+		gantt.getLightboxSection('workstation').setValue(task.workstation);
         //task.workstation = gantt.getLightboxSection('workstation ').getValue();
         
         return saveTask(task, old_event,is_new);
@@ -666,11 +668,9 @@ $TElement = _get_task_for_of($fk_project);
 		var start = task.start_date.getTime();
 		var end = task.end_date.getTime();
 
-		//to get the value
-		task.workstation = gantt.getLightboxSection('workstation').getValue();
-		gantt.getLightboxSection('workstation').setValue(task.workstation);
 		
-		console.log(task);
+		//console.log('beforsave',task);
+		
 		$.ajax({
 			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1); ?>"
 			,data:{
@@ -689,7 +689,7 @@ $TElement = _get_task_for_of($fk_project);
 			    // TODO : gérer un vrai message avec des retour en json
 				gantt.message('<?php echo $langs->trans('Saved') ?>');
 
-				gantt.refreshTask(task.id);
+				//gantt.refreshTask(task.id);
 				/*updateAllCapacity();*/
 
 				if(old_event)
@@ -702,9 +702,7 @@ $TElement = _get_task_for_of($fk_project);
 					t_start = start / 1000;
 					t_end = end / 1000;
 				}
-
 				updateWSCapacity(task.workstation, t_start, t_end, task.ws_nb_hour_capacity);
-		    	//console.log(task);
 		        return true;
 			},
 		    error: function(error){
@@ -1274,15 +1272,16 @@ $TElement = _get_task_for_of($fk_project);
 		$sql.=" OR a.datep2 BETWEEN NOW() - INTERVAL ".$day_range." DAY AND NOW() + INTERVAL ".$day_range." DAY )";
 		$sql.=" AND aex.fk_workstation > 0 ";
 		
-		if($fk_project>0)
+		if($fk_project > 0)
 		{
 			$sql.= " AND a.fk_project=".(int)$fk_project;
 		}
 		else
 		{
-			$sql.= " AND a.fk_project=0";
+			$sql.= " AND ( a.fk_project=0 OR ISNULL(a.fk_project) )";
 		}
-
+		//echo $sql;
+		//exit();
 		$res = $db->query($sql);
 		if($res===false) {
 			var_dump($db);exit;
