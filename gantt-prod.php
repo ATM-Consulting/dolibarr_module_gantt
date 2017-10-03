@@ -192,10 +192,10 @@ $TElement = _get_task_for_of($fk_project);
     					
     					$taskColor='';
     					$projectColor='';
-    					if(ColorTools::validate_color($project->array_options['options_gantt_color']))
+    					if(ColorTools::validate_color($project->array_options['options_color']))
     					{
-    						$taskColor= ColorTools::adjustBrightness($project->array_options['options_gantt_color'], -50);
-    						$projectColor= ',color:"'.$project->array_options['options_gantt_color'].'"';
+    						$taskColor= ColorTools::adjustBrightness($project->array_options['options_color'], -50);
+    						$projectColor= ',color:"'.$project->array_options['options_color'].'"';
     					}
     					
     					$TData[] = ' {"id":"'.$project->ganttid.'",objElement:"'.$project->element.'", "text":"'.$project->title.'", "type":gantt.config.types.project, open: '.$close_init_status.$projectColor.'}';
@@ -1255,9 +1255,9 @@ $TElement = _get_task_for_of($fk_project);
 	            }
 	            
 	            // Check if a color is define for this task
-	            if(!empty($task->array_options['options_gantt_color']) && ColorTools::validate_color($task->array_options['options_gantt_color']))
+	            if(!empty($task->array_options['options_color']) && ColorTools::validate_color($task->array_options['options_color']))
 	            {
-	                $taskColor = $task->array_options['options_gantt_color'];
+	                $taskColor = $task->array_options['options_color'];
 	            }
 	      
 	            $taskColorCode='';

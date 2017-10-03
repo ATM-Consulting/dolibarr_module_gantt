@@ -250,8 +250,8 @@ class modGantt extends DolibarrModules
 		// add gantt color // TODO : use scrumboard color
 		$e=new ExtraFields($this->db);
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
-		$e->addExtraField('gantt_color', '	Couleur Gantt', 'varchar', 1, 9, 'projet_task',0,0,'',$param);
-		$e->addExtraField('gantt_color', '	Couleur Gantt', 'varchar', 1, 9, 'projet',0,0,'',$param);
+		$e->addExtraField('color', '	Couleur', 'varchar', 1, 9, 'projet_task',0,0,'',$param);
+		$e->addExtraField('color', '	Couleur', 'varchar', 1, 9, 'projet',0,0,'',$param);
 		
 		// Create link to parent gantt task
 		$e=new ExtraFields($this->db);
