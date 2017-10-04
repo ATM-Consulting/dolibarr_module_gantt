@@ -299,7 +299,7 @@ $TElement = _get_task_for_of($fk_project);
 
 			_get_events($TData,$TLink);
 
-			echo implode(',',$TData);
+			echo implode(",\n",$TData);
 
 			// prevent unix timestamp start date
 			if($t_start == 0)
@@ -1025,13 +1025,11 @@ $TElement = _get_task_for_of($fk_project);
 
 		$day_range = empty($conf->global->GANTT_DAY_RANGE_FROM_NOW) ? 90 : $conf->global->GANTT_DAY_RANGE_FROM_NOW;
 
-		$projet_previ=new Project($db);
-		$projet_previ->fetch(0,'PREVI');
-		$fk_projet_previ = $projet_previ->id;
-
 		$TCacheProject = $TCacheOrder  = $TCacheWS = array();
 
 		$PDOdb=new TPDOdb;
+
+		$idNoAffectation = 1;
 
 		$sql = "SELECT t.rowid
 		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
@@ -1078,7 +1076,13 @@ $TElement = _get_task_for_of($fk_project);
 				$of->fk_commande = 0;
 			}
 
-			$of->ganttid = 'M'.(int)$of->id;
+			if($of->id>0) {
+				$of->ganttid = 'M'.(int)$of->id;
+			}
+			else {
+				$of->ganttid = 'MNA'.$idNoAffectation; $idNoAffectation++;
+			}
+
 			$of->title = $of->numero;
 
 			if($of->fk_commande>0) {
@@ -1093,9 +1097,12 @@ $TElement = _get_task_for_of($fk_project);
 					$order->fetch($of->fk_commande);
 					$order->fetch_thirdparty();
 
-					if($order->id>0)$order->title = $order->ref.' '.$order->thirdparty->name;
-					else $order->title = $langs->trans('UndefinedOrder');
-
+					if($order->id>0){
+						$order->title = $order->ref.' '.$order->thirdparty->name;
+					}
+					else {
+						$order->title = $langs->trans('UndefinedOrder');
+					}
 					$TCacheOrder[(int)$order->id] = $order;
 				}
 
@@ -1104,11 +1111,17 @@ $TElement = _get_task_for_of($fk_project);
 			else {
 
 				$order = new Commande($db);
+
 				$order->title = $langs->trans('UndefinedOrder');
 
 			}
+			if($order->id >0){
+				$order->ganttid = 'O'.$order->id;
+			}
+			else{
+				$order->ganttid= 'ONA'.$idNoAffectation; $idNoAffectation++;
+			}
 
-			$order->ganttid = 'O'.(int)$order->id;
 
 			if(!empty($TCacheProject[$task->fk_project])) {
 
@@ -1120,12 +1133,20 @@ $TElement = _get_task_for_of($fk_project);
 				$project->fetch($task->fk_project);
 
 				if($project->id>0)$project->title = $project->ref.' '.$project->title;
-				else $project->title = $langs->trans('UndefinedProject');
+				else {
+					$project->title = $langs->trans('UndefinedProject');
+				}
 
 				$TCacheProject[$project->id] = $project;
 			}
 
-			$project->ganttid = 'P'.(int)$project->id;
+			if($project->id>0) {
+				$project->ganttid = 'P'.$project->id;
+			}
+			else {
+				$project->ganttid = 'PNA'.$idNoAffectation; $idNoAffectation++;
+			}
+
 
 			if(!empty($TCacheWS[$task->array_options['options_fk_workstation']])) {
 
@@ -1139,8 +1160,12 @@ $TElement = _get_task_for_of($fk_project);
 
 			}
 
-			$ws->ganttid = 'W'.(int)$ws->id;
-
+			if($ws->id>0) {
+				$ws->ganttid = 'W'.(int)$ws->id;
+			}
+			else{
+				$ws->ganttid = 'WNA'.$idNoAffectation; $idNoAffectation++;
+			}
 
 
 			if(empty($TTask[$project->id])) {
@@ -1149,7 +1174,6 @@ $TElement = _get_task_for_of($fk_project);
 						'orders'=>array()
 						,'project'=>$project
 				);
-
 				_load_child_tasks( $TTask[$project->id] , $project );
 
 			}
@@ -1197,12 +1221,16 @@ $TElement = _get_task_for_of($fk_project);
 	 */
 	function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $maxDeep = 3) {
 		global $db;
-return false;
+
 		if($level>$maxDeep) return;
+
+		$projet_previ=new Project($db);
+		$projet_previ->fetch(0,'PREVI');
+		$fk_projet_previ = $projet_previ->id;
 
 		$sql = "SELECT t.rowid
 				FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
-				WHERE ";
+				WHERE t.fk_projet=$fk_projet_previ AND ";
 
 
 		$sqlWhere = " t.fk_task_parent = 0 AND ( tex.fk_gantt_parent_task < 1 OR ISNULL(tex.fk_gantt_parent_task)) ";
