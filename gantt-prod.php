@@ -274,7 +274,7 @@ $TElement = _get_task_for_of($fk_project);
 
                 								}
                 								else {*/
-                								$TData[] = ' {"id":"'.$task->ganttid.'",objElement:"'.$task->element.'",objId:"'.$task->id.'", workstation:'.$ws->rowid.', ws_nb_hour_capacity:'.$ws->nb_hour_capacity.' , "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$ws->rowid.'", type:gantt.config.types.task}';
+                								$TData[] = ' {"id":"'.$task->ganttid.'",objElement:"'.$task->element.'",objId:"'.$task->id.'", workstation:'.$ws->rowid.', ws_nb_hour_capacity:'.$ws->nb_hour_capacity.' , "text":"'.$task->text.'" , "title":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_of) ? ' ,parent:"'.$fk_parent_of.'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$ws->rowid.'", type:gantt.config.types.task}';
                 								//}
 
 
@@ -511,8 +511,11 @@ $TElement = _get_task_for_of($fk_project);
 
 
 	gantt.attachEvent("onTaskDblClick", function(id,e){
-
 		if(id[0] == 'T') {
+			var task = gantt.getTask(id);
+
+			task.text = task.title;
+
 			return true;
 		}
 		else {
@@ -1058,9 +1061,10 @@ $TElement = _get_task_for_of($fk_project);
 			$task->fetch_optionals($gantt_milestonetask->id);
 
 			$task->ganttid = 'T'.$task->id;
-			$task->title = $task->ref.' '.$task->label;
+			$task->title = $task->label;
+			$task->text = $task->ref.' '.$task->label;
 			if($task->planned_workload>0) {
-				$task->title.=' '.dol_print_date($task->planned_workload,'hour');
+				$task->text.=' '.dol_print_date($task->planned_workload,'hour');
 			}
 
 			if($task->array_options['options_fk_of']>0) {
@@ -1234,7 +1238,6 @@ $TElement = _get_task_for_of($fk_project);
 				WHERE t.fk_projet=$fk_projet_previ AND ";
 
 
-		$sqlWhere = " t.fk_task_parent = 0 AND ( tex.fk_gantt_parent_task < 1 OR ISNULL(tex.fk_gantt_parent_task)) ";
 		if($gantt_parent_objet)
 		{
     		if($level > 0)
@@ -1246,6 +1249,9 @@ $TElement = _get_task_for_of($fk_project);
     		    $sqlWhere = " tex.fk_gantt_parent_task = '".$gantt_parent_objet->ganttid."'";
     		}
 		}
+		else{
+			$sqlWhere = " t.fk_task_parent = 0 AND ( tex.fk_gantt_parent_task < 1 OR ISNULL(tex.fk_gantt_parent_task)) ";
+		}
 		//echo $sql.$sqlWhere;
 		$res = $db->query($sql.$sqlWhere);
 		if($res===false) {
@@ -1255,7 +1261,8 @@ $TElement = _get_task_for_of($fk_project);
 		while($obj = $db->fetch_object($res)) {
 			$task = new Task($db);
 			$task->fetch($obj->rowid);
-			$task->title = 'PREVI '.$task->label;
+			$task->title = $task->label;
+			$task->text = 'PREVI '.$task->label;
 			$task->ganttid = 'T'.$task->id;
 			$task->fk_task_parent = $gantt_parent_objet?$gantt_parent_objet->id:0;
 
@@ -1279,8 +1286,8 @@ $TElement = _get_task_for_of($fk_project);
 	            if($duration<1)$duration = 1;
 
 	            $type = ',type:gantt.config.types.task';
-	            if(empty($task->fk_task_parent)) {
-	               // $type = ',type:gantt.config.types.project';
+	            if(empty($task->fk_task_parent) && empty($task->array_options['options_fk_gantt_parent_task'])) {
+	               $type = ',type:gantt.config.types.project';
 	            }
 
 	            // Check if a color is define for this task
@@ -1304,10 +1311,17 @@ $TElement = _get_task_for_of($fk_project);
 	            $needed_ressource= ',needed_ressource:0';
 	            if(!empty($event->array_options['options_needed_ressource']))
 	            {
-	            	$needed_ressource= ',needed_ressource:'.$event->array_options['options_needed_ressource'];
+	            	$needed_ressource= ',needed_ressource:'.(int)$event->array_options['options_needed_ressource'];
 	            }
 
-	            $TData[] = ' {"id":"'.$task->ganttid.'"'.$needed_ressource.',objId:"'.$task->id.'",objElement:"'.$task->element.'", source:"'.$task->array_options['options_fk_gantt_parent_task'].'", "text":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($task->array_options['options_fk_gantt_parent_task']) ? ' ,parent:"'.$task->array_options['options_fk_gantt_parent_task'].'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$owner.'" '.$type.' '.$taskColorCode.$workstation.'}';
+	            if( $type == ',type:gantt.config.types.project') {
+	            	$TData[] = ' {id:"'.$task->ganttid.'",objId:"'.$task->id.'",objElement:"'.$task->element .'",text:"'.$task->text.'", "title":"'.$task->title.'"'.$type.' '.$taskColorCode.'}';
+	            }
+	            else {
+	            	$TData[] = ' {"id":"'.$task->ganttid.'"'.$needed_ressource.',objId:"'.$task->id.'",objElement:"'.$task->element.(empty($task->array_options['options_fk_gantt_parent_task']) ? '' : '", source:"'.$task->array_options['options_fk_gantt_parent_task'].'"').', "text":"'.$task->text.'", "title":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($task->array_options['options_fk_gantt_parent_task']) ? ' ,parent:"'.$task->array_options['options_fk_gantt_parent_task'].'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$owner.'" '.$type.' '.$taskColorCode.$workstation.'}';
+	            }
+
+
 	            if($task->fk_task_parent>0) {
 	               // $TLink[] = ' {id:'.(count($TLink)+1).', source:"'.$task->array_options['options_fk_gantt_parent_task'].'", target:"'.$task->ganttid.'", type:"0"}';
 	            }
