@@ -185,8 +185,9 @@ $TElement = _get_task_for_of($fk_project);
 			$t_start  = $t_end = 0;
 			foreach($TElement as &$projectData ) {
 
-			    if(!empty($projectData['project'])) {
-    			    $project = &$projectData['project'];
+			    if(!empty($projectData['object'])) {
+
+			    	$project = &$projectData['object'];
 
     				$fk_parent_project = null;
 
@@ -210,9 +211,10 @@ $TElement = _get_task_for_of($fk_project);
 
 
 
-    				if(!empty($projectData['orders'])) {
-        				foreach($projectData['orders'] as &$orderData) {
-        					$order = &$orderData['order'];
+    				if(!empty($projectData['childs'])) {
+        				foreach($projectData['childs'] as &$orderData) {
+
+        					$order= &$orderData['object'];
 
         					$fk_parent_order = null;
 
@@ -225,10 +227,13 @@ $TElement = _get_task_for_of($fk_project);
 
 
 
-        					if(!empty($orderData['ofs'])) {
+        					if(!empty($orderData['childs'])) {
 
-            					foreach($orderData['ofs'] as &$ofData) {
-            						$of = $ofData['of'];
+            					foreach($orderData['childs'] as &$ofData) {
+
+            						$of = &$ofData['object'];
+
+
             						$fk_parent_of = null;
 
             						if(!empty($conf->of->enabled)) {
@@ -244,17 +249,18 @@ $TElement = _get_task_for_of($fk_project);
             						_format_task_for_gantt($ofData['tasks'], $TData,$TLink,$of->rowid,$t_start,$t_end, $taskColor);
 
 
-            						if(!empty($ofData['workstations'])) {
-                						foreach($ofData['workstations'] as &$wsData) {
+            						if(!empty($ofData['childs'])) {
+                						foreach($ofData['childs'] as &$wsData) {
 
-                							$ws = $wsData['ws'];
+                							$ws = $wsData['object'];
+
                 							if($ws->id>0) $TWS[$ws->id] = $ws;
                 							//$TData[] = ' {"id":"WS'.$ws->id.'",objElement:"'.$ws->element.'", "text":"'.$ws->name.'", "type":gantt.config.types.project, parent:"M'.$of->id.'", open: true}';
 
                 							// Add order child tasks
                 							$taskColor='';
 
-                							foreach($wsData['tasks'] as &$task) {
+                							foreach($wsData['childs'] as &$task) {
 
                 								if(empty($t_start) || $task->date_start<$t_start)$t_start=$task->date_start;
                 								if(empty($t_end) || $t_end<$task->date_end)$t_end=$task->date_end;
@@ -1176,44 +1182,44 @@ $TElement = _get_task_for_of($fk_project);
 			if(empty($TTask[$project->id])) {
 
 				$TTask[$project->id]=array(
-						'orders'=>array()
-						,'project'=>$project
+						'childs'=>array()
+						,'object'=>$project
 				);
-				_load_child_tasks( $TTask[$project->id] , $project );
+				_load_child_tasks( $TTask[$project->id]['childs'] , $project);
 
 			}
 
 			$order->id=(int)$order->id;
 
-			if(empty($TTask[$project->id]['orders'][$order->id])) {
+			if(empty($TTask[$project->id]['childs'][$order->id])) {
 
-				$TTask[$project->id]['orders'][$order->id]=array(
-					'ofs'=>array()
-					,'order'=>$order
+				$TTask[$project->id]['childs'][$order->id]=array(
+					'childs'=>array()
+					,'object'=>$order
 				);
 
-				_load_child_tasks( $TTask[$project->id]['orders'][$order->id], $order);
+				_load_child_tasks( $TTask[$project->id]['childs'][$order->id]['childs'], $order);
 			}
 
-			if(empty($TTask[$project->id]['orders'][$order->id]['ofs'][$of->id])) {
+			if(empty($TTask[$project->id]['childs'][$order->id]['childs'][$of->id])) {
 
-				$TTask[$project->id]['orders'][$order->id]['ofs'][$of->id]=array(
-						'workstations'=>array()
-						,'of'=>$of
-				);
-			}
-
-			if(empty($TTask[$project->id]['orders'][$order->id]['ofs'][$of->id]['workstations'][$ws->id])) {
-
-				$TTask[$project->id]['orders'][$order->id]['ofs'][$of->id]['workstations'][$ws->id]=array(
-						'tasks'=>array()
-						,'ws'=>$ws
+				$TTask[$project->id]['childs'][$order->id]['childs'][$of->id]=array(
+						'childs'=>array()
+						,'object'=>$of
 				);
 			}
 
-			$TTask[$project->id]['orders'][$order->id]['ofs'][$of->id]['workstations'][$ws->id]['tasks'][$task->id] = $task;
+			if(empty($TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id])) {
 
-			_load_child_tasks( $TTask[$project->id]['orders'][$order->id]['ofs'][$of->id]['workstations'][$ws->id],$task);
+				$TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]=array(
+						'childs'=>array()
+						,'object'=>$ws
+				);
+			}
+
+			$TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'][$task->id] = $task;
+
+			_load_child_tasks( $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'],$task);
 		}
 		_load_child_tasks( $TTask);
 		return $TTask;
@@ -1266,9 +1272,9 @@ $TElement = _get_task_for_of($fk_project);
 			$task->ganttid = 'T'.$task->id;
 			$task->fk_task_parent = $gantt_parent_objet?$gantt_parent_objet->id:0;
 
-			$TData['tasks'][$task->id] = $task;
+			$TData['PREVI'.$task->id]['object'] = $task;
 
-			_load_child_tasks( $TData,$task,($level+1) , $maxDeep) ;
+			_load_child_tasks( $TData['PREVI'.$task->id]['childs'] ,$task,($level+1) , $maxDeep) ;
 		}
 	}
 
@@ -1277,6 +1283,8 @@ $TElement = _get_task_for_of($fk_project);
 	 */
 	function _format_task_for_gantt(&$tasksList, &$TData,&$TLink,$owner=0,$t_start=false,$t_end=false, $taskColor=false)
 	{
+		return false;
+
 	    if(!empty($tasksList))
 	    {
 	        foreach($tasksList as &$task) {
