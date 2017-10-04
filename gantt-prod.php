@@ -134,7 +134,9 @@ $TElement = _get_task_for_of($fk_project);
     	color:white;
     	font-weight: bold;
     }
-
+	 .gantt_cal_light_wide .gantt_cal_lsection {
+		width:120px;
+	}
 	</style>
 	<script type="text/javascript">
 
@@ -386,7 +388,7 @@ $TElement = _get_task_for_of($fk_project);
 
 	gantt.config.lightbox.sections = [
         {name: "description", height: 26, map_to: "text", type: "textarea", focus: true},
-        {name: "workstation", label:"Workstation", height: 22, type: "select", map_to: "workstation",options: [
+        {name: "workstation", label:"Workstation", height: 22, type: "select", width:"60%", map_to: "workstation",options: [
             <?php echo _get_workstation_list(); ?>
         ]},
 
@@ -402,7 +404,7 @@ $TElement = _get_task_for_of($fk_project);
             {key:"0.7", label: "70%"},
             {key:"0.8", label: "80%"},
             {key:"0.9", label: "90%"},
-            {key:"1", label: "<?php echo $langs->transnoentities('Complete') ?>"}
+            {key:"1", label: "<?php echo $langs->transnoentities('Complete') ?>", width:"60%"}
         ]},
 
         {name: "time", type: "time", map_to: "auto", time_format:["%d", "%m", "%Y"]} //{name: "time", type: "duration", map_to: "auto", time_format:["%d", "%m", "%Y", "%H:%i"]}
@@ -507,17 +509,16 @@ $TElement = _get_task_for_of($fk_project);
 	});
 
 
-	/*
+
 	gantt.attachEvent("onTaskDblClick", function(id,e){
 
 		if(id[0] == 'T') {
-			pop_edit_task(id.substring(1));
-			//document.location.href="<?php echo dol_buildpath('/projet/tasks/task.php',1) ?>?id="+id.substring(1)+"&withproject=1";
+			return true;
 		}
 		else {
 			return false;
 		}
-	});*/
+	});
 
 
 	gantt.attachEvent("onTaskCreated", function(task){
