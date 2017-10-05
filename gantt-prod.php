@@ -74,8 +74,13 @@ else {
 
 
 $TElement = _get_task_for_of($fk_project);
+//pre($TElement,1);exit;
+
+	if(GETPOST('open')!='all') echo ' <a href="?open=all">'.$langs->trans('OpenAllTask').'</a>';
+	else echo '<a href="?open=no">'.$langs->trans('ClosedTask').'</a>';
 
 ?>
+
 
 	<div id="gantt_here" style='width:100%; height:100%;'></div>
 	<style type="text/css">
@@ -83,18 +88,18 @@ $TElement = _get_task_for_of($fk_project);
 	#gantt_here {
 		margin-bottom:500px;
 	}
+	.gantt_task_line.gantt_milestone,.gantt_task_line.gantt_release {
 
-	.gantt_task_line.gantt_milestone {
-	    visibility: hidden;
 	    background-color: #d33daf;
 	    border: 0 solid #61164f;
+	    /*visibility: hidden;
 	    box-sizing: content-box;
 	    -moz-box-sizing: content-box;
 	    height: 30px;
 		line-height: 30px;
 		width: 30px;
 		font-size: 1px;
-	    content:'';
+	    content:'';*/
 	}
 
 	.gantt_task_line.gantt_of {
@@ -141,7 +146,7 @@ $TElement = _get_task_for_of($fk_project);
 			<?php
 			$TData=array(); $TWS=array(); $TLink=array();
 
-			$close_init_status = empty($fk_project) ? 'false': 'true';
+			$close_init_status = empty($fk_project) && GETPOST('open')!='all' ? 'false': 'true';
 
 			$t_start  = $t_end = 0;
 			foreach($TElement as &$projectData ) {
@@ -203,24 +208,33 @@ $TElement = _get_task_for_of($fk_project);
                 							$ws = $wsData['object'];
 
                 							if($ws->id>0) $TWS[$ws->id] = $ws;
-                							//$TData[] = ' {"id":"WS'.$ws->id.'",objElement:"'.$ws->element.'", "text":"'.$ws->name.'", "type":gantt.config.types.project, parent:"M'.$of->id.'", open: true}';
+                							if(empty($ws->element)) $ws->element = 'workstation';
+                							//var_dump($ws->element);
+
+                							$ws->ganttid = $fk_parent_of.$ws->ganttid;
+
+                							$TData[] = _get_json_data($ws, $close_init_status, $fk_parent_of);
+
+                							$fk_parent_ws = $ws->ganttid;
 
                 							// Add order child tasks
                 							$taskColor='';
 
-                							foreach($wsData['childs'] as &$task) {
+                							if(!empty($wsData['childs'])) {
+	                							foreach($wsData['childs'] as &$task) {
 
-                								if(empty($t_start) || $task->date_start<$t_start)$t_start=$task->date_start;
-                								if(empty($t_end) || $t_end<$task->date_end)$t_end=$task->date_end;
+	                								if(empty($t_start) || $task->date_start<$t_start)$t_start=$task->date_start;
+	                								if(empty($t_end) || $t_end<$task->date_end)$t_end=$task->date_end;
 
-                								$task->ws = &$ws;
+	                								$task->ws = &$ws;
 
-                								$TData[] = _get_json_data($task, $close_init_status, $fk_parent_of);
+	                								$TData[] = _get_json_data($task, $close_init_status, $fk_parent_ws);
 
-												if($task->fk_task_parent>0) {
-													//$TLink[] = ' {id:'.(count($TLink)+1).', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
-												}
+													if($task->fk_task_parent>0) {
+														//$TLink[] = ' {id:'.(count($TLink)+1).', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
+													}
 
+	                							}
                 							}
                 						}
             						}
@@ -302,8 +316,8 @@ $TElement = _get_task_for_of($fk_project);
 		if(obj.type == gantt.config.types.order){
 			return "gantt_order";
 		}
-		else if(obj.type == gantt.config.types.milestone){
-			return "gantt_milestone";
+		else if(obj.type == gantt.config.types.release){
+			return "gantt_release";
 		}
 		else if(obj.owner) {
 			return "workstation_"+obj.workstation;
@@ -353,7 +367,7 @@ $TElement = _get_task_for_of($fk_project);
     gantt.locale.labels["section_progress"] = "<?php echo $langs->transnoentities('Progress') ?>";
     gantt.locale.labels["section_workstation"] = "<?php echo $langs->transnoentities('Workstation') ?>";
     gantt.locale.labels["section_needed_ressource"] = "<?php echo $langs->transnoentities('needed_ressource') ?>";
-
+    gantt.locale.labels["section_planned_workload"] = "<?php echo $langs->transnoentities('planned_workload') ?>";
 
 	gantt.config.lightbox.sections = [
         {name: "description", height: 26, map_to: "text", type: "textarea", focus: true},
@@ -376,7 +390,17 @@ $TElement = _get_task_for_of($fk_project);
             {key:"1", label: "<?php echo $langs->transnoentities('Complete') ?>", width:"60%"}
         ]},
 
-        {name: "time", type: "time", map_to: "auto", time_format:["%d", "%m", "%Y"]} //{name: "time", type: "duration", map_to: "auto", time_format:["%d", "%m", "%Y", "%H:%i"]}
+        {name: "time", type: "time", map_to: "auto", time_format:["%d", "%m", "%Y"]},
+        {name: "planned_workload", height: "duration", map_to: "planned_workload", type:"select", options:[
+			<?php
+				dol_include_once('/core/lib/date.lib.php');
+
+				for($i=0;$i<1000000;$i+=900) {
+					echo '{key:"'.$i.'", label:"'.convertSecondToTime($i,'all').'"},';
+				}
+
+			?>
+        ]}
     ];
 
 
@@ -532,6 +556,13 @@ $TElement = _get_task_for_of($fk_project);
 	gantt.attachEvent("onBeforeTaskChanged", function(id, mode, old_event){
 
 		var task = gantt.getTask(id);
+
+		if(task.id[0]!='T' && task.id[0]!='A') {
+			gantt.message('<?php echo $langs->trans('OnlyTaskCanBeMoved') ?>');
+
+			return false;
+		}
+
         return saveTask(task, old_event);
 
 
@@ -679,6 +710,7 @@ $TElement = _get_task_for_of($fk_project);
 				,objElement:task.objElement
 				,description:task.text
 				,needed_ressource:task.needed_ressource
+				,planned_workload:task.planned_workload
 			},
 			method:"post",
 		    success: function(data){
@@ -1127,6 +1159,7 @@ $TElement = _get_task_for_of($fk_project);
 			else{
 				$ws = new TWorkstation();
 				$ws->load($PDOdb,$task->array_options['options_fk_workstation']);
+				$ws->text = $ws->title = $ws->name;
 				$TCacheWS[$ws->id] = $ws;
 
 			}
@@ -1136,6 +1169,7 @@ $TElement = _get_task_for_of($fk_project);
 			}
 			else{
 				$ws->ganttid = 'WNA'.$idNoAffectation; $idNoAffectation++;
+				$ws->title = $langs->trans('UndefinedWorkstation');
 			}
 
 
@@ -1168,6 +1202,7 @@ $TElement = _get_task_for_of($fk_project);
 						,'object'=>$of
 				);
 			}
+			_adding_task_supplier_order($PDOdb,$of, $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs']);
 
 			if(empty($TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id])) {
 
@@ -1183,6 +1218,34 @@ $TElement = _get_task_for_of($fk_project);
 		}
 		_load_child_tasks( $TTask);
 		return $TTask;
+
+	}
+
+	function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
+		global $db, $langs;
+
+		dol_include_once('/fourn/class/fournisseur.commande.class.php');
+		$TIdCommandeFourn = $assetOf->getElementElement($PDOdb);
+
+		if(count($TIdCommandeFourn)){
+			foreach($TIdCommandeFourn as $idcommandeFourn){
+				$cmd = new CommandeFournisseur($db);
+				$cmd->fetch($idcommandeFourn);
+
+				if($cmd->statut>0 && $cmd->statut<5 && $cmd->date_livraison>0) {
+					$object=new stdClass();
+					$object->element = 'milestone';
+					$object->title = $object->text = $langs->trans('AwaitingDelivery', $cmd->ref, dol_print_date($cmd->date_livraison));
+					$object->date_start= $cmd->date_livraison;
+					$object->ganttid = 'DELIVERY'.$cmd->id;
+
+					$TData[$object->ganttid]['object'] = $object;
+
+				}
+
+
+			}
+		}
 
 	}
 
@@ -1240,6 +1303,10 @@ $TElement = _get_task_for_of($fk_project);
 		if($object->element == 'commande') {
 			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
 		}
+		else if($object->element == 'workstation') {
+
+			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: true}';
+		}
 		else if($object->element == 'project') {
 
 			$taskColor='';
@@ -1261,10 +1328,17 @@ $TElement = _get_task_for_of($fk_project);
 			$duration = $object->date_end>0 ? ceil( ($object->date_end - $object->date_start) / 86400 ) : ceil($object->planned_workload / (3600 * 7));
 			if($duration<1)$duration = 1;
 
-			$fk_workstation = (int) $task->array_options['options_fk_workstation'];
-			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task}';
+			$fk_workstation = (int) $object->array_options['options_fk_workstation'];
+
+			return ' {"id":"'.$object->ganttid.'",planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task}';
 
 		}
+		else if($object->element== 'milestone' || $object->element == 'release') {
+
+			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":1 '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.release}';
+
+		}
+
 
 		return '{ nonObjectManaged:"'.$object->element.'" }';
 	}
