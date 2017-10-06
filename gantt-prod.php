@@ -178,7 +178,7 @@ $TElement = _get_task_for_of($fk_project);
         						$time_task_limit_no_after = $order->date;
         					}
 
-        					if(empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $order->id>0 || ($ws->element!='order')) {
+        					if(empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $order->id>0 || $order->element!='commande') {
         						$TData[] = _get_json_data($order, $close_init_status, $fk_parent_project);
         						$fk_parent_order = $order->ganttid;
         					}
@@ -523,6 +523,12 @@ $TElement = _get_task_for_of($fk_project);
 
 			task.text = task.title;
 
+			if(task.planned_workload>0) {
+				var m = task.planned_workload%900;
+
+				if(m>0) task.planned_workload = task.planned_workload - m + 900;
+			}
+
 			return true;
 		}
 		else {
@@ -551,9 +557,6 @@ $TElement = _get_task_for_of($fk_project);
 		var task = gantt.getTask(id);
 		return delete_task(task.id,1,0);
 	});
-
-
-
 
 	var start_task_drag = 0;
 	var end_task_drag =  0;
