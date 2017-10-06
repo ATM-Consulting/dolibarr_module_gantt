@@ -130,6 +130,31 @@ echo ajax_constantonoff('GANTT_HIDE_INEXISTANT_PARENT');
 print '</form>';
 print '</td></tr>';
 
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="right" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="set_GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE">';
+echo ajax_constantonoff('GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE');
+print '</form>';
+print '</td></tr>';
+
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("GANTT_DISABLE_PROJECT_MILESTONE").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="right" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="set_GANTT_DISABLE_PROJECT_MILESTONE">';
+echo ajax_constantonoff('GANTT_DISABLE_PROJECT_MILESTONE');
+print '</form>';
+print '</td></tr>';
+
+
 // Example with a yes / no select
 $var=!$var;
 print '<tr '.$bc[$var].'>';

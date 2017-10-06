@@ -165,7 +165,7 @@ $TElement = _get_task_for_of($fk_project);
     					_get_events( $TData,$TLink,$project->id);
     				}
 
-
+    				$time_task_limit_no_after = 0;
 
     				if(!empty($projectData['childs'])) {
         				foreach($projectData['childs'] as &$orderData) {
@@ -174,7 +174,11 @@ $TElement = _get_task_for_of($fk_project);
 
         					$fk_parent_order = null;
 
-        					if(empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $order->id>0) {
+        					if($order->element =='milestone') {
+        						$time_task_limit_no_after = $order->date;
+        					}
+
+        					if(empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $order->id>0 || ($ws->element!='order')) {
         						$TData[] = _get_json_data($order, $close_init_status, $fk_parent_project);
         						$fk_parent_order = $order->ganttid;
         					}
@@ -203,7 +207,7 @@ $TElement = _get_task_for_of($fk_project);
             						// Add order child tasks
             						$taskColor='';
 
-
+            						$time_task_limit_no_before= 0;
             						if(!empty($ofData['childs'])) {
                 						foreach($ofData['childs'] as &$wsData) {
 
@@ -214,6 +218,10 @@ $TElement = _get_task_for_of($fk_project);
                 							//var_dump($ws->element);
 
                 							$ws->ganttid = $fk_parent_of.$ws->ganttid;
+
+                							if($ws->element =='milestone') {
+                								$time_task_limit_no_before = $ws->date;
+                							}
 
                 							if((!empty($ws->id) && empty($conf->global->GANTT_HIDE_WORKSTATION)) || ($ws->element!='workstation')) {
                 								$TData[] = _get_json_data($ws, $close_init_status, $fk_parent_of);
@@ -234,7 +242,7 @@ $TElement = _get_task_for_of($fk_project);
 
 	                								$task->ws = &$ws;
 
-	                								$TData[] = _get_json_data($task, $close_init_status, $fk_parent_ws);
+	                								$TData[] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after);
 
 													if($task->fk_task_parent>0) {
 														//$TLink[] = ' {id:'.(count($TLink)+1).', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
@@ -546,62 +554,81 @@ $TElement = _get_task_for_of($fk_project);
 
 
 
-/*
+
 	var start_task_drag = 0;
 	var end_task_drag =  0;
+	var rightLimit = null;
+	var leftLimit = null;
+	var alertLimit = false;
+	var leftLimitON = false;
+	var rightLimitON = false;
 
 	gantt.attachEvent("onBeforeTaskDrag", function(sid, parent, tindex){
 		var task = gantt.getTask(sid);
-
-		start_task_drag = task.start_date.getTime()
-		end_task_drag = task.end_date.getTime();
-
-		return true;
-	});
-*/
-	gantt.attachEvent("onBeforeTaskChanged", function(id, mode, old_event){
-
-		var task = gantt.getTask(id);
-
 		if(task.id[0]!='T' && task.id[0]!='A') {
 			gantt.message('<?php echo $langs->trans('OnlyTaskCanBeMoved') ?>');
 
 			return false;
 		}
 
-        return saveTask(task, old_event);
+		if(task.time_task_limit_no_before && task.time_task_limit_no_before>0) {
+			leftLimit = task.time_task_limit_no_before * 1000;
+			alertLimit = true;
+			leftLimitON = true;
+		}
+		else {
+			leftLimitON = false;
+		}
 
-
-/*
-		var progress = task.progress ;
-		//var date_start = task.start_date.toISOString().substring(0,10);
-		//var date_end = task.end_date.toISOString().substring(0,10);
-
-		var start = task.start_date.getTime();
-		var end = task.end_date.getTime();
-
-		$.ajax({
-			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1); ?>"
-			,data:{
-				ganttid:id
-				,start:start
-				,end:end
-				,progress:progress
-				,put:"gantt"
-			}
-			,method:"post"
-		}).done( function() {
-			gantt.refreshTask(id);
-			//updateAllCapacity();
-			t_start = Math.min(start, old_event.start_date.getTime()) / 1000;
-			t_end = Math.max(end, old_event.end_date.getTime()) / 1000;
-
-			updateWSCapacity(task.workstation, t_start, t_end, task.ws_nb_hour_capacity);
-
-		});
+		if(task.time_task_limit_no_after && task.time_task_limit_no_after>0) {
+			rightLimit = task.time_task_limit_no_after * 1000;
+			alertLimit = true;
+			rightLimitON = true;
+		}
+		else {
+			rightLimitON = false;
+		}
 
 		return true;
-*/
+	});
+
+	gantt.attachEvent("onTaskDrag", function(id, mode, task, original){
+	    var modes = gantt.config.drag_mode;
+	    if(mode == modes.move || mode == modes.resize){
+
+	        var diff = original.duration*(1000*60*60*24);
+
+	        if(leftLimitON && +task.start_date < +leftLimit){
+	            task.start_date = new Date(leftLimit);
+	            if(mode == modes.move) {
+	                task.end_date = new Date(+task.start_date + diff);
+	                if(alertLimit) {
+	                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+d.toLocaleString());
+	                	alertLimit = false;
+	                }
+	            }
+	        }
+
+	        if(rightLimitON && +task.end_date > +rightLimit){
+	            task.end_date = new Date(rightLimit);
+	            if(mode == modes.move) {
+	            	task.start_date = new Date(task.end_date - diff);
+	                if(alertLimit) {
+	                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+d.toLocaleString());
+	                	alertLimit = false;
+	                }
+	            }
+	        }
+	    }
+	    return true;
+	});
+
+	gantt.attachEvent("onBeforeTaskChanged", function(id, mode, old_event){
+
+		var task = gantt.getTask(id);
+
+		return saveTask(task, old_event);
+
 	});
 
     gantt.attachEvent("onLightboxSave", function(id, task, is_new){
@@ -612,6 +639,7 @@ $TElement = _get_task_for_of($fk_project);
 		task.workstation = gantt.getLightboxSection('workstation').getValue();
 		gantt.getLightboxSection('workstation').setValue(task.workstation);
         //task.workstation = gantt.getLightboxSection('workstation ').getValue();
+		task.title = task.text;
 
         return saveTask(task, old_event,is_new);
     })
@@ -648,37 +676,6 @@ $TElement = _get_task_for_of($fk_project);
         gantt.setSizes();
 	}
 
-//TODO add scrollbar locked at top or bottom
-
-/*	(function() {
-	function scrollHorizontally(e) {
-	    e = window.event || e;
-
-	    var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
-
-	    var sPos = gantt.getScrollState();
-
-	    gantt.scrollTo(sPos.x - delta*40, null);
-
-	    e.preventDefault();
-	}
-	if (window.addEventListener) {
-	    // IE9, Chrome, Safari, Opera
-	    window.addEventListener("mousewheel", scrollHorizontally, false);
-	    // Firefox
-	    window.addEventListener("DOMMouseScroll", scrollHorizontally, false);
-	} else {
-	    // IE 6/7/8
-	    window.attachEvent("onmousewheel", scrollHorizontally);
-	}
-	})();
-*/
-
-	/*$divScroll = $('<div />');
-	$divScroll.width(  );
-
-	$("#gantt_here").before($divScroll);
-	*/
 	var url_in_pop = '';var pop_callback = null;
 	function pop_edit_task(fk_task, callback) {
 
@@ -714,7 +711,7 @@ $TElement = _get_task_for_of($fk_project);
 				,put:"gantt"
 				,workstation:task.workstation
 				,objElement:task.objElement
-				,description:task.text
+				,description:task.title
 				,needed_ressource:task.needed_ressource
 				,planned_workload:task.planned_workload
 			},
@@ -1185,6 +1182,7 @@ $TElement = _get_task_for_of($fk_project);
 						'childs'=>array()
 						,'object'=>$project
 				);
+				_adding_task_project_end($project, $TTask[$project->id]['childs']);
 				_load_child_tasks( $TTask[$project->id]['childs'] , $project);
 
 			}
@@ -1227,8 +1225,31 @@ $TElement = _get_task_for_of($fk_project);
 
 	}
 
-	function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
+	function _adding_task_project_end(&$project,&$TData) {
 		global $db, $langs;
+		if(!empty($conf->global->GANTT_DISABLE_PROJECT_MILESTONE)) {
+			return false;
+		}
+
+		if($project->date_end>0) {
+			$object=new stdClass();
+			$object->element = 'milestone';
+			$object->title = $object->text = $langs->trans('EndOfProject', $project->ref, dol_print_date($project->date_end));
+			$object->date= $project->date_end + 84399; //23:59:59
+			$object->ganttid = 'RELEASE'.$project->id;
+
+			$TData[$object->ganttid]['object'] = $object;
+
+		}
+
+	}
+
+	function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
+		global $db, $langs, $conf;
+
+		if(!empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE)) {
+			return false;
+		}
 
 		dol_include_once('/fourn/class/fournisseur.commande.class.php');
 		$TIdCommandeFourn = $assetOf->getElementElement($PDOdb);
@@ -1242,7 +1263,7 @@ $TElement = _get_task_for_of($fk_project);
 					$object=new stdClass();
 					$object->element = 'milestone';
 					$object->title = $object->text = $langs->trans('AwaitingDelivery', $cmd->ref, dol_print_date($cmd->date_livraison));
-					$object->date_start= $cmd->date_livraison;
+					$object->date= $cmd->date_livraison;
 					$object->ganttid = 'DELIVERY'.$cmd->id;
 
 					$TData[$object->ganttid]['object'] = $object;
@@ -1304,7 +1325,7 @@ $TElement = _get_task_for_of($fk_project);
 		}
 	}
 
-	function _get_json_data(&$object, $close_init_status, $fk_parent_object=null) {
+	function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $time_task_limit_no_before=0,$time_task_limit_no_after=0) {
 
 		if($object->element == 'commande') {
 			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
@@ -1336,12 +1357,12 @@ $TElement = _get_task_for_of($fk_project);
 
 			$fk_workstation = (int) $object->array_options['options_fk_workstation'];
 
-			return ' {"id":"'.$object->ganttid.'",planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task , open: '.$close_init_status.'}';
+			return ' {"id":"'.$object->ganttid.'",time_task_limit_no_before:'.(int)$time_task_limit_no_before.',time_task_limit_no_after:'.(int)$time_task_limit_no_after.',planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task , open: '.$close_init_status.'}';
 
 		}
 		else if($object->element== 'milestone' || $object->element == 'release') {
 
-			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":1 '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.release}';
+			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.date('d-m-Y',$object->date).'", "duration":1 '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.release}';
 
 		}
 
