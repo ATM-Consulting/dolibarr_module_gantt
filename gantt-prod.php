@@ -174,11 +174,14 @@ $TElement = _get_task_for_of($fk_project);
 
         					$fk_parent_order = null;
 
-        					$TData[] = _get_json_data($order, $close_init_status, $fk_parent_project);
+        					if(empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $order->id>0) {
+        						$TData[] = _get_json_data($order, $close_init_status, $fk_parent_project);
+        						$fk_parent_order = $order->ganttid;
+        					}
+        					else {
+        						$fk_parent_order = $fk_parent_project;
+        					}
 
-//        					$TData[] = ' {"id":"'.$order->ganttid.'",objElement:"'.$order->element.'", "text":"'.$order->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_project) ? ' ,parent:"'.$fk_parent_project.'" ' : '' ).', open: '.$close_init_status.'}';
-
-        					$fk_parent_order = $order->ganttid;
 
         					if(!empty($orderData['childs'])) {
 
@@ -189,9 +192,8 @@ $TElement = _get_task_for_of($fk_project);
 
             						$fk_parent_of = null;
 
-            						if(!empty($conf->of->enabled)) {
+            						if(!empty($conf->of->enabled) && (empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $of->id>0) ) {
             							$TData[] = _get_json_data($of, $close_init_status, $fk_parent_order);
-
             							$fk_parent_of= $of->ganttid;
             						}
             						else{
@@ -213,9 +215,13 @@ $TElement = _get_task_for_of($fk_project);
 
                 							$ws->ganttid = $fk_parent_of.$ws->ganttid;
 
-                							$TData[] = _get_json_data($ws, $close_init_status, $fk_parent_of);
-
-                							$fk_parent_ws = $ws->ganttid;
+                							if((!empty($ws->id) && empty($conf->global->GANTT_HIDE_WORKSTATION)) || ($ws->element!='workstation')) {
+                								$TData[] = _get_json_data($ws, $close_init_status, $fk_parent_of);
+                								$fk_parent_ws = $ws->ganttid;
+                							}
+											else{
+												$fk_parent_ws = $fk_parent_of;
+											}
 
                 							// Add order child tasks
                 							$taskColor='';
@@ -1330,7 +1336,7 @@ $TElement = _get_task_for_of($fk_project);
 
 			$fk_workstation = (int) $object->array_options['options_fk_workstation'];
 
-			return ' {"id":"'.$object->ganttid.'",planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task}';
+			return ' {"id":"'.$object->ganttid.'",planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task , open: '.$close_init_status.'}';
 
 		}
 		else if($object->element== 'milestone' || $object->element == 'release') {

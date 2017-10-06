@@ -59,7 +59,7 @@ if (preg_match('/set_(.*)/',$action,$reg))
 		dol_print_error($db);
 	}
 }
-	
+
 if (preg_match('/del_(.*)/',$action,$reg))
 {
 	$code=$reg[1];
@@ -106,19 +106,30 @@ print '<td align="center" width="100">'.$langs->trans("Value").'</td>'."\n";
 
 
 // Example with a yes / no select
-/*$var=!$var;
+$var=!$var;
 print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("ParamLabel").'</td>';
+print '<td>'.$langs->trans("GANTT_HIDE_WORKSTATION").'</td>';
 print '<td align="center" width="20">&nbsp;</td>';
 print '<td align="right" width="300">';
 print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
 print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_CONSTNAME">';
-print $form->selectyesno("CONSTNAME",$conf->global->CONSTNAME,1);
-print '<input type="submit" class="button" value="'.$langs->trans("Modify").'">';
+print '<input type="hidden" name="action" value="set_GANTT_HIDE_WORKSTATION">';
+echo ajax_constantonoff('GANTT_HIDE_WORKSTATION');
 print '</form>';
 print '</td></tr>';
-*/
+
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("GANTT_HIDE_INEXISTANT_PARENT").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="right" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="set_GANTT_HIDE_INEXISTANT_PARENT">';
+echo ajax_constantonoff('GANTT_HIDE_INEXISTANT_PARENT');
+print '</form>';
+print '</td></tr>';
+
 // Example with a yes / no select
 $var=!$var;
 print '<tr '.$bc[$var].'>';
