@@ -72,17 +72,29 @@ else {
 
 }
 
+	$day_range = empty($conf->global->GANTT_DAY_RANGE_FROM_NOW) ? 90 : $conf->global->GANTT_DAY_RANGE_FROM_NOW;
 
-$TElement = _get_task_for_of($fk_project);
+	$range = new stdClass();
+	$range->date_start = 0;
+	$range->date_end= 0;
+	$range->sql_date_start = date('Y-m-d',strtotime('-'.$day_range.' days'));
+	$range->sql_date_end = date('Y-m-d',strtotime('+'.$day_range.' days'));
+	$range->autotime = true;
+
+	if(GETPOST('range_start')!='') {
+		$range->date_start = dol_mktime(0, 0, 0, GETPOST('range_startmonth'), GETPOST('range_startday'), GETPOST('range_startyear'));
+		$range->autotime = false;
+	}
+
+	if(GETPOST('range_end')!='') {
+		$range->date_end= dol_mktime(0, 0, 0, GETPOST('range_endmonth'), GETPOST('range_endday'), GETPOST('range_endyear'));
+		$range->autotime = false;
+	}
+
+	$TElement = _get_task_for_of($fk_project);
 //pre($TElement,1);exit;
 
-	if(GETPOST('open')!='all') echo ' <a href="?open=all">'.$langs->trans('OpenAllTask').'</a>';
-	else echo '<a href="?open=no">'.$langs->trans('ClosedTask').'</a>';
-
 ?>
-
-
-	<div id="gantt_here" style='width:100%; height:100%;'></div>
 	<style type="text/css">
 
 	#gantt_here {
@@ -122,6 +134,7 @@ $TElement = _get_task_for_of($fk_project);
 		position: fixed;
 		bottom:0px;
 		overflow: hidden;
+		background-color:#fff;
 	}
 	div.ws_container {
 		overflow: scroll;
@@ -141,9 +154,42 @@ $TElement = _get_task_for_of($fk_project);
 	 .gantt_cal_light_wide .gantt_cal_lsection {
 		width:120px;
 	}
+
+	.modalwaiter {
+	    display:    none;
+	    position:   fixed;
+	    z-index:    1000;
+	    top:        0;
+	    left:       0;
+	    height:     100%;
+	    width:      100%;
+	    background: rgba( 255, 255, 255, .8 )
+	                url('img/ajax-loader.gif')
+	                50% 50%
+	                no-repeat;
+	}
+
+	/* When the body has the loading class, we turn
+	   the scrollbar off with overflow:hidden */
+	body.loading {
+	    overflow: hidden;
+	}
+
+	/* Anytime the body has the loading class, our
+	   modal element will be visible */
+	body.loading .modalwaiter {
+	    display: block;
+	}
+
+	.lateDay {
+		background-color:#ffdddd;
+	}
+
 	</style>
 
 			<?php
+			_get_workstation(); // init tableau de WS
+
 			$TData=array(); $TWS=array(); $TLink=array();
 
 			$close_init_status = empty($fk_project) && GETPOST('open')!='all' ? 'false': 'true';
@@ -213,7 +259,6 @@ $TElement = _get_task_for_of($fk_project);
 
                 							$ws = $wsData['object'];
 
-                							if($ws->id>0) $TWS[$ws->id] = $ws;
                 							if(empty($ws->element)) $ws->element = 'workstation';
                 							//var_dump($ws->element);
 
@@ -258,10 +303,33 @@ $TElement = _get_task_for_of($fk_project);
 
 			_get_events($TData,$TLink);
 		//	var_dump(dol_print_date($t_start),dol_print_date($t_end));exit;
+
+			if(GETPOST('open')!='all') echo ' <a href="?open=all">'.$langs->trans('OpenAllTask').'</a>';
+			else echo '<a href="?open=no">'.$langs->trans('ClosedTask').'</a> ';
+
+			if($range->autotime){
+				if(empty($range->date_start)) {
+					$range->date_start = $range->date_end = time()-86400;
+				}
+				$range->date_end+=864000;
+			}
+
+			echo $form->select_date($range->date_start, 'range_start');
+			echo $form->select_date($range->date_end,'range_end');
+
 			?>
+			<div id="gantt_here" style='width:100%; height:100%;'></div>
+
 			<script type="text/javascript">
+			$body = $("body");
+			$body.addClass("loading");
+/*
+			$(document).on({
+			     ajaxStart: function() { $body.addClass("loading");    },
+			     ajaxStop: function() { $body.removeClass("loading"); }
+			});
+*/
 			<?php
-				if(empty($workstationList)){ _get_workstation(); }
 
 				echo 'var workstations = '.json_encode($workstationList).';';
 			?>
@@ -296,15 +364,6 @@ $TElement = _get_task_for_of($fk_project);
 			<?php
 
 			echo implode(",\n",$TData);
-
-			// prevent unix timestamp start date
-			if($t_start == 0)
-			{
-			    $t_start = time() -864000;
-			    $t_end =time();
-			}
-
-			$t_end = $t_end+864000; // on ajoute 10jours de rab
 
 			?>
 
@@ -345,6 +404,9 @@ $TElement = _get_task_for_of($fk_project);
 	gantt.templates.task_cell_class = function(item,date){
 	    if(date.getDay()==0||date.getDay()==6){
 	        return "weekend" ;
+	    }
+	    else if(date.getTime() < <?php echo strtotime('-1day')*1000; ?>) {
+	    	return "lateDay" ;
 	    }
 	};
 
@@ -605,7 +667,7 @@ $TElement = _get_task_for_of($fk_project);
 	            if(mode == modes.move) {
 	                task.end_date = new Date(+task.start_date + diff);
 	                if(alertLimit) {
-	                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+d.toLocaleString());
+	                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+d.toLocaleDateString());
 	                	alertLimit = false;
 	                }
 	            }
@@ -616,7 +678,7 @@ $TElement = _get_task_for_of($fk_project);
 	            if(mode == modes.move) {
 	            	task.start_date = new Date(task.end_date - diff);
 	                if(alertLimit) {
-	                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+d.toLocaleString());
+	                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+d.toLocaleDateString());
 	                	alertLimit = false;
 	                }
 	            }
@@ -665,7 +727,7 @@ $TElement = _get_task_for_of($fk_project);
 	gantt.config.autoscroll = false;
 	//gantt.config.autosize = "x";
 
-	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $t_start) ?>"), new Date("<?php echo date('Y-m-d', $t_end) ?>"));
+	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $range->date_start) ?>"), new Date("<?php echo date('Y-m-d', $range->date_end) ?>"));
 	modSampleHeight();
 	gantt.parse(tasks);
 
@@ -915,8 +977,8 @@ $TElement = _get_task_for_of($fk_project);
 		<?php
 
 		$cells = '';
-		$t_cur = $t_start;
-		while($t_cur<=$t_end) {
+		$t_cur = $range->date_start;
+		while($t_cur<=$range->date_end) {
 			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">N/A</div>';
 			$t_cur = strtotime('+1day',$t_cur);
 		}
@@ -945,7 +1007,7 @@ $TElement = _get_task_for_of($fk_project);
 
 			}
 
-			updateWSCapacity(<?php echo $ws->id ?>, <?php echo (int)$t_start ?>, <?php echo (int)$t_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>);
+			updateWSCapacity(<?php echo $ws->id ?>, <?php echo (int)$range->date_start?>, <?php echo (int)$range->date_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>);
 			<?php
 
 		}
@@ -980,6 +1042,7 @@ $TElement = _get_task_for_of($fk_project);
 	*	Recalcul la taille des colonnes du workflow
 	*/
 	$( document ).ready(function(){
+		$body.removeClass("loading");
 		var colWidth = $( ".gantt_task_row .gantt_task_cell" ).first().width();
 		/*window.alert(colWidth);*/
 		$( ".ws_container .gantt_task_cell" ).width(colWidth);
@@ -1024,13 +1087,12 @@ $TElement = _get_task_for_of($fk_project);
 	<?php
 
 	dol_fiche_end();
+	echo '<div class="modalwaiter"></div>';
 	llxFooter();
 
 	function _get_task_for_of($fk_project = 0) {
 
-		global $db,$langs;
-
-		$day_range = empty($conf->global->GANTT_DAY_RANGE_FROM_NOW) ? 90 : $conf->global->GANTT_DAY_RANGE_FROM_NOW;
+		global $db,$langs,$range;
 
 		$TCacheProject = $TCacheOrder  = $TCacheWS = array();
 
@@ -1048,7 +1110,7 @@ $TElement = _get_task_for_of($fk_project);
 			AND p.fk_statut = 1
 		";
 
-		$sql.=" AND t.dateo BETWEEN NOW() - INTERVAL ".$day_range." DAY AND NOW() + INTERVAL ".$day_range." DAY ";
+		$sql.=" AND t.dateo BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."'";
 
 		$res = $db->query($sql);
 		if($res===false) {
@@ -1283,7 +1345,7 @@ $TElement = _get_task_for_of($fk_project);
 	 *
 	 */
 	function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $maxDeep = 3) {
-		global $db;
+		global $db,$range;
 
 		if($level>$maxDeep) return;
 
@@ -1298,21 +1360,24 @@ $TElement = _get_task_for_of($fk_project);
 
 		if($level > 0)
 		{
-			$sqlWhere = " t.fk_task_parent = ".(int)$gantt_parent_objet->id;
+			$sql.= " t.fk_task_parent = ".(int)$gantt_parent_objet->id;
 		}
 		elseif(empty($gantt_parent_objet)) {
-			$sqlWhere = " (tex.fk_gantt_parent_task IS NULL OR tex.fk_gantt_parent_task='0')";
+			$sql.= " (tex.fk_gantt_parent_task IS NULL OR tex.fk_gantt_parent_task='0')";
 		}
 		else {
-			$sqlWhere = " tex.fk_gantt_parent_task = '".$gantt_parent_objet->ganttid."'";
+			$sql.= " tex.fk_gantt_parent_task = '".$gantt_parent_objet->ganttid."'";
 		}
 
+		$sql.=" AND t.dateo BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."'";
+
 		//echo $sql.$sqlWhere;
-		$res = $db->query($sql.$sqlWhere);
+		$res = $db->query($sql);
 		if($res===false) {
 			var_dump($db);exit;
 		}
 
+		$hasChild = false;
 		while($obj = $db->fetch_object($res)) {
 			$task = new Task($db);
 			$task->fetch($obj->rowid);
@@ -1323,8 +1388,19 @@ $TElement = _get_task_for_of($fk_project);
 
 			$TData['PREVI'.$task->id]['object'] = $task;
 
-			_load_child_tasks( $TData['PREVI'.$task->id]['childs'] ,$task,($level+1) , $maxDeep) ;
+			$hasChild = true;
+
+			if(_load_child_tasks( $TData['PREVI'.$task->id]['childs'] ,$task,($level+1) , $maxDeep)) {
+
+				$TData['PREVI'.$task->id]['object']->element = ( $level==0 ? 'project' : 'commande');
+
+			}
+
+
 		}
+
+		return $hasChild;
+
 	}
 
 	function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $time_task_limit_no_before=0,$time_task_limit_no_after=0) {
@@ -1353,20 +1429,29 @@ $TElement = _get_task_for_of($fk_project);
 			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.of'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
 		}
 		elseif($object->element == 'project_task') {
-			global $t_start, $t_end;
-			if(empty($t_start) || $object->date_start<$t_start)$t_start=$object->date_start;
-			if(empty($t_end) || $t_end<$object->date_end)$t_end=$object->date_end;
+			global $range,$TWS,$workstationList;
 
+			if($range->autotime) {
+				if(empty($range->date_start) || $object->date_start<$range->date_start)$range->date_start=$object->date_start;
+				if(empty($range->date_end) || $range->date_end<$object->date_end)$range->date_end=$object->date_end;
+			}
 
 			$duration = $object->date_end>0 ? ceil( ($object->date_end - $object->date_start) / 86400 ) : ceil($object->planned_workload / (3600 * 7));
 			if($duration<1)$duration = 1;
 
 			$fk_workstation = (int) $object->array_options['options_fk_workstation'];
-
+			if($fk_workstation>0) $TWS[$fk_workstation] = $workstationList[$fk_workstation]; //TODO ouh que c'est moche !
+		//	var_dump($workstationList,$fk_workstation,$TWS);exit;
 			return ' {"id":"'.$object->ganttid.'",time_task_limit_no_before:'.(int)$time_task_limit_no_before.',time_task_limit_no_after:'.(int)$time_task_limit_no_after.',planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task , open: '.$close_init_status.'}';
 
 		}
 		else if($object->element== 'milestone' || $object->element == 'release') {
+			global $range;
+
+			if($range->autotime) {
+				if(empty($range->date_start) || $object->date<$range->date_start)$range->date_start=$object->date;
+				if(empty($range->date_end) || $range->date_end<$object->date)$range->date_end=$object->date;
+			}
 
 			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.date('d-m-Y',$object->date).'", "duration":1 '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.release}';
 
@@ -1442,7 +1527,7 @@ $TElement = _get_task_for_of($fk_project);
 	function _get_workstation()
 	{
 		global $db,$langs, $workstationList;
-		$sql = "SELECT w.rowid, w.name, w.nb_hour_capacity FROM ".MAIN_DB_PREFIX."workstation w  ";
+		$sql = "SELECT w.rowid as id , w.name, w.nb_hour_capacity FROM ".MAIN_DB_PREFIX."workstation w  ";
 
 		//echo $sql.$sqlWhere;
 		$res = $db->query($sql);
@@ -1453,11 +1538,7 @@ $TElement = _get_task_for_of($fk_project);
 		$workstationList = array();
 
 		while($obj = $db->fetch_object($res)) {
-			$workstationList[$obj->rowid] = array(
-					'name' => $obj->name,
-					'id' => $obj->rowid,
-					'nb_hour_capacity' => $obj->nb_hour_capacity,
-			);
+			$workstationList[$obj->id] = $obj;
 		}
 		return count($workstationList);
 	}
@@ -1472,9 +1553,9 @@ $TElement = _get_task_for_of($fk_project);
 		if(empty($workstationList)){ _get_workstation(); }
 
 		$TData[] = '{key:"0", label: " "}';
-		foreach($workstationList as $wordstation) {
+		foreach($workstationList as $ws) {
 
-			$TData[] = '{key:"'.$wordstation['id'].'", label: "'.$wordstation['name'].'"}';
+			$TData[] = '{key:"'.$ws->id.'", label: "'.$ws->name.'"}';
 
 		}
 		return implode(',',$TData);
@@ -1484,18 +1565,17 @@ $TElement = _get_task_for_of($fk_project);
 	 */
 	function _get_events( &$TData,&$TLink,$fk_project=0,$owner=0,$taskColor= '#f7d600')
 	{
-		global $db;
+		global $db,$range;
+
 		$day_range = empty($conf->global->GANTT_DAY_RANGE_FROM_NOW) ? 90 : $conf->global->GANTT_DAY_RANGE_FROM_NOW;
-
-
-
 
 		$sql = "SELECT a.id
 		FROM ".MAIN_DB_PREFIX."actioncomm a
 			LEFT JOIN ".MAIN_DB_PREFIX."actioncomm_extrafields aex ON (aex.fk_object=a.id)
 		WHERE ";
-		$sql.=" ( a.datep BETWEEN NOW() - INTERVAL ".$day_range." DAY AND NOW() + INTERVAL ".$day_range." DAY ";
-		$sql.=" OR a.datep2 BETWEEN NOW() - INTERVAL ".$day_range." DAY AND NOW() + INTERVAL ".$day_range." DAY )";
+
+		$sql.=" ( a.datep BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."' ";
+		$sql.=" OR a.datep2 BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."' )";
 		$sql.=" AND aex.fk_workstation > 0 ";
 
 		if($fk_project > 0)
@@ -1526,8 +1606,10 @@ $TElement = _get_task_for_of($fk_project);
 			$event->ganttid = 'A'.$event->id;
 			$event->title = 'AGENDA'.' '. $event->label;
 
-			if(empty($t_start) || $event->datep<$t_start) $t_start=$event->datep;
-			if(empty($t_end) || $t_end<$event->datef ) $t_end=$event->datef;
+			if($range->autotime) {
+				if(empty($range->date_start) || $event->datep<$range->date_start) $range->date_start=$event->datep;
+				if(empty($range->date_end) || $range->date_end<$event->datef ) $range->date_end=$event->datef;
+			}
 
 			$duration = $event->datef>0 ? ceil( ($event->datef- $event->datep) / 86400 ) : ceil($event->planned_workload / (3600 * 7));
 
