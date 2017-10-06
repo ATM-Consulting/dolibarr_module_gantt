@@ -192,7 +192,7 @@ else {
 
 			$TData=array(); $TWS=array(); $TLink=array();
 
-			$close_init_status = empty($fk_project) && GETPOST('open')!='all' ? 'false': 'true';
+			$close_init_status = !empty($fk_project) || GETPOST('open') ? 'true': 'false';
 
 			$t_start  = $t_end = 0;
 			foreach($TElement as &$projectData ) {
@@ -304,9 +304,6 @@ else {
 			_get_events($TData,$TLink);
 		//	var_dump(dol_print_date($t_start),dol_print_date($t_end));exit;
 
-			if(GETPOST('open')!='all') echo ' <a href="?open=all">'.$langs->trans('OpenAllTask').'</a>';
-			else echo '<a href="?open=no">'.$langs->trans('ClosedTask').'</a> ';
-
 			if($range->autotime){
 				if(empty($range->date_start)) {
 					$range->date_start = $range->date_end = time()-86400;
@@ -314,8 +311,21 @@ else {
 				$range->date_end+=864000;
 			}
 
+			$formCore=new TFormCore('auto','formDate');
+
+			$open = GETPOST('open') ? 1 : 0;
+
+			if(!$open) echo $formCore->btsubmit($langs->trans('OpenAllTask'), 'open');
+			else  echo $formCore->btsubmit($langs->trans('ClosedTask'), 'close');
+
+			echo $formCore->hidden('open',$open);
+
 			echo $form->select_date($range->date_start, 'range_start');
 			echo $form->select_date($range->date_end,'range_end');
+
+			echo $formCore->btsubmit($langs->trans('ok'), 'bt_select_date');
+
+			$formCore->end();
 
 			?>
 			<div id="gantt_here" style='width:100%; height:100%;'></div>
