@@ -1135,6 +1135,8 @@ else {
 
 		$sql.=" AND t.dateo BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."'";
 
+		$sql.=" AND p.entity IN (".getEntity('project',1).")";
+		
 		$res = $db->query($sql);
 		if($res===false) {
 			var_dump($db);exit;
@@ -1378,6 +1380,7 @@ else {
 
 		$sql = "SELECT t.rowid
 				FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
+						LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
 				WHERE t.fk_projet=$fk_projet_previ AND ";
 
 
@@ -1393,7 +1396,9 @@ else {
 		}
 
 		$sql.=" AND t.dateo BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."'";
-
+		
+		$sql.=" AND p.entity IN (".getEntity('project',1).")";
+		
 		//echo $sql.$sqlWhere;
 		$res = $db->query($sql);
 		if($res===false) {
@@ -1609,6 +1614,9 @@ else {
 		{
 			$sql.= " AND ( a.fk_project=0 OR ISNULL(a.fk_project) )";
 		}
+		
+		$sql.=" AND a.entity IN (".getEntity('actioncomm',1).")";
+		
 		//echo $sql;
 		//exit();
 		$res = $db->query($sql);
