@@ -83,11 +83,13 @@ else {
 
 	if(GETPOST('range_start')!='') {
 		$range->date_start = dol_mktime(0, 0, 0, GETPOST('range_startmonth'), GETPOST('range_startday'), GETPOST('range_startyear'));
+		$range->sql_date_start = date('Y-m-d',$range->date_start);
 		$range->autotime = false;
 	}
 
 	if(GETPOST('range_end')!='') {
 		$range->date_end= dol_mktime(0, 0, 0, GETPOST('range_endmonth'), GETPOST('range_endday'), GETPOST('range_endyear'));
+		$range->sql_date_end = date('Y-m-d',$range->date_end);
 		$range->autotime = false;
 	}
 
@@ -1025,7 +1027,7 @@ else {
 			?>
 			if($("div#workstations_<?php echo $ws->id; ?>.gantt_row").length == 0 ) {
 
-				$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:20px;padding-right:5px;"><?php echo $ws->name . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
+				$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:20px;padding-right:5px;"><?php echo addslashes($ws->name) . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
 				$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
 
 			}
@@ -1484,7 +1486,6 @@ else {
 			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.date('d-m-Y',$object->date).'", "duration":1 '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.release}';
 
 		}
-
 
 		return '{ nonObjectManaged:"'.$object->element.'" }';
 	}
