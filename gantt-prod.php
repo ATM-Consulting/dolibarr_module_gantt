@@ -192,7 +192,12 @@ else {
 
 			$TData=array(); $TWS=array(); $TLink=array();
 
-			$close_init_status = !empty($fk_project) || GETPOST('open') ? 'true': 'false';
+			$open = false;
+			if(GETPOST('open')) $open = true;
+			else if(GETPOST('close')) $open = false;
+			else if(GETPOST('open_status')) $open = true;
+			
+			$close_init_status = !empty($fk_project) || $open ? 'true': 'false';
 
 			$t_start  = $t_end = 0;
 			foreach($TElement as &$projectData ) {
@@ -313,13 +318,13 @@ else {
 
 			$formCore=new TFormCore('auto','formDate');
 
-			$open = GETPOST('open') ? 1 : 0;
-
 			if(!$open) echo $formCore->btsubmit($langs->trans('OpenAllTask'), 'open');
 			else  echo $formCore->btsubmit($langs->trans('ClosedTask'), 'close');
 
-			echo $formCore->hidden('open',$open);
-
+			echo $formCore->hidden('open_status',(int)$open);
+			echo $formCore->hidden('fk_project',$fk_project);
+			
+			$form = new Form($db);
 			echo $form->select_date($range->date_start, 'range_start');
 			echo $form->select_date($range->date_end,'range_end');
 
@@ -677,7 +682,7 @@ else {
 	            if(mode == modes.move) {
 	                task.end_date = new Date(+task.start_date + diff);
 	                if(alertLimit) {
-	                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+d.toLocaleDateString());
+	                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+task.end_date.toLocaleDateString());
 	                	alertLimit = false;
 	                }
 	            }
@@ -688,7 +693,7 @@ else {
 	            if(mode == modes.move) {
 	            	task.start_date = new Date(task.end_date - diff);
 	                if(alertLimit) {
-	                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+d.toLocaleDateString());
+	                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+task.start_date.toLocaleDateString());
 	                	alertLimit = false;
 	                }
 	            }
@@ -779,6 +784,7 @@ else {
 			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1); ?>"
 			,data:{
 				ganttid:task.id
+				,id:task.objId
 				,start:start
 				,end:end
 				,progress:progress
@@ -921,13 +927,15 @@ else {
 	function updateWSCapacity(wsid, t_start, t_end) { //, nb_hour_capacity = 0
 
 		var nb_hour_capacity = 0;
+		var nb_ressource = 0;
 		if(workstations[wsid])
 		{
 			nb_hour_capacity = parseFloat(workstations[wsid].nb_hour_capacity);
+			nb_ressource = parseFloat(workstations[wsid].nb_ressource);
 		}
 
-
-
+		var total_hour_capacity = nb_hour_capacity * nb_ressource;
+		
 //console.log('updateWSCapacity', wsid, t_start, t_end, nb_hour_capacity);
 		$.ajax({
 			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>"
@@ -954,12 +962,17 @@ else {
 					p = Math.round(c * 100) / 100;
 
 					if(p<0) bg='#ff0000';
-					else if(p<=nb_hour_capacity/10) bg='#ffa500';
-					else if(p>nb_hour_capacity/2) bg='#7cec43';
+					else if(p<=total_hour_capacity/10) bg='#ffa500';
+					else if(p>total_hour_capacity/2) bg='#7cec43';
 
 					//p+='%';
 				}
 
+				if(p<0) {
+					var nb_people = Math.round(-p * 10 / nb_hour_capacity) / 10;
+					p = p + ' ['+nb_people+']';
+				}
+				
 				$('div#workstations_'+wsid+' div[date='+d+']').html(p).css({'background-color':bg});
 
 			}
@@ -1361,7 +1374,7 @@ else {
 
 		$projet_previ=new Project($db);
 		$projet_previ->fetch(0,'PREVI');
-		$fk_projet_previ = $projet_previ->id;
+		$fk_projet_previ = (int)$projet_previ->id;
 
 		$sql = "SELECT t.rowid
 				FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
@@ -1537,7 +1550,7 @@ else {
 	function _get_workstation()
 	{
 		global $db,$langs, $workstationList;
-		$sql = "SELECT w.rowid as id , w.name, w.nb_hour_capacity FROM ".MAIN_DB_PREFIX."workstation w  ";
+		$sql = "SELECT w.rowid as id , w.name, w.nb_hour_capacity, w.nb_hour_capacity, w.nb_ressource FROM ".MAIN_DB_PREFIX."workstation w  ";
 
 		//echo $sql.$sqlWhere;
 		$res = $db->query($sql);

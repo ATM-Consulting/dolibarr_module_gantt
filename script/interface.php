@@ -13,7 +13,7 @@
 
 		case 'gantt':
 
-			echo _put_gantt($_POST);
+			echo _put_gantt($_REQUEST);
 
 			break;
 
@@ -25,7 +25,7 @@
 
 		case 'projects':
 
-			_put_projects($_POST['TProject']);
+			_put_projects($_REQUEST['TProject']);
 
 			echo 1;
 
@@ -118,12 +118,13 @@
 	function _put_gantt($data) {
 		global $db, $user;
 
-
 		switch($data['ganttid'][0]) {
 			case 'T':
 				$description = preg_replace("/^(PREVI )/","",$data['description']);
 				$o=new Task($db);
-				$o->fetch(substr($data['ganttid'],1));
+				$o->fetch((int)$data['id']);
+				if(empty($o->array_options))$o->fetch_optionals($o->id);
+				
 				$o->label = $description;
 				$o->date_start = $data['start'] / 1000;
 				$o->date_end = ($data['end'] / 1000) - 1; //Pour que cela soit à 23:59:59 de la vieille
@@ -131,15 +132,19 @@
 				$o->progress = $data['progress'] * 100;
 				$o->array_options['options_fk_workstation'] = (int)$data['workstation'];
 				$o->array_options['options_needed_ressource'] = (int)$data['needed_ressource'];
-				return $o->update($user);
+				$res = $o->update($user);
 
+			if($res<0 ) {
+				var_dump($res);
+			}
+				return $res;
 				break;
 
 			case 'A':
 				$description = preg_replace("/^(AGENDA )/","",$data['description']);
 				$o=new ActionComm($db);
-				$o->fetch(substr($data['ganttid'],1));
-				$o->fetch_optionals();
+				$o->fetch((int)$data['id']);
+				$o->fetch_optionals($o->id);
 				$o->label = $description;
 				$o->datep = $data['start'] / 1000;
 				$o->datef = ($data['end'] / 1000) - 1; //Pour que cela soit à 23:59:59 de la vieille
