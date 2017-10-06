@@ -27,3 +27,5 @@ GANTT_HIDE_INEXISTANT_PARENT=Cacher les parents inexistants
 GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE=Désactiver les jalons de commandes fournisseurs
 GANTT_DISABLE_PROJECT_MILESTONE=Désactiver la limite de fin de projet
 EndOfProject=Fin du projet %s le %s
+ToDate=au
+FromDate=Du

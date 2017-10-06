@@ -179,7 +179,7 @@ $TElement = _get_task_for_of($fk_project);
         					}
 
         					if(empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $order->id>0 || $order->element!='commande') {
-        						$TData[] = _get_json_data($order, $close_init_status, $fk_parent_project);
+        						$TData[] = _get_json_data($order, $close_init_status, $fk_parent_project, $time_task_limit_no_before,$time_task_limit_no_after);
         						$fk_parent_order = $order->ganttid;
         					}
         					else {
@@ -197,7 +197,7 @@ $TElement = _get_task_for_of($fk_project);
             						$fk_parent_of = null;
 
             						if(!empty($conf->of->enabled) && (empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $of->id>0) ) {
-            							$TData[] = _get_json_data($of, $close_init_status, $fk_parent_order);
+            							$TData[] = _get_json_data($of, $close_init_status, $fk_parent_order, $time_task_limit_no_before,$time_task_limit_no_after);
             							$fk_parent_of= $of->ganttid;
             						}
             						else{
@@ -224,7 +224,7 @@ $TElement = _get_task_for_of($fk_project);
                 							}
 
                 							if((!empty($ws->id) && empty($conf->global->GANTT_HIDE_WORKSTATION)) || ($ws->element!='workstation')) {
-                								$TData[] = _get_json_data($ws, $close_init_status, $fk_parent_of);
+                								$TData[] = _get_json_data($ws, $close_init_status, $fk_parent_of, $time_task_limit_no_before,$time_task_limit_no_after);
                 								$fk_parent_ws = $ws->ganttid;
                 							}
 											else{
@@ -236,9 +236,6 @@ $TElement = _get_task_for_of($fk_project);
 
                 							if(!empty($wsData['childs'])) {
 	                							foreach($wsData['childs'] as &$task) {
-
-	                								if(empty($t_start) || $task->date_start<$t_start)$t_start=$task->date_start;
-	                								if(empty($t_end) || $t_end<$task->date_end)$t_end=$task->date_end;
 
 	                								$task->ws = &$ws;
 
@@ -260,7 +257,7 @@ $TElement = _get_task_for_of($fk_project);
 			}
 
 			_get_events($TData,$TLink);
-
+		//	var_dump(dol_print_date($t_start),dol_print_date($t_end));exit;
 			?>
 			<script type="text/javascript">
 			<?php
@@ -448,12 +445,14 @@ $TElement = _get_task_for_of($fk_project);
 
 	gantt.templates.tooltip_text = function(start,end,task){
 
+		var r ='';
 		if(task.text) {
-	    	return "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?>";
+	    	r = "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?>";
+			r+= "<br /><?php echo $langs->trans('FromDate') ?> "+task.start_date.toLocaleDateString()+" <?php echo $langs->trans('ToDate') ?> "+task.end_date.toLocaleDateString();
 		}
-		else{
-			return '';
-		}
+
+		return r;
+
 	};
 
 	gantt.attachEvent("onBeforeLinkAdd", function(id,link){
@@ -1354,6 +1353,10 @@ $TElement = _get_task_for_of($fk_project);
 			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.of'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
 		}
 		elseif($object->element == 'project_task') {
+			global $t_start, $t_end;
+			if(empty($t_start) || $object->date_start<$t_start)$t_start=$object->date_start;
+			if(empty($t_end) || $t_end<$object->date_end)$t_end=$object->date_end;
+
 
 			$duration = $object->date_end>0 ? ceil( ($object->date_end - $object->date_start) / 86400 ) : ceil($object->planned_workload / (3600 * 7));
 			if($duration<1)$duration = 1;
