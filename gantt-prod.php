@@ -355,10 +355,11 @@ else {
 			}
 if($fk_project == 0){
 			$formCore=new TFormCore('auto','formDate');
-
+			
 			if(!$open) echo $formCore->btsubmit($langs->trans('OpenAllTask'), 'open');
 			else  echo $formCore->btsubmit($langs->trans('ClosedTask'), 'close');
 
+			echo $formCore->hidden('restrictWS',0);
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
 			
@@ -1074,7 +1075,7 @@ if($fk_project == 0){
 			?>
 			if($("div#workstations_<?php echo $ws->id; ?>.gantt_row").length == 0 ) {
 
-				$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:13px;padding-right:5px;font-size:10px;"><?php echo addslashes($ws->name) . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
+				$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:13px;padding-right:5px;font-size:10px;"><a href="#" onclick="$(\'#formDate input[name=restrictWS]\').val(<?php echo $ws->id ?>);$(\'#formDate\').submit();"><?php echo addslashes($ws->name) . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></a></div>');
 				$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px; "><?php echo $cells; ?></div>');
 
 			}
@@ -1242,6 +1243,11 @@ if($fk_project == 0){
 
 			if(!empty($conf->global->GANTT_MANAGE_SHARED_PROJECT)) $sql.=" AND p.entity IN (".getEntity('project',1).")";
 			else $sql.=" AND p.entity=".$conf->entity;
+
+			if(GETPOST('restrictWS')>0) {
+				$sql.=" AND tex.fk_workstation=".(int)GETPOST('restrictWS');
+			}
+
 		}
 
 		$sql.=" ORDER BY t.rowid ";
@@ -1509,6 +1515,11 @@ if($fk_project == 0){
 		else {
 			$sql.= " tex.fk_gantt_parent_task = '".$gantt_parent_objet->ganttid."'";
 		}
+
+		if(GETPOST('restrictWS')>0) {
+                                $sql.=" AND tex.fk_workstation=".(int)GETPOST('restrictWS');
+                }
+
 
 		$sql.=" AND t.dateo BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."'";
 		
