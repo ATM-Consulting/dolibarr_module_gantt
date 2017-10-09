@@ -325,7 +325,7 @@ else {
 				}
 				$range->date_end+=864000;
 			}
-
+if($fk_project == 0){
 			$formCore=new TFormCore('auto','formDate');
 
 			if(!$open) echo $formCore->btsubmit($langs->trans('OpenAllTask'), 'open');
@@ -341,7 +341,7 @@ else {
 			echo $formCore->btsubmit($langs->trans('ok'), 'bt_select_date');
 
 			$formCore->end();
-
+}
 			?>
 			<div id="gantt_here" style='width:100%; height:100%;'></div>
 
@@ -534,8 +534,9 @@ else {
 
 		var r ='';
 		if(task.text) {
-	    	r = "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?>";
-			r+= "<br /><?php echo $langs->trans('FromDate') ?> "+task.start_date.toLocaleDateString()+" <?php echo $langs->trans('ToDate') ?> "+task.end_date.toLocaleDateString();
+		    	r = "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?>";
+			if(task.start_date) r+= "<br /><?php echo $langs->trans('FromDate') ?> "+task.start_date.toLocaleDateString()
+			if(task.end_date) r+= " <?php echo $langs->trans('ToDate') ?> "+task.end_date.toLocaleDateString();
 		}
 
 		return r;
@@ -1139,14 +1140,16 @@ else {
 		WHERE ";
 
 		if($fk_project>0) $sql.= " fk_projet=".$fk_project;
-		else $sql.= "tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
+		else {
+			$sql.= "tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
 			AND p.fk_statut = 1
-		";
+			";
 
-		$sql.=" AND t.dateo BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."'";
+			$sql.=" AND t.dateo BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."'";
 
-		$sql.=" AND p.entity IN (".getEntity('project',1).")";
-		
+			$sql.=" AND p.entity IN (".getEntity('project',1).")";
+		}
+
 		$res = $db->query($sql);
 		if($res===false) {
 			var_dump($db);exit;
@@ -1252,7 +1255,7 @@ else {
 				$project->ganttid = 'PNA'.$idNoAffectation; $idNoAffectation++;
 			}
 
-
+			if(!empty($conf->workstation->enabled)) {
 			if(!empty($TCacheWS[$task->array_options['options_fk_workstation']])) {
 
 				$ws=$TCacheWS[$task->array_options['options_fk_workstation']];
@@ -1264,6 +1267,12 @@ else {
 				$ws->text = $ws->title = $ws->name;
 				$TCacheWS[$ws->id] = $ws;
 
+			}
+			}
+			else{
+				$ws=new StdClass;
+				$ws->element = 'workstation';
+				$ws->id = 0;
 			}
 
 			if($ws->id>0) {
@@ -1346,7 +1355,7 @@ else {
 	function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
 		global $db, $langs, $conf;
 
-		if(!empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE)) {
+		if(!empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE) || $assetOf->id<=0) {
 			return false;
 		}
 
