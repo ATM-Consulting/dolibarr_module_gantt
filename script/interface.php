@@ -162,6 +162,9 @@
 	}
 
 	function _get_ws_capactiy($wsid, $t_start, $t_end) {
+		global $conf;
+
+		if(empty($conf->workstation->enabled)) return array();
 
 		dol_include_once('/workstation/class/workstation.class.php');
 

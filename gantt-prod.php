@@ -1137,11 +1137,11 @@ if($fk_project == 0){
 		$sql = "SELECT t.rowid
 		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
 			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
-		WHERE ";
+		WHERE t.dateo IS NOT NULL ";
 
-		if($fk_project>0) $sql.= " fk_projet=".$fk_project;
+		if($fk_project>0) $sql.= " AND fk_projet=".$fk_project;
 		else {
-			$sql.= "tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
+			$sql.= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
 			AND p.fk_statut = 1
 			";
 
