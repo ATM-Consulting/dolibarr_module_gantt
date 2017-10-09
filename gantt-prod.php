@@ -218,13 +218,13 @@ else {
 
     				$fk_parent_project = null;
 
-    				if(empty($fk_project)) {
+//    				if(empty($fk_project)) {
 
     					$TData[] = _get_json_data($project, $close_init_status);
     					$fk_parent_project= $project->ganttid;
 
     					_get_events( $TData,$TLink,$project->id);
-    				}
+  //  				}
 
     				$time_task_limit_no_after = 0;
 
@@ -1572,7 +1572,13 @@ if($fk_project == 0){
 	 */
 	function _get_workstation()
 	{
-		global $db,$langs, $workstationList;
+		global $db,$langs, $workstationList,$conf;
+
+		if(empty($conf->workstation->enabled)) {
+			$workstationList=array();
+			return 0;
+		}
+
 		$sql = "SELECT w.rowid as id , w.name, w.nb_hour_capacity, w.nb_hour_capacity, w.nb_ressource FROM ".MAIN_DB_PREFIX."workstation w  ";
 
 		//echo $sql.$sqlWhere;
