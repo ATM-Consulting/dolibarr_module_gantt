@@ -79,6 +79,14 @@ else {
 	$range->date_end= 0;
 	$range->sql_date_start = date('Y-m-d',strtotime('-'.$day_range.' days'));
 	$range->sql_date_end = date('Y-m-d',strtotime('+'.$day_range.' days'));
+
+	if($fk_project>0) {
+		$range->date_start = $project->date_start;
+	        $range->date_end= $project->date_end;
+        	$range->sql_date_start = date('Y-m-d',$project->date_start);
+	        $range->sql_date_end = date('Y-m-d',$project->date_end);
+	}
+
 	$range->autotime = true;
 
 	if(GETPOST('range_start')!='') {
