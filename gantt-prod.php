@@ -1031,7 +1031,7 @@ if($fk_project == 0){
 
         var html_style = '<style rel="drawLine" type="text/css">'
                            +' div.gantt_bars_area div.workstation div.gantt_task_cell { width:'+w_cell+'px; text-align:center; } '
-                           +' div.gantt_bars_area div.workstation { height:20px; font-size:10px; } '
+                           +' div.gantt_bars_area div.workstation { height:12px; font-size:10px; } '
                          +'</style>';
 
         $(html_style).appendTo("head");
@@ -1045,6 +1045,14 @@ if($fk_project == 0){
 			$t_cur = strtotime('+1day',$t_cur);
 		}
 
+		echo 'function replicateDates() {
+				$(\'div.ws_container_label div.dates, div.ws_container>div div.dates\').remove();
+				$(\'div.ws_container_label\').append(\'<div class="gantt_row dates" style="height:12px;">&nbsp;</div>\');
+				$(\'div.ws_container>div\').append($(\'#gantt_here div.gantt_container div.gantt_task div.gantt_task_scale div.gantt_scale_line:eq(1)\').clone().addClass(\'dates\'));
+				
+
+		}';
+
 		echo 'function updateAllCapacity() {
 
 		if($("div.ws_container_label").length == 0) {
@@ -1054,8 +1062,10 @@ if($fk_project == 0){
 			$("div.ws_container").scroll(function(e) {
 /*console.log($(this).scrollLeft(),e);*/
 				gantt.scrollTo($(this).scrollLeft(),null);
+				replicateDates();
 			});
 		}
+
 
 		';
 
@@ -1064,8 +1074,8 @@ if($fk_project == 0){
 			?>
 			if($("div#workstations_<?php echo $ws->id; ?>.gantt_row").length == 0 ) {
 
-				$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:20px;padding-right:5px;"><?php echo addslashes($ws->name) . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
-				$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px;"><?php echo $cells; ?></div>');
+				$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:13px;padding-right:5px;font-size:10px;"><?php echo addslashes($ws->name) . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></div>');
+				$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px; "><?php echo $cells; ?></div>');
 
 			}
 
@@ -1073,7 +1083,9 @@ if($fk_project == 0){
 			<?php
 
 		}
+
 		echo '
+		replicateDates();
 		$("div.ws_container").css({
 			width : $("#gantt_here div.gantt_task").width()
 			, left:$("#gantt_here div.gantt_task").offset().left
@@ -1129,6 +1141,38 @@ if($fk_project == 0){
 		var colWidth = $( ".gantt_task_row .gantt_task_cell" ).first().width();
 		/*window.alert(colWidth);*/
 		$( ".ws_container .gantt_task_cell" ).width(colWidth);
+
+/*
+  function fixHeader() {
+    var $cache = $('#gantt_here div.gantt_container div.gantt_grid_scale,#gantt_here div.gantt_container div.gantt_task_scale');
+    if($('.clonedHTML').length == 0) {
+	$cache.each(function(i,item) {
+	     var $item = $(item);
+	     var $parent = $item.parent();
+	     $item.clone()
+		.appendTo('body')
+		.css({left:-$parent.scrollLeft()})
+		.wrap(function() {
+		
+			$div = $('<div class="clonedHTML" style="width:'+$parent.width()+'px; top:0; position:fixed;overflow:hidden;"></div>');
+//			$div.css({'left' : -$parent.scrollLeft()});
+			return $div;
+		});
+		
+	});
+    }
+    if ($(window).scrollTop() < fixedTopHeader) {
+		$('.clonedHTML').remove();
+    }
+
+
+  }
+
+	  var fixedTopHeader = $('#gantt_here div.gantt_container div.gantt_grid_scale').offset().top;
+
+	  $(window).scroll(fixHeader);
+	  fixHeader();
+*/
 	});
 
 	</script>
