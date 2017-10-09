@@ -963,7 +963,7 @@ if($fk_project == 0){
 				c = data[d];
 
 				var p;
-				var bg = '#fff';
+				var bg = '#7caa43';
 
 				if(c == 'NA') {
 					p='N/A'; bg='#ccc';
@@ -1126,7 +1126,7 @@ if($fk_project == 0){
 
 	function _get_task_for_of($fk_project = 0) {
 
-		global $db,$langs,$range;
+		global $db,$langs,$range,$conf;
 
 		$TCacheProject = $TCacheOrder  = $TCacheWS = array();
 
@@ -1147,8 +1147,11 @@ if($fk_project == 0){
 
 			$sql.=" AND t.dateo BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."'";
 
-			$sql.=" AND p.entity IN (".getEntity('project',1).")";
+			if(!empty($conf->global->GANTT_MANAGE_SHARED_PROJECT)) $sql.=" AND p.entity IN (".getEntity('project',1).")";
+			else $sql.=" AND p.entity=".$conf->entity;
 		}
+
+		$sql.=" ORDER BY t.rowid ";
 
 		$res = $db->query($sql);
 		if($res===false) {
