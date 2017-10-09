@@ -147,7 +147,8 @@ else {
 		background-color:#fff;
 	}
 	div.ws_container {
-		overflow: scroll;
+		overflow-y:hidden;
+		overflow-x: scroll;
 	}
 	div.ws_container div.gantt_task_cell {
 		width:70px;
@@ -1068,6 +1069,27 @@ if($fk_project == 0){
 		updateAllCapacity(); ';
 
 
+	}
+	else {
+		
+		?>$( document ).ready(function(){
+		if($("div.ws_container_label").length == 0) {
+                        $("body").append('<div class="ws_container"><div>&nbsp;</div></div>');
+
+                        $("div.ws_container").scroll(function(e) {
+                                gantt.scrollTo($(this).scrollLeft(),null);
+                        });
+                }
+
+                $("div.ws_container").css({
+                        width : $("#gantt_here div.gantt_task").width()
+                        , left:$("#gantt_here div.gantt_task").offset().left
+                });
+		$("div.ws_container>div").css({
+			 width : $("#gantt_here div.gantt_task div.gantt_data_area").width()
+		});
+		});
+		<?
 	}
 
 	?>
