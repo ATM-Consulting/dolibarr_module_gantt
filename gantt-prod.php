@@ -154,6 +154,33 @@ else {
 		width:70px;
 		text-align:center;
 	}
+	div.ws_container div.gantt_task_cell,div.ws_container_label div.div.gantt_row,div.ws_container div.gantt_row {
+		line-height:12px;
+		overflow:visible;
+	}
+        div.ws_container div.gantt_task_cell.normal {
+		background-color:#7caa43;
+	}
+        div.ws_container div.gantt_task_cell.pasassez {
+                background-color:rgb(255, 10, 10);
+        }
+       div.ws_container div.gantt_row:nth-child(odd) div.gantt_task_cell.pasassez {
+                background-color:rgb(255, 100, 100);
+        }
+
+        div.ws_container div.gantt_task_cell.justeassez {
+                background-color:rgb(255, 165, 0);
+        }
+        div.ws_container div.gantt_task_cell.onestlarge {
+                background-color:rgb(124, 236, 67);
+        }
+	 div.ws_container div.gantt_row:nth-child(odd) div.gantt_task_cell.onestlarge {
+                background-color:rgb(110, 222, 53);
+        }
+	div.ws_container div.gantt_task_cell.closed {
+                background-color:#ccc;
+        }
+
 
     .gantt_task_progress{
     	text-align:left;
@@ -964,18 +991,18 @@ if($fk_project == 0){
 				c = data[d];
 
 				var p;
-				var bg = '#7caa43';
+				var bg = 'normal';
 
 				if(c == 'NA') {
-					p='N/A'; bg='#ccc';
+					p='N/A'; bg='closed';
 				}
 				else {
 					//p = Math.round(((nb_hour_capacity - c) / nb_hour_capacity)*100);
 					p = Math.round(c * 100) / 100;
 
-					if(p<0) bg='#ff0000';
-					else if(p<=total_hour_capacity/10) bg='#ffa500';
-					else if(p>total_hour_capacity/2) bg='#7cec43';
+					if(p<0) bg='pasassez';
+					else if(p<=total_hour_capacity/10) bg='justeassez';
+					else if(p>total_hour_capacity/2) bg='onestlarge';
 
 					//p+='%';
 				}
@@ -985,7 +1012,7 @@ if($fk_project == 0){
 					p = p + ' ['+nb_people+']';
 				}
 				
-				$('div#workstations_'+wsid+' div[date='+d+']').html(p).css({'background-color':bg});
+				$('div#workstations_'+wsid+' div[date='+d+']').html(p).removeClass('pasassez,justeassez,onestlarge,closed,normal').addClass(bg);
 
 			}
 
