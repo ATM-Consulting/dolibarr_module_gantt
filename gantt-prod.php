@@ -359,7 +359,12 @@ if($fk_project == 0){
 			if(!$open) echo $formCore->btsubmit($langs->trans('OpenAllTask'), 'open');
 			else  echo $formCore->btsubmit($langs->trans('ClosedTask'), 'close');
 
-			echo $formCore->hidden('restrictWS',0);
+			if(!empty($conf->workstation->enabled)) {
+			   $PDOdb=new TPDOdb;
+                           echo $formCore->combo('', 'restrictWS',TWorkstation::getWorstations($PDOdb, false, true), GETPOST('restrictWS'));
+
+			}
+
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
 			
@@ -787,7 +792,6 @@ if($fk_project == 0){
 	gantt.parse(tasks);
 
 
-
 	function modHeight(){
         var headHeight = 35;
         var sch = document.getElementById("gantt_here");
@@ -1075,7 +1079,7 @@ if($fk_project == 0){
 			?>
 			if($("div#workstations_<?php echo $ws->id; ?>.gantt_row").length == 0 ) {
 
-				$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:13px;padding-right:5px;font-size:10px;"><a href="#" onclick="$(\'#formDate input[name=restrictWS]\').val(<?php echo $ws->id ?>);$(\'#formDate\').submit();"><?php echo addslashes($ws->name) . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></a></div>');
+				$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:13px;padding-right:5px;font-size:10px;"><a href="#" onclick="$(\'#formDate select[name=restrictWS]\').val(<?php echo $ws->id ?>);$(\'#formDate\').submit();"><?php echo addslashes($ws->name) . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></a></div>');
 				$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px; "><?php echo $cells; ?></div>');
 
 			}
