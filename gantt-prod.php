@@ -223,6 +223,13 @@ else {
 		background-color:#ffdddd;
 	}
 
+	.gantt_side_content.gantt_right {
+
+		padding-left : 5px;
+		overflow:visible;
+
+	}
+
 	</style>
 
 			<?php
@@ -234,7 +241,7 @@ else {
 			if(GETPOST('open')) $open = true;
 			else if(GETPOST('close')) $open = false;
 			else if(GETPOST('open_status')) $open = true;
-			
+
 			$close_init_status = !empty($fk_project) || $open ? 'true': 'false';
 
 			$t_start  = $t_end = 0;
@@ -355,19 +362,19 @@ else {
 			}
 if($fk_project == 0){
 			$formCore=new TFormCore('auto','formDate');
-			
+
 			if(!$open) echo $formCore->btsubmit($langs->trans('OpenAllTask'), 'open');
 			else  echo $formCore->btsubmit($langs->trans('ClosedTask'), 'close');
 
 			if(!empty($conf->workstation->enabled)) {
 			   $PDOdb=new TPDOdb;
-                           echo $formCore->combo('', 'restrictWS',TWorkstation::getWorstations($PDOdb, false, true), GETPOST('restrictWS'));
+               echo $formCore->combo('', 'restrictWS',TWorkstation::getWorstations($PDOdb, false, true), GETPOST('restrictWS'));
 
 			}
 
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
-			
+
 			$form = new Form($db);
 			echo $form->select_date($range->date_start, 'range_start');
 			echo $form->select_date($range->date_end,'range_end');
@@ -470,15 +477,19 @@ if($fk_project == 0){
 	};
 
 	gantt.templates.task_text = function(start, end, task){
-		if(task.type == gantt.config.types.milestone){
-			return "";
-		}
+
 		return task.text;
 	}
 	gantt.templates.rightside_text = function(start, end, task){
-		if(task.type == gantt.config.types.milestone){
-			return task.text;
+
+		if(task.time_task_limit_no_before && task.time_task_limit_no_before> (+task.start_date / 1000)){
+			return "<?php echo  addslashes(img_warning().$langs->trans('TooEarly')); ?>";
 		}
+		else if(task.time_task_limit_no_after && task.time_task_limit_no_after>0 && (+task.end_date/1000)>task.time_task_limit_no_after + 86399 ){
+			return "<?php echo  addslashes(img_warning().$langs->trans('TooLate')); ?>";
+		}
+
+
 		return "";
 	}
 
@@ -979,7 +990,7 @@ if($fk_project == 0){
 		}
 
 		var total_hour_capacity = nb_hour_capacity * nb_ressource;
-		
+
 //console.log('updateWSCapacity', wsid, t_start, t_end, nb_hour_capacity);
 		$.ajax({
 			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>"
@@ -1016,7 +1027,7 @@ if($fk_project == 0){
 					var nb_people = Math.round(-p * 10 / nb_hour_capacity) / 10;
 					p = p + ' ['+nb_people+']';
 				}
-				
+
 				$('div#workstations_'+wsid+' div[date='+d+']').html(p).removeClass('pasassez,justeassez,onestlarge,closed,normal').addClass(bg);
 
 			}
@@ -1054,7 +1065,7 @@ if($fk_project == 0){
 				$(\'div.ws_container_label div.dates, div.ws_container>div div.dates\').remove();
 				$(\'div.ws_container_label\').append(\'<div class="gantt_row dates" style="height:12px;">&nbsp;</div>\');
 				$(\'div.ws_container>div\').append($(\'#gantt_here div.gantt_container div.gantt_task div.gantt_task_scale div.gantt_scale_line:eq(1)\').clone().addClass(\'dates\'));
-				
+
 
 		}';
 
@@ -1115,7 +1126,7 @@ if($fk_project == 0){
 
 	}
 	else {
-		
+
 		?>$( document ).ready(function(){
 		if($("div.ws_container_label").length == 0) {
                         $("body").append('<div class="ws_container"><div>&nbsp;</div></div>');
@@ -1133,7 +1144,7 @@ if($fk_project == 0){
 			 width : $("#gantt_here div.gantt_task div.gantt_data_area").width()
 		});
 		});
-		<?
+		<?php
 	}
 
 	?>
@@ -1158,12 +1169,12 @@ if($fk_project == 0){
 		.appendTo('body')
 		.css({left:-$parent.scrollLeft()})
 		.wrap(function() {
-		
+
 			$div = $('<div class="clonedHTML" style="width:'+$parent.width()+'px; top:0; position:fixed;overflow:hidden;"></div>');
 //			$div.css({'left' : -$parent.scrollLeft()});
 			return $div;
 		});
-		
+
 	});
     }
     if ($(window).scrollTop() < fixedTopHeader) {
@@ -1440,7 +1451,7 @@ if($fk_project == 0){
 	}
 
 	function _adding_task_project_end(&$project,&$TData) {
-		global $db, $langs;
+		global $db, $langs, $conf;
 		if(!empty($conf->global->GANTT_DISABLE_PROJECT_MILESTONE)) {
 			return false;
 		}
@@ -1526,9 +1537,9 @@ if($fk_project == 0){
 
 
 		$sql.=" AND t.dateo BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."'";
-		
+
 		$sql.=" AND p.entity IN (".getEntity('project',1).")";
-		
+
 		//echo $sql.$sqlWhere;
 		$res = $db->query($sql);
 		if($res===false) {
@@ -1749,9 +1760,9 @@ if($fk_project == 0){
 		{
 			$sql.= " AND ( a.fk_project=0 OR ISNULL(a.fk_project) )";
 		}
-		
+
 		$sql.=" AND a.entity IN (".getEntity('actioncomm',1).")";
-		
+
 		//echo $sql;
 		//exit();
 		$res = $db->query($sql);
