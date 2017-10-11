@@ -641,6 +641,11 @@ if($fk_project == 0){
 			,method:"post"
 		}).done( function(newid) {
 			gantt.changeTaskId(id, newid);
+
+			var task = gantt.getTask(newid);
+			task.objId = newid.substring(1);
+			task.objElement = 'project_task';
+
 			/*updateAllCapacity();*/
 
 			// TODO set workstation and update capacity
@@ -1028,7 +1033,7 @@ if($fk_project == 0){
 					p = p + ' ['+nb_people+']';
 				}
 
-				$('div#workstations_'+wsid+' div[date='+d+']').html(p).removeClass('pasassez,justeassez,onestlarge,closed,normal').addClass(bg);
+				$('div#workstations_'+wsid+' div[date='+d+']').html(p).removeClass('pasassez justeassez onestlarge closed normal').addClass(bg);
 
 			}
 
