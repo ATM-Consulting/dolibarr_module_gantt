@@ -665,7 +665,7 @@ if($fk_project == 0){
 
 				if(m>0) task.planned_workload = task.planned_workload - m + 900;
 			}
-
+			console.log(task);
 			return true;
 		}
 		else {
@@ -1615,8 +1615,10 @@ if($fk_project == 0){
 
 			$fk_workstation = (int) $object->array_options['options_fk_workstation'];
 			if($fk_workstation>0) $TWS[$fk_workstation] = $workstationList[$fk_workstation]; //TODO ouh que c'est moche !
-		//	var_dump($workstationList,$fk_workstation,$TWS);exit;
-			return ' {"id":"'.$object->ganttid.'",time_task_limit_no_before:'.(int)$time_task_limit_no_before.',time_task_limit_no_after:'.(int)$time_task_limit_no_after.',planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task , open: '.$close_init_status.'}';
+
+			$needed_ressource= $object->array_options['options_needed_ressource']>0 ? $object->array_options['options_needed_ressource'] : 1;
+
+			return ' {"id":"'.$object->ganttid.'",needed_ressource:'.(int)$needed_ressource.',time_task_limit_no_before:'.(int)$time_task_limit_no_before.',time_task_limit_no_after:'.(int)$time_task_limit_no_after.',planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task , open: '.$close_init_status.'}';
 
 		}
 		else if($object->element== 'milestone' || $object->element == 'release') {
