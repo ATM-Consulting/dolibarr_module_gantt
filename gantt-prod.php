@@ -1238,6 +1238,34 @@ if($fk_project == 0){
 	echo '<div class="modalwaiter"></div>';
 	llxFooter();
 
+	function _add_project_included_into_date(&$TTask) {
+
+		global $db,$langs,$range,$conf;
+
+		$sql="SELECT p.rowid as fk_project FROM ".MAIN_DB_PREFIX."projet p
+			WHERE p.dateo <= '".$range->sql_date_end."' AND p.datee >=  '".$range->sql_date_start."' ";
+		$res = $db->query($sql);
+		while($obj = $db->fetch_object($res)) {
+
+			$project = new Project($db);
+			$project->fetch($obj->fk_project);
+
+			if($project->id>0)$project->title = $project->ref.' '.$project->title;
+
+			$project->ganttid = 'P'.$project->id;
+
+			$TTask[$project->id]=array(
+					'childs'=>array()
+					,'object'=>$project
+			);
+			_adding_task_project_end($project, $TTask[$project->id]['childs']);
+			_load_child_tasks( $TTask[$project->id]['childs'] , $project);
+		}
+	}
+
+
+
+
 	function _get_task_for_of($fk_project = 0) {
 
 		global $db,$langs,$range,$conf;
@@ -1259,7 +1287,7 @@ if($fk_project == 0){
 			AND p.fk_statut = 1
 			";
 
-			$sql.=" AND t.dateo BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."'";
+			$sql.=" AND t.dateo <= '".$range->sql_date_end."' AND t.datee >=  '".$range->sql_date_start."' ";
 
 			if(!empty($conf->global->GANTT_MANAGE_SHARED_PROJECT)) $sql.=" AND p.entity IN (".getEntity('project',1).")";
 			else $sql.=" AND p.entity=".$conf->entity;
@@ -1278,6 +1306,9 @@ if($fk_project == 0){
 		}
 		//echo $sql;
 		$TTask=array();
+		if($fk_project == 0 && !empty($conf->global->GANTT_INCLUDE_PROJECT_WIHOUT_TASK)) {
+			_add_project_included_into_date($TTask);
+		}
 
 		while($obj = $db->fetch_object($res)) {
 
