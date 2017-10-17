@@ -261,7 +261,7 @@ else {
     					_get_events( $TData,$TLink,$project->id);
   //  				}
 
-    				$time_task_limit_no_after = 0;
+    				$time_task_limit_no_after = $time_task_limit_no_before_init = $time_task_limit_no_before = 0;
 
     				if(!empty($projectData['childs'])) {
         				foreach($projectData['childs'] as &$orderData) {
@@ -271,7 +271,12 @@ else {
         					$fk_parent_order = null;
 
         					if($order->element =='milestone') {
-        						$time_task_limit_no_after = $order->date;
+        						if($order->bound == 'before') {
+        							$time_task_limit_no_before=$time_task_limit_no_before_init = $order->date;
+        						}
+        						else {
+        							$time_task_limit_no_after = $order->date;
+        						}
         					}
 
         					if(empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $order->id>0 || $order->element!='commande') {
@@ -303,7 +308,7 @@ else {
             						// Add order child tasks
             						$taskColor='';
 
-            						$time_task_limit_no_before= 0;
+            						$time_task_limit_no_before=$time_task_limit_no_before_init;
             						if(!empty($ofData['childs'])) {
                 						foreach($ofData['childs'] as &$wsData) {
 
@@ -314,7 +319,7 @@ else {
 
                 							$ws->ganttid = $fk_parent_of.$ws->ganttid;
 
-                							if($ws->element =='milestone') {
+                							if($ws->element =='milestone' && $ws->date>$time_task_limit_no_before) {
                 								$time_task_limit_no_before = $ws->date;
                 							}
 
@@ -862,6 +867,14 @@ else {
 
         return saveTask(task, old_event,is_new);
     })
+	gantt.attachEvent("onBeforeTaskDisplay", function(id, task){
+
+	    if (typeof task.visible != "undefined" && task.visible == 0){
+	    	/*console.log(id,task.visible);*/
+	        return false;
+	    }
+	    return true;
+	});
 
 // Add more button to lightbox
 	gantt.config.buttons_left=["dhx_save_btn","dhx_cancel_btn","edit_task_button"];
@@ -1570,12 +1583,26 @@ else {
 			return false;
 		}
 
+		if($project->date_start>0) {
+
+			$object=new stdClass();
+			$object->element = 'milestone';
+			$object->title = $object->text = $langs->trans('StartOfProject', $project->ref, dol_print_date($project->date_start));
+			$object->date= $project->date_start;
+			$object->ganttid = 'STARTOF'.$project->id;
+			$object->bound='before';
+
+			$TData[$object->ganttid]['object'] = $object;
+
+		}
+
 		if($project->date_end>0) {
 			$object=new stdClass();
 			$object->element = 'milestone';
 			$object->title = $object->text = $langs->trans('EndOfProject', $project->ref, dol_print_date($project->date_end));
 			$object->date= $project->date_end + 84399; //23:59:59
 			$object->ganttid = 'RELEASE'.$project->id;
+			$object->bound='after';
 
 			$TData[$object->ganttid]['object'] = $object;
 
@@ -1604,6 +1631,8 @@ else {
 					$object->title = $object->text = $langs->trans('AwaitingDelivery', $cmd->ref, dol_print_date($cmd->date_livraison));
 					$object->date= $cmd->date_livraison;
 					$object->ganttid = 'DELIVERY'.$cmd->id;
+					$object->bound='before';
+					$object->visible = 1;
 
 					$TData[$object->ganttid]['object'] = $object;
 
@@ -1733,12 +1762,12 @@ else {
 		else if($object->element== 'milestone' || $object->element == 'release') {
 			global $range;
 
-			if($range->autotime) {
+			/*if($range->autotime) {
 				if(empty($range->date_start) || $object->date<$range->date_start)$range->date_start=$object->date;
 				if(empty($range->date_end) || $range->date_end<$object->date)$range->date_end=$object->date;
-			}
+			}*/
 
-			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.date('d-m-Y',$object->date).'", "duration":1 '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.release}';
+			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.date('d-m-Y',$object->date).'", "duration":1 '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.release, visible:'.( empty($object->visible) ? 0 : 1 ).'}';
 
 		}
 
