@@ -33,3 +33,5 @@ GANTT_MANAGE_SHARED_PROJECT=Voir les projets partagés entre entité
 TooEarly=Trop tôt
 TooLate=Trop tard
 GANTT_INCLUDE_PROJECT_WIHOUT_TASK=Inclure les projets sans tâche sur la plage mais dans les bornes
+GANTT_MODIFY_PARENT_DATES_AS_CHILD=Repousser les dates de début des tâches parentes si hors bornes
+GANTT_MOVE_CHILD_AS_PARENT=Déplacer les enfants avec le parent

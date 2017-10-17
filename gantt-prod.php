@@ -337,7 +337,7 @@ else {
 	                								$TData[] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after);
 
 													if($task->fk_task_parent>0) {
-														//$TLink[] = ' {id:'.(count($TLink)+1).', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
+														$TLink[] = ' {id:'.(count($TLink)+1).', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
 													}
 
 	                							}
@@ -360,29 +360,29 @@ else {
 				}
 				$range->date_end+=864000;
 			}
-if($fk_project == 0){
-			$formCore=new TFormCore('auto','formDate');
+			if($fk_project == 0){
+				$formCore=new TFormCore('auto','formDate');
 
-			if(!$open) echo $formCore->btsubmit($langs->trans('OpenAllTask'), 'open');
-			else  echo $formCore->btsubmit($langs->trans('ClosedTask'), 'close');
+				if(!$open) echo $formCore->btsubmit($langs->trans('OpenAllTask'), 'open');
+				else  echo $formCore->btsubmit($langs->trans('ClosedTask'), 'close');
 
-			if(!empty($conf->workstation->enabled)) {
-			   $PDOdb=new TPDOdb;
-               echo $formCore->combo('', 'restrictWS',TWorkstation::getWorstations($PDOdb, false, true), GETPOST('restrictWS'));
+				if(!empty($conf->workstation->enabled)) {
+				   $PDOdb=new TPDOdb;
+	               echo $formCore->combo('', 'restrictWS',TWorkstation::getWorstations($PDOdb, false, true), GETPOST('restrictWS'));
 
+				}
+
+				echo $formCore->hidden('open_status',(int)$open);
+				echo $formCore->hidden('fk_project',$fk_project);
+
+				$form = new Form($db);
+				echo $form->select_date($range->date_start, 'range_start');
+				echo $form->select_date($range->date_end,'range_end');
+
+				echo $formCore->btsubmit($langs->trans('ok'), 'bt_select_date');
+
+				$formCore->end();
 			}
-
-			echo $formCore->hidden('open_status',(int)$open);
-			echo $formCore->hidden('fk_project',$fk_project);
-
-			$form = new Form($db);
-			echo $form->select_date($range->date_start, 'range_start');
-			echo $form->select_date($range->date_end,'range_end');
-
-			echo $formCore->btsubmit($langs->trans('ok'), 'bt_select_date');
-
-			$formCore->end();
-}
 			?>
 			<div id="gantt_here" style='width:100%; height:100%;'></div>
 
@@ -702,6 +702,7 @@ if($fk_project == 0){
 	var alertLimit = false;
 	var leftLimitON = false;
 	var rightLimitON = false;
+	var TAnotherTaskToSave = {};
 
 	gantt.attachEvent("onBeforeTaskDrag", function(sid, parent, tindex){
 		var task = gantt.getTask(sid);
@@ -729,7 +730,22 @@ if($fk_project == 0){
 			rightLimitON = false;
 		}
 
+		TAnotherTaskToSave = {};
+
 		return true;
+	});
+
+	gantt.attachEvent("onAfterTaskDrag", function(id, mode, e){
+
+		/*console.log(TAnotherTaskToSave);*/
+		for(idTask in TAnotherTaskToSave) {
+
+			task = gantt.getTask(idTask);
+			saveTask(task);
+
+		}
+
+		TAnotherTaskToSave = {};
 	});
 
 	gantt.attachEvent("onTaskDrag", function(id, mode, task, original){
@@ -759,9 +775,72 @@ if($fk_project == 0){
 	                }
 	            }
 	        }
+
+	        <?php
+	        if(!empty($conf->global->GANTT_MOVE_CHILD_AS_PARENT)) {
+	        	echo 'moveChild(task, task.start_date - original.start_date );';
+	        }
+
+	        if(!empty($conf->global->GANTT_MODIFY_PARENT_DATES_AS_CHILD)) {
+	        	echo 'moveParentIfNeccessary(task);';
+	        }
+
+	        ?>
+
+	        /*gantt.eachSuccessor(function(child){
+	            child.start_date = new Date(+child.start_date + diff);
+	            child.end_date = new Date(+child.end_date + diff);
+	            gantt.refreshTask(child.id, true);
+	          },id );
+*/
 	    }
 	    return true;
 	});
+
+	function moveParentIfNeccessary(task) {
+		if(task.$target) {
+			$.each(task.$target,function(i, linkid) {
+				var link = gantt.getLink(linkid);
+
+				var parent = gantt.getTask(link.source);
+
+				var diff = parent.end_date - parent.start_date ;
+
+				if(parent.start_date > task.start_date ) {
+					parent.start_date = task.start_date;
+					parent.end_date = new Date(+parent.start_date + diff);
+
+					TAnotherTaskToSave[parent.id] = true;
+				}
+				/*if(parent.end_date < task.end_date ) {
+					parent.end_date = task.end_date;
+					parent.start_date = new Date(+parent.end_date - diff);
+				}*/
+				gantt.refreshTask(parent.id, true);
+
+				moveParentIfNeccessary(parent);
+			});
+		}
+	}
+
+	function moveChild(task,diff) {
+		if(task.$source) {
+			//console.log(task.$source);
+
+			$.each(task.$source,function(i, linkid) {
+				var link = gantt.getLink(linkid);
+
+				child = gantt.getTask(link.target);
+				child.start_date = new Date(+child.start_date + diff);
+				child.end_date = new Date(+child.end_date + diff);
+	            gantt.refreshTask(child.id, true);
+
+	            TAnotherTaskToSave[child.id] = true;
+
+	            moveChild(child, diff);
+			});
+		}
+	}
 
 	gantt.attachEvent("onBeforeTaskChanged", function(id, mode, old_event){
 
@@ -799,14 +878,13 @@ if($fk_project == 0){
 	    }
 	});
 
-
+	gantt.config.drag_links = false;
 	gantt.config.autoscroll = false;
 	//gantt.config.autosize = "x";
 
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $range->date_start) ?>"), new Date("<?php echo date('Y-m-d', $range->date_end) ?>"));
 	modSampleHeight();
 	gantt.parse(tasks);
-
 
 	function modHeight(){
         var headHeight = 35;
@@ -831,7 +909,7 @@ if($fk_project == 0){
 
 	function saveTask(task, old_event=false,is_new = false)
 	{
-		console.log(task,old_event);
+		/*console.log(task,old_event);*/
 		var progress = task.progress ;
 
 		var start = task.start_date.getTime();
@@ -857,9 +935,9 @@ if($fk_project == 0){
 			},
 			method:"post",
 		    success: function(data){
-		    	console.log(data);
+
 			    // TODO : gérer un vrai message avec des retour en json
-				gantt.message('<?php echo $langs->trans('Saved') ?>');
+				gantt.message(task.title + ' <?php echo $langs->trans('Saved') ?>');
 
 				//gantt.refreshTask(task.id);
 				/*updateAllCapacity();*/
@@ -897,7 +975,7 @@ if($fk_project == 0){
                 }
             }
         });
-	}
+	};
 
 	function delete_task(id,prevent_child_deletion,deleteFromGantt=1) {
 
