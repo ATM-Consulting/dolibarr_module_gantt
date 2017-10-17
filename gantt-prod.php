@@ -808,6 +808,8 @@ else {
 				var link = gantt.getLink(linkid);
 
 				var parent = gantt.getTask(link.source);
+				
+				if(parent.id) {
 
 				var diff = parent.end_date - parent.start_date ;
 
@@ -824,6 +826,7 @@ else {
 				gantt.refreshTask(parent.id, true);
 
 				moveParentIfNeccessary(parent);
+				}
 			});
 		}
 	}
@@ -836,13 +839,16 @@ else {
 				var link = gantt.getLink(linkid);
 
 				child = gantt.getTask(link.target);
-				child.start_date = new Date(+child.start_date + diff);
-				child.end_date = new Date(+child.end_date + diff);
-	            gantt.refreshTask(child.id, true);
+				if(child.id) {
 
-	            TAnotherTaskToSave[child.id] = true;
+				    child.start_date = new Date(+child.start_date + diff);
+				    child.end_date = new Date(+child.end_date + diff);
+			            gantt.refreshTask(child.id, true);
 
-	            moveChild(child, diff);
+	        		    TAnotherTaskToSave[child.id] = true;
+
+			            moveChild(child, diff);
+				}
 			});
 		}
 	}
