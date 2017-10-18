@@ -276,10 +276,10 @@ else {
 
         					if($order->element =='milestone') {
         						if($order->bound == 'before') {
-        							$time_task_limit_no_before=$time_task_limit_no_before_init = $order->date;
+        							$time_task_limit_no_before=$time_task_limit_no_before_init = strtotime(date('Y-m-d 00:00:00',$order->date));
         						}
         						else {
-        							$time_task_limit_no_after = $order->date;
+        							$time_task_limit_no_after = strtotime(date('Y-m-d 23:59:59',$order->date));
         						}
         					}
 
@@ -324,7 +324,7 @@ else {
                 							$ws->ganttid = $fk_parent_of.$ws->ganttid;
 
                 							if($ws->element =='milestone' && $ws->date>$time_task_limit_no_before) {
-                								$time_task_limit_no_before = $ws->date;
+                								$time_task_limit_no_before = strtotime(date('Y-m-d 00:00:00',$ws->date));
                 							}
 
                 							if((!empty($ws->id) && empty($conf->global->GANTT_HIDE_WORKSTATION)) || ($ws->element!='workstation')) {
@@ -589,7 +589,7 @@ else {
 
 		var r ='';
 		if(task.text) {
-		    	r = "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?>";
+		    r = "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?>";
 			if(task.start_date) r+= "<br /><?php echo $langs->trans('FromDate') ?> "+task.start_date.toLocaleDateString()
 			if(task.end_date) r+= " <?php echo $langs->trans('ToDate') ?> "+task.end_date.toLocaleDateString();
 		}
@@ -722,6 +722,45 @@ else {
 			return false;
 		}
 
+		initTaskDrag(task);
+
+		return true;
+	});
+
+	gantt.attachEvent("onAfterTaskDrag", function(id, mode, e){
+
+		/*console.log(TAnotherTaskToSave);*/
+		for(idTask in TAnotherTaskToSave) {
+
+			task = gantt.getTask(idTask);
+
+			regularizeHour(task);
+			gantt.refreshTask(task.id);
+
+			saveTask(task);
+
+		}
+
+		TAnotherTaskToSave = {};
+	});
+
+//gantt.callEvent("onTaskDrag",[s.id,e.mode,o,r,t]);
+
+	gantt.attachEvent("onTaskDrag", function(id, mode, task, original){
+	    var modes = gantt.config.drag_mode;
+	    if(mode == modes.move || mode == modes.resize){
+
+	        var diff = original.duration*(1000*60*60*24);
+
+	        dragTaskLimit(task, diff, mode);
+	        moveChild(task, task.start_date - original.start_date );
+	        moveParentIfNeccessary(task);
+
+	    }
+	    return true;
+	});
+
+	function initTaskDrag(task) {
 		if(task.time_task_limit_no_before && task.time_task_limit_no_before>0) {
 			leftLimit = task.time_task_limit_no_before * 1000;
 			alertLimit = true;
@@ -742,74 +781,80 @@ else {
 
 		TAnotherTaskToSave = {};
 
-		return true;
-	});
+	}
 
-	gantt.attachEvent("onAfterTaskDrag", function(id, mode, e){
+	function taskAutoMove(task) {
+		var modes = gantt.config.drag_mode;
 
-		/*console.log(TAnotherTaskToSave);*/
-		for(idTask in TAnotherTaskToSave) {
+        var today = new Date("<?php echo date('Y-m-d 00:00:00'); ?>");
+        var duration = task.duration;
 
-			task = gantt.getTask(idTask);
-			saveTask(task);
+        var init_start = task.start_date;
+        var init_end = task.end_date;
 
-		}
+        var diff = task.duration*(1000*60*60*24);
 
-		TAnotherTaskToSave = {};
-	});
+		var good_day = today;
+//TODO calculate good day
 
-//gantt.callEvent("onTaskDrag",[s.id,e.mode,o,r,t]);
 
-	gantt.attachEvent("onTaskDrag", function(id, mode, task, original){
-	    var modes = gantt.config.drag_mode;
-	    if(mode == modes.move || mode == modes.resize){
+		task.start_date = good_day;
+		task.end_date= new Date( +task.start_date + diff );
 
-	        var diff = original.duration*(1000*60*60*24);
+		initTaskDrag(task);
+		dragTaskLimit(task, diff,modes.move);
 
-	        if(leftLimitON && +task.start_date < +leftLimit){
-	            task.start_date = new Date(leftLimit);
-	            if(mode == modes.move) {
-	                task.end_date = new Date(+task.start_date + diff);
-	                if(alertLimit) {
-	                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+task.end_date.toLocaleDateString());
-	                	alertLimit = false;
-	                }
-	            }
-	        }
+		gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+task.start_date.toLocaleDateString());
 
-	        if(rightLimitON && +task.end_date > +rightLimit){
-	            task.end_date = new Date(rightLimit);
-	            if(mode == modes.move) {
-	            	task.start_date = new Date(task.end_date - diff);
-	                if(alertLimit) {
-	                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+task.start_date.toLocaleDateString());
-	                	alertLimit = false;
-	                }
-	            }
-	        }
+		gantt.refreshTask(task.id);
+		saveTask(task);
 
-	        <?php
-	        if(!empty($conf->global->GANTT_MOVE_CHILD_AS_PARENT)) {
-	        	echo 'moveChild(task, task.start_date - original.start_date );';
-	        }
+	}
 
-	        if(!empty($conf->global->GANTT_MODIFY_PARENT_DATES_AS_CHILD)) {
-	        	echo 'moveParentIfNeccessary(task);';
-	        }
 
-	        ?>
+	function regularizeHour(task) {
+		task.start_date.setHours(0,0,0,0);
 
-	        /*gantt.eachSuccessor(function(child){
-	            child.start_date = new Date(+child.start_date + diff);
-	            child.end_date = new Date(+child.end_date + diff);
-	            gantt.refreshTask(child.id, true);
-	          },id );
-*/
-	    }
-	    return true;
-	});
+		task.end_date = new Date(+task.start_date + task.duration * 86400000 - 1000);
+	}
+
+	function dragTaskLimit(task, diff ,mode) {
+		var modes = gantt.config.drag_mode;
+
+		if(leftLimitON && +task.start_date < +leftLimit){
+            task.start_date = new Date(leftLimit);
+            if(mode == modes.move) {
+                task.end_date = new Date(+task.start_date + diff);
+                if(alertLimit) {
+                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+task.end_date.toLocaleDateString());
+                	alertLimit = false;
+                }
+            }
+            return -1;
+        }
+
+        if(rightLimitON && +task.end_date > +rightLimit){
+            task.end_date = new Date(rightLimit);
+            if(mode == modes.move) {
+            	task.start_date = new Date(+task.end_date - diff);
+                if(alertLimit) {
+                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+task.end_date.toLocaleDateString());
+                	alertLimit = false;
+                }
+            }
+            return -1;
+        }
+
+	}
 
 	function moveParentIfNeccessary(task) {
+
+		<?php
+		if(empty($conf->global->GANTT_MODIFY_PARENT_DATES_AS_CHILD)) {
+			echo 'return 0;';
+		}
+		?>
+
 		if(task.$target) {
 			$.each(task.$target,function(i, linkid) {
 				var link = gantt.getLink(linkid);
@@ -818,27 +863,35 @@ else {
 
 				if(parent.id) {
 
-				var diff = parent.end_date - parent.start_date ;
+					var diff = +parent.end_date - parent.start_date ;
 
-				if(parent.start_date > task.start_date ) {
-					parent.start_date = task.start_date;
-					parent.end_date = new Date(+parent.start_date + diff);
+					if(parent.start_date > task.start_date ) {
 
-					TAnotherTaskToSave[parent.id] = true;
-				}
-				/*if(parent.end_date < task.end_date ) {
-					parent.end_date = task.end_date;
-					parent.start_date = new Date(+parent.end_date - diff);
-				}*/
-				gantt.refreshTask(parent.id, true);
+						parent.start_date = task.start_date;
+						parent.end_date = new Date(+parent.start_date + diff);
 
-				moveParentIfNeccessary(parent);
+						TAnotherTaskToSave[parent.id] = true;
+
+						var modes = gantt.config.drag_mode;
+					    dragTaskLimit(parent, +parent.duration * 86400000,modes.move);
+
+					    gantt.refreshTask(parent.id, true);
+					}
+
+					moveParentIfNeccessary(parent);
 				}
 			});
 		}
 	}
 
 	function moveChild(task,diff) {
+
+		<?php
+		if(empty($conf->global->GANTT_MOVE_CHILD_AS_PARENT)) {
+			echo 'return 0;';
+		}
+		?>
+
 		if(task.$source) {
 			//console.log(task.$source);
 
@@ -847,14 +900,18 @@ else {
 
 				child = gantt.getTask(link.target);
 				if(child.id) {
+					TAnotherTaskToSave[child.id] = true;
 
+					var diff_child = +child.duration * 86400000 - 1000;
 				    child.start_date = new Date(+child.start_date + diff);
-				    child.end_date = new Date(+child.end_date + diff);
-			            gantt.refreshTask(child.id, true);
+				    child.end_date = new Date(+child.start_date + diff_child);
 
-	        		    TAnotherTaskToSave[child.id] = true;
+				    var modes = gantt.config.drag_mode;
+				    dragTaskLimit(child, diff_child,modes.move);
 
-			            moveChild(child, diff);
+			        gantt.refreshTask(child.id, true);
+
+	        		moveChild(child, diff);
 				}
 			});
 		}
@@ -908,16 +965,7 @@ else {
 
 	        gantt.hideLightbox();
 
-	        var today = new Date();
-	        var duration = task.duration;
-
-			task.start_date = today;
-			task.end_date.setDate( task.start_date.getDate() + duration );
-
-			gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+task.start_date.toLocaleDateString());
-
-			gantt.refreshTask(task.id);
-			saveTask(task);
+			taskAutoMove(task);
 
 	    }
 	});
@@ -1620,7 +1668,7 @@ else {
 			$object=new stdClass();
 			$object->element = 'milestone';
 			$object->title = $object->text = $langs->trans('StartOfProject', $project->ref, dol_print_date($project->date_start));
-			$object->date= $project->date_start;
+			$object->date=$project->date_start;
 			$object->ganttid = 'STARTOF'.$project->id;
 			$object->bound='before';
 
@@ -1792,14 +1840,15 @@ else {
 
 		}
 		else if($object->element== 'milestone' || $object->element == 'release') {
-			global $range;
-
-			/*if($range->autotime) {
+			/*
+			 global $range;
+			 if($range->autotime) {
 				if(empty($range->date_start) || $object->date<$range->date_start)$range->date_start=$object->date;
 				if(empty($range->date_end) || $range->date_end<$object->date)$range->date_end=$object->date;
 			}*/
 
-			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.date('d-m-Y',$object->date).'", "duration":1 '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.release, visible:'.( empty($object->visible) ? 0 : 1 ).'}';
+			$date = date('d-m-Y',$object->date);
+			return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.$date.'", "duration":1 '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.release, visible:'.( empty($object->visible) ? 0 : 1 ).'}';
 
 		}
 
