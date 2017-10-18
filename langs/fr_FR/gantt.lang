@@ -39,3 +39,4 @@ GANTT_MOVE_CHILD_AS_PARENT=Déplacer les enfants avec le parent
 ModifyTask=Modifier
 AutoMove=Repositionner
 TaskMovedTo=Tâche déplacée le 
+setWSTime=Etablir le temps du poste

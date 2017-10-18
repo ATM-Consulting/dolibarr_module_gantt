@@ -15,6 +15,8 @@ dol_include_once('/comm/action/class/actioncomm.class.php');
 //<script src="../../codebase/locale/locale_fr.js" charset="utf-8"></script>
 $row_height = 20;
 
+$langs->load('workstation@workstation');
+
 llxHeader('', $langs->trans('GanttProd') , '', '', 0, 0, array(
 		'/gantt/lib/dhx/codebase/dhtmlxgantt.js',
 		'/gantt/lib/dhx/codebase/ext/dhtmlxgantt_smart_rendering.js',
@@ -785,6 +787,58 @@ else {
 
 	}
 
+	function setWSTime(wsid, dateOf) {
+		var nb_hour_capacity = 0;
+		var nb_ressource = 0;
+		if(workstations[wsid])
+		{
+			nb_hour_capacity = parseFloat(workstations[wsid].nb_hour_capacity);
+			nb_ressource = parseFloat(workstations[wsid].nb_ressource);
+		}
+
+		$('#wsTimePlanner').remove();
+		$div = $('<div id="wsTimePlanner"></div>');
+		$div.append('<div><?php echo $langs->trans('NbHourCapacity'); ?> <input type="input" name="nb_hour_capacity" value="'+nb_hour_capacity+'" /></div>');
+		$div.append('<div><?php echo $langs->trans('AvailaibleRessources'); ?> <input type="input" name="nb_ressource" value="'+nb_ressource+'" /></div>');
+	    $('body').append($div);
+
+	    $('#wsTimePlanner').dialog({
+			title:"<?php echo $langs->trans('setWSTime'); ?>"
+			,modal:true
+			,draggable: false
+			,resizable: false
+			,buttons:[
+	            {
+	              text: '<?php echo $langs->trans('Set'); ?>',
+	              click: function() {
+
+	                $.ajax({
+	                   url : "script/interface.php"
+	                   ,data:{
+	                       'put':'ws-time'
+	                       ,'wsid':wsid
+	                       ,'date':dateOf
+	                       ,'nb_hour_capacity':$('#wsTimePlanner input[name=nb_hour_capacity]').val()
+	                       ,'nb_ressource':$('#wsTimePlanner input[name=nb_ressource]').val()
+
+	                   }
+	                }).done(function(data) {
+
+	                	var t_start = new Date(dateOf);
+						var t_end = new Date(dateOf);
+
+	                	updateWSCapacity(wsid, +t_start/1000, +t_end/1000);
+
+	                });
+
+	                $( this ).dialog( "close" );
+	              }
+	            }
+	          ]
+		});
+
+	}
+
 	function splitTask(task) {
 
 		var min = task.planned_workload * task.progress / 3600;
@@ -812,7 +866,7 @@ else {
 	                       ,'tache2':$("#splitSlider label").attr("tache2")
 
 	                   }
-	                }).done(function(task) {
+	                }).done(function(data) {
 
 						$('#formDate').submit();
 
@@ -1270,7 +1324,15 @@ else {
 					p = p + ' ['+nb_people+']';
 				}
 
-				$('div#workstations_'+wsid+' div[date='+d+']').html(p).attr('dispo',dispo).removeClass('pasassez justeassez onestlarge closed normal').addClass(bg);
+				$('div#workstations_'+wsid+' div[date='+d+']')
+							.html(p).attr('dispo',dispo).data('wsid',wsid).data('date',d)
+							.removeClass('pasassez justeassez onestlarge closed normal')
+							.addClass(bg)
+							.click(function() {
+
+								setWSTime($(this).data('wsid'), $(this).data('date'))
+
+							});
 
 			}
 

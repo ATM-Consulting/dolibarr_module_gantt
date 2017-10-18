@@ -40,6 +40,10 @@
 			__out(_split_task(GETPOST('taskid'), GETPOST('tache1'), GETPOST('tache2')),'json');
 			break;
 
+		case 'ws-time':
+			__out(_set_ws_time(GETPOST('wsid'), GETPOST('date'), GETPOST('nb_hour_capacity'), GETPOST('nb_ressource')),'json');
+			break;
+
 	}
 
 	switch ($get) {
@@ -48,6 +52,34 @@
 			__out(_get_ws_capactiy(  GETPOST('wsid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
 
 			break;
+	}
+
+	function _set_ws_time($wsid, $date, $nb_hour_capacity, $nb_ressource) {
+		global $conf;
+
+		if(empty($conf->workstation->enabled)) return 0;
+
+		dol_include_once('/workstation/class/workstation.class.php');
+
+		$PDOdb=new TPDOdb;
+
+		$ws=new TWorkstation;
+		$ws->load($PDOdb, $wsid);
+
+		$wssc = new TWorkstationSchedule();
+		$wssc->loadByWSDate($PDOdb, $wsid, $date);
+
+		$wssc->fk_workstation = $wsid;
+		$wssc->date_off = strtotime($date);
+
+		$wssc->nb_hour_capacity = $nb_hour_capacity;
+		$wssc->nb_ressource=$ws->nb_ressource - $nb_ressource;
+
+		$wssc->save($PDOdb);
+
+		if($wssc->nb_ressource == 0)$wssc->delete($PDOdb);
+
+		return $wssc->id;
 	}
 
 	function _split_task($taskid, $task1time, $task2time) {
@@ -170,7 +202,7 @@
 
 				$o->label = $description;
 				$o->date_start = $data['start'] / 1000;
-				$o->date_end = ($data['end'] / 1000) - 1; //Pour que cela soit à 23:59:59 de la vieille
+				$o->date_end = ($data['end'] / 1000) - 1;//Pour que cela soit à 23:59:59 de la vieille
 				$o->planned_workload = (int)$data['planned_workload'];
 				$o->progress = $data['progress'] * 100;
 				$o->array_options['options_fk_workstation'] = (int)$data['workstation'];
