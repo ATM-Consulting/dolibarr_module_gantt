@@ -36,7 +36,9 @@
 			_delete_task();
 
 			break;
-
+		case 'split':
+			__out(_split_task(GETPOST('taskid'), GETPOST('tache1'), GETPOST('tache2')),'json');
+			break;
 
 	}
 
@@ -46,6 +48,47 @@
 			__out(_get_ws_capactiy(  GETPOST('wsid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
 
 			break;
+	}
+
+	function _split_task($taskid, $task1time, $task2time) {
+		global $db, $user, $conf;
+
+		$task =new Task($db);
+		$task->fetch($taskid);
+		$task->fetch_optionals($task->id);
+
+		$task->planned_workload = $task1time * 3600;
+		$task->update($user);
+
+		$task2 = new Task($db);
+		foreach($task as $k=>$v) {
+
+			if($k!='id' && $k!='progress' &$k!='duration_effective' && $k!='ref' ) {
+				$task2->{$k} = $v;
+			}
+
+		}
+
+		$task2->planned_workload = $task2time * 3600;
+
+		$defaultref='';
+		$obj = empty($conf->global->PROJECT_TASK_ADDON)?'mod_task_simple':$conf->global->PROJECT_TASK_ADDON;
+		if (! empty($conf->global->PROJECT_TASK_ADDON) && is_readable(DOL_DOCUMENT_ROOT ."/core/modules/project/task/".$conf->global->PROJECT_TASK_ADDON.".php"))
+		{
+			require_once DOL_DOCUMENT_ROOT ."/core/modules/project/task/".$conf->global->PROJECT_TASK_ADDON.'.php';
+			$modTask = new $obj;
+			$defaultref = $modTask->getNextValue(0,$task2);
+		}
+
+		if (is_numeric($defaultref) && $defaultref <= 0) $defaultref='';
+
+		$task2->ref = $defaultref;
+
+		$task2->fk_task_parent = $task->id;
+
+		$task2->create($user);
+
+		return $task2->id;
 	}
 
 	function _create_task($data) {
@@ -124,7 +167,7 @@
 				$o=new Task($db);
 				$o->fetch((int)$data['id']);
 				if(empty($o->array_options))$o->fetch_optionals($o->id);
-				
+
 				$o->label = $description;
 				$o->date_start = $data['start'] / 1000;
 				$o->date_end = ($data['end'] / 1000) - 1; //Pour que cela soit à 23:59:59 de la vieille

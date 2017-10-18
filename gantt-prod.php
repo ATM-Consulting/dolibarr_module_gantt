@@ -230,10 +230,12 @@ else {
 
 	}
 
-    div.edit_task_button_set, div.automove_set {
+    div.edit_task_button_set, div.automove_set, div.split_set {
 		border-radius: 4px;
 		border:1px solid #ccc;
     }
+
+
 	</style>
 
 			<?php
@@ -783,6 +785,60 @@ else {
 
 	}
 
+	function splitTask(task) {
+
+		var min = task.planned_workload * task.progress / 3600;
+		var max = task.planned_workload / 3600;
+
+		$('#splitSlider').remove();
+	    $('body').append('<div id="splitSlider"><div><label></label></div><div style="padding:20px;position:relative;" ><div rel="slide"></div></div></div>');
+
+		$('#splitSlider').dialog({
+			title:"Sélectionnez comment diviser la tâche"
+			,modal:true
+			,draggable: false
+			,resizable: false
+			,buttons:[
+	            {
+	              text: 'Split',
+	              click: function() {
+
+	                $.ajax({
+	                   url : "script/interface.php"
+	                   ,data:{
+	                       'put':'split'
+	                       ,'taskid':task.objId
+	                       ,'tache1':$("#splitSlider label").attr("tache1")
+	                       ,'tache2':$("#splitSlider label").attr("tache2")
+
+	                   }
+	                }).done(function(task) {
+
+						$('#formDate').submit();
+
+	                });
+
+	                $( this ).dialog( "close" );
+	              }
+	            }
+	          ]
+		});
+
+		 $( "div[rel=slide]" ).slider({
+			min:min
+			,max:max
+			,step:0.25
+			,slide:function(event,ui) {
+				var val = Math.round( ui.value * 100 ) / 100;
+				$("#splitSlider label").html("Reste sur tâche actuelle : "+ val +"h<br />Sur la tâche créée : "+(max - val)+"h"  );
+
+				$("#splitSlider label").attr("tache1", val);
+				$("#splitSlider label").attr("tache2", max - val);
+			}
+		});
+
+	}
+
 	function taskAutoMove(task) {
 		var modes = gantt.config.drag_mode;
 
@@ -947,10 +1003,11 @@ else {
 	});
 
 // Add more button to lightbox
-	gantt.config.buttons_left=["dhx_save_btn","dhx_cancel_btn","edit_task_button","automove"];
+	gantt.config.buttons_left=["dhx_save_btn","dhx_cancel_btn","edit_task_button","automove","split"];
 
 	gantt.locale.labels["edit_task_button"] = "<?php echo $langs->trans('ModifyTask'); ?>";
 	gantt.locale.labels["automove"] = "<?php echo $langs->trans('AutoMove'); ?>";
+	gantt.locale.labels["split"] = "<?php echo $langs->trans('Split'); ?>";
 
 	gantt.attachEvent("onLightboxButton", function(button_id, node, e){
 	    if(button_id == "edit_task_button"){
@@ -966,6 +1023,15 @@ else {
 	        gantt.hideLightbox();
 
 			taskAutoMove(task);
+
+	    }
+	    else if(button_id == "split"){
+	        var id = gantt.getState().lightbox;
+	        task = gantt.getTask(id);
+
+	        gantt.hideLightbox();
+
+			splitTask(task);
 
 	    }
 	});
