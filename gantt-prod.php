@@ -230,6 +230,10 @@ else {
 
 	}
 
+    div.edit_task_button_set, div.automove_set {
+		border-radius: 4px;
+		border:1px solid #ccc;
+    }
 	</style>
 
 			<?php
@@ -342,7 +346,8 @@ else {
 	                								$TData[] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after);
 
 													if($task->fk_task_parent>0) {
-														$TLink[] = ' {id:'.(count($TLink)+1).', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
+														$linkId = count($TLink)+1;
+														$TLink[$linkId] =' {id:'.$linkId.', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
 													}
 
 	                							}
@@ -563,7 +568,7 @@ else {
 
 	<?php
 
-	if(GETPOST('scale')=='week') {
+	if(GETPOST('scale')=='week') { //TODO make it work ?
 		echo 'gantt.config.scale_unit = "week"; gantt.config.date_scale = "'.$langs->trans('WeekShort').' %W";';
 	}
 	else {
@@ -753,6 +758,8 @@ else {
 		TAnotherTaskToSave = {};
 	});
 
+//gantt.callEvent("onTaskDrag",[s.id,e.mode,o,r,t]);
+
 	gantt.attachEvent("onTaskDrag", function(id, mode, task, original){
 	    var modes = gantt.config.drag_mode;
 	    if(mode == modes.move || mode == modes.resize){
@@ -808,7 +815,7 @@ else {
 				var link = gantt.getLink(linkid);
 
 				var parent = gantt.getTask(link.source);
-				
+
 				if(parent.id) {
 
 				var diff = parent.end_date - parent.start_date ;
@@ -883,17 +890,35 @@ else {
 	});
 
 // Add more button to lightbox
-	gantt.config.buttons_left=["dhx_save_btn","dhx_cancel_btn","edit_task_button"];
+	gantt.config.buttons_left=["dhx_save_btn","dhx_cancel_btn","edit_task_button","automove"];
 
-	gantt.locale.labels["edit_task_button"] = "Modifier la tâche";
+	gantt.locale.labels["edit_task_button"] = "<?php echo $langs->trans('ModifyTask'); ?>";
+	gantt.locale.labels["automove"] = "<?php echo $langs->trans('AutoMove'); ?>";
 
 	gantt.attachEvent("onLightboxButton", function(button_id, node, e){
 	    if(button_id == "edit_task_button"){
 	        var id = gantt.getState().lightbox;
-	        gantt.getTask(id).progress = 1;
 	        gantt.updateTask(id);
 	        gantt.hideLightbox();
 	        pop_edit_task(id.substring(1));
+	    }
+	    else if(button_id == "automove"){
+	        var id = gantt.getState().lightbox;
+	        task = gantt.getTask(id);
+
+	        gantt.hideLightbox();
+
+	        var today = new Date();
+	        var duration = task.duration;
+
+			task.start_date = today;
+			task.end_date.setDate( task.start_date.getDate() + duration );
+
+			gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+task.start_date.toLocaleDateString());
+
+			gantt.refreshTask(task.id);
+			saveTask(task);
+
 	    }
 	});
 
@@ -1109,10 +1134,11 @@ else {
 				c = data[d];
 
 				var p;
+				var dispo = 0;
 				var bg = 'normal';
 
 				if(c == 'NA') {
-					p='N/A'; bg='closed';
+					p='N/A'; bg='closed'; dispo = 0;
 				}
 				else {
 					//p = Math.round(((nb_hour_capacity - c) / nb_hour_capacity)*100);
@@ -1122,7 +1148,7 @@ else {
 					else if(p<=total_hour_capacity/10) bg='justeassez';
 					else if(p>total_hour_capacity/2) bg='onestlarge';
 
-					//p+='%';
+					dispo = p;
 				}
 
 				if(p<0) {
@@ -1130,7 +1156,7 @@ else {
 					p = p + ' ['+nb_people+']';
 				}
 
-				$('div#workstations_'+wsid+' div[date='+d+']').html(p).removeClass('pasassez justeassez onestlarge closed normal').addClass(bg);
+				$('div#workstations_'+wsid+' div[date='+d+']').html(p).attr('dispo',dispo).removeClass('pasassez justeassez onestlarge closed normal').addClass(bg);
 
 			}
 
