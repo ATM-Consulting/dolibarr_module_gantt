@@ -66,7 +66,6 @@ if($fk_project>0) {
 	}
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref);
-
 }
 else {
 
@@ -1094,7 +1093,7 @@ else {
 	});
 
 	gantt.config.drag_links = false;
-	gantt.config.autoscroll = false;scrollLeft
+	gantt.config.autoscroll = false;
 	//gantt.config.autosize = "x";
 
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $range->date_start) ?>"), new Date("<?php echo date('Y-m-d', $range->date_end) ?>"));
@@ -1610,6 +1609,7 @@ console.log(row);
 			$task->fetch_optionals($gantt_milestonetask->id);
 
 			$task->ganttid = 'T'.$task->id;
+			$task->label = strtr($task->label, array("\n"=>' ',"\r"=>''));
 			$task->title = $task->label;
 			$task->text = $task->ref.' '.$task->label;
 			if($task->planned_workload>0) {
