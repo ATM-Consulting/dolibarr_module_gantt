@@ -373,30 +373,36 @@ else {
 				}
 				$range->date_end+=864000;
 			}
+
+			$formCore=new TFormCore('auto','formDate');
+			echo $formCore->hidden('open_status',(int)$open);
+			echo $formCore->hidden('fk_project',$fk_project);
+			echo $formCore->hidden('scrollLeft', 0);
+
+			$form = new Form($db);
+			echo $form->select_date($range->date_start, 'range_start');
+			echo $form->select_date($range->date_end,'range_end');
+
+
 			if($fk_project == 0){
-				$formCore=new TFormCore('auto','formDate');
+
 
 				if(!$open) echo $formCore->btsubmit($langs->trans('OpenAllTask'), 'open');
 				else  echo $formCore->btsubmit($langs->trans('ClosedTask'), 'close');
 
 				if(!empty($conf->workstation->enabled)) {
 				   $PDOdb=new TPDOdb;
-	               echo $formCore->combo('', 'restrictWS',TWorkstation::getWorstations($PDOdb, false, true), GETPOST('restrictWS'));
+	      	                   echo $formCore->combo('', 'restrictWS',TWorkstation::getWorstations($PDOdb, false, true), GETPOST('restrictWS'));
 
 				}
 
-				echo $formCore->hidden('open_status',(int)$open);
-				echo $formCore->hidden('fk_project',$fk_project);
-				echo $formCore->hidden('scrollLeft', 0);
 
-				$form = new Form($db);
-				echo $form->select_date($range->date_start, 'range_start');
-				echo $form->select_date($range->date_end,'range_end');
-
-				echo $formCore->btsubmit($langs->trans('ok'), 'bt_select_date');
-
-				$formCore->end();
 			}
+
+			echo $formCore->btsubmit($langs->trans('ok'), 'bt_select_date');
+
+			$formCore->end();
+
 			?>
 			<div id="gantt_here" style='width:100%; height:100%;'></div>
 
@@ -562,7 +568,7 @@ else {
 
 
 	gantt.config.grid_width = 390;
-	gantt.config.date_grid = "%F %d"
+	gantt.config.date_grid = "%d/%m/%y";
 
 	gantt.config.scale_height  = 40;
 	gantt.config.row_height = <?php echo $row_height; ?>;
@@ -1609,7 +1615,7 @@ console.log(row);
 			$task->fetch_optionals($gantt_milestonetask->id);
 
 			$task->ganttid = 'T'.$task->id;
-			$task->label = strtr($task->label, array("\n"=>' ',"\r"=>''));
+			$task->label = strip_tags(strtr($task->label, array("\n"=>' ',"\r"=>'')));
 			$task->title = $task->label;
 			$task->text = $task->ref.' '.$task->label;
 			if($task->planned_workload>0) {
