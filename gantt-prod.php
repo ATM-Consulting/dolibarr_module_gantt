@@ -388,6 +388,7 @@ else {
 
 				echo $formCore->hidden('open_status',(int)$open);
 				echo $formCore->hidden('fk_project',$fk_project);
+				echo $formCore->hidden('scrollLeft', 0);
 
 				$form = new Form($db);
 				echo $form->select_date($range->date_start, 'range_start');
@@ -619,13 +620,8 @@ else {
 		/*updateAllCapacity();*/
 	});
 	gantt.attachEvent("onGanttScroll", function (left, top) {
-//		updateAllCapacity();
-//console.log($("div.gantt_task_line[task_id^=T]"));
-	/*	$("div.gantt_task_line[task_id^=T]").each(function(i,item) {
 
-		});
-*/
-//console.log('onGanttScroll',$('div.gantt_hor_scroll').scrollLeft());
+		$('#formDate input[name=scrollLeft]').val(left);
 		$('div.ws_container ').scrollLeft( $('div.gantt_hor_scroll').scrollLeft() );
 	});
 
@@ -796,10 +792,17 @@ else {
 			nb_ressource = parseFloat(workstations[wsid].nb_ressource);
 		}
 
+		$ws = $('div#workstations_'+wsid+' div[date='+dateOf+']');
+		if($ws.length>0) {
+			console.log($ws);
+				nb_hour_capacity=$ws.data('nb_hour_capacity');
+				nb_ressource=$ws.data('nb_ressource');
+		}
+
 		$('#wsTimePlanner').remove();
 		$div = $('<div id="wsTimePlanner"></div>');
-		$div.append('<div><?php echo $langs->trans('NbHourCapacity'); ?> <input type="input" name="nb_hour_capacity" value="'+nb_hour_capacity+'" /></div>');
-		$div.append('<div><?php echo $langs->trans('AvailaibleRessources'); ?> <input type="input" name="nb_ressource" value="'+nb_ressource+'" /></div>');
+		$div.append('<div><?php echo $langs->trans('NbHourCapacity'); ?> <input type="number" name="nb_hour_capacity" value="'+nb_hour_capacity+'" /></div>');
+		$div.append('<div><?php echo $langs->trans('AvailaibleRessources'); ?> <input type="number" name="nb_ressource" value="'+nb_ressource+'" /></div>');
 	    $('body').append($div);
 
 	    $('#wsTimePlanner').dialog({
@@ -1091,12 +1094,18 @@ else {
 	});
 
 	gantt.config.drag_links = false;
-	gantt.config.autoscroll = false;
+	gantt.config.autoscroll = false;scrollLeft
 	//gantt.config.autosize = "x";
 
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $range->date_start) ?>"), new Date("<?php echo date('Y-m-d', $range->date_end) ?>"));
 	modSampleHeight();
 	gantt.parse(tasks);
+
+	<?php
+	if(GETPOST('scrollLeft')>0) {
+		echo 'gantt.scrollTo('.(int)GETPOST('scrollLeft').',0);';
+	}
+	?>
 
 	function modHeight(){
         var headHeight = 35;
@@ -1299,7 +1308,13 @@ else {
 		}).done(function(data) {
 //console.log('nb_hour_capacity', data);
 			for(d in data) {
-				c = data[d];
+				row = data[d];
+				var c = row.capacityLeft;
+if(d =='2017-10-14') {
+console.log(row);
+
+}
+				total_hour_capacity = row.nb_hour_capacity * row.nb_ressource;
 
 				var p;
 				var dispo = 0;
@@ -1320,19 +1335,29 @@ else {
 				}
 
 				if(p<0) {
-					var nb_people = Math.round(-p * 10 / nb_hour_capacity) / 10;
+					var nb_people = Math.round(-p * 10 / row.nb_hour_capacity ) / 10;
 					p = p + ' ['+nb_people+']';
 				}
 
-				$('div#workstations_'+wsid+' div[date='+d+']')
-							.html(p).attr('dispo',dispo).data('wsid',wsid).data('date',d)
-							.removeClass('pasassez justeassez onestlarge closed normal')
-							.addClass(bg)
-							.click(function() {
+				$ws = $('div#workstations_'+wsid+' div[date='+d+']');
 
-								setWSTime($(this).data('wsid'), $(this).data('date'))
+				$ws .html(p)
+					.data('dispo',dispo)
+					.data('wsid',wsid)
+					.data('nb_hour_capacity',row.nb_hour_capacity)
+					.data('nb_ressource',row.nb_ressource)
+					.removeClass('pasassez justeassez onestlarge closed normal')
+					.addClass(bg)
+					.click(function() {
+						setWSTime($(this).data('wsid'), $(this).attr('date'))
+					});
 
-							});
+				if(row.capacityLeft!='NA' && (nb_hour_capacity!=row.nb_hour_capacity || nb_ressource!=row.nb_ressource)) {
+					$ws.css({
+						'background-image': 'url(img/star.png)'
+						,'background-repeat':'no-repeat'
+					}).attr('title','<?php echo $langs->trans('DayCapacityModify'); ?>');
+				}
 
 			}
 
@@ -1462,37 +1487,6 @@ else {
 		/*window.alert(colWidth);*/
 		$( ".ws_container .gantt_task_cell" ).width(colWidth);
 
-/*
-  function fixHeader() {
-    var $cache = $('#gantt_here div.gantt_container div.gantt_grid_scale,#gantt_here div.gantt_container div.gantt_task_scale');
-    if($('.clonedHTML').length == 0) {
-	$cache.each(function(i,item) {
-	     var $item = $(item);
-	     var $parent = $item.parent();
-	     $item.clone()
-		.appendTo('body')
-		.css({left:-$parent.scrollLeft()})
-		.wrap(function() {
-
-			$div = $('<div class="clonedHTML" style="width:'+$parent.width()+'px; top:0; position:fixed;overflow:hidden;"></div>');
-//			$div.css({'left' : -$parent.scrollLeft()});
-			return $div;
-		});
-
-	});
-    }
-    if ($(window).scrollTop() < fixedTopHeader) {
-		$('.clonedHTML').remove();
-    }
-
-
-  }
-
-	  var fixedTopHeader = $('#gantt_here div.gantt_container div.gantt_grid_scale').offset().top;
-
-	  $(window).scroll(fixHeader);
-	  fixHeader();
-*/
 	});
 
 	</script>
