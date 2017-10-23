@@ -559,7 +559,7 @@ else {
 				dol_include_once('/core/lib/date.lib.php');
 
 				for($i=0;$i<1000000;$i+=900) {
-					echo '{key:"'.$i.'", label:"'.convertSecondToTime($i,'all').'"},';
+					echo '{key:"'.$i.'", label:"'.convertSecondToTime($i,'allhourmin').'"},';
 				}
 
 			?>
@@ -1319,10 +1319,7 @@ else {
 			for(d in data) {
 				row = data[d];
 				var c = row.capacityLeft;
-if(d =='2017-10-14') {
-console.log(row);
 
-}
 				total_hour_capacity = row.nb_hour_capacity * row.nb_ressource;
 
 				var p;
@@ -1343,7 +1340,11 @@ console.log(row);
 					dispo = p;
 				}
 
-				if(p<0) {
+				if(wsid == 0) {
+					p = -p;
+					if(p == 0) p='';
+				}
+				else if(p<0) {
 					var nb_people = Math.round(-p * 10 / row.nb_hour_capacity ) / 10;
 					p = p + ' ['+nb_people+']';
 				}
@@ -1356,16 +1357,20 @@ console.log(row);
 					.data('nb_hour_capacity',row.nb_hour_capacity)
 					.data('nb_ressource',row.nb_ressource)
 					.removeClass('pasassez justeassez onestlarge closed normal')
-					.addClass(bg)
+
+				if(wsid>0) {
+					$ws.addClass(bg)
 					.click(function() {
 						setWSTime($(this).data('wsid'), $(this).attr('date'))
 					});
 
-				if(row.capacityLeft!='NA' && (nb_hour_capacity!=row.nb_hour_capacity || nb_ressource!=row.nb_ressource)) {
-					$ws.css({
-						'background-image': 'url(img/star.png)'
-						,'background-repeat':'no-repeat'
-					}).attr('title','<?php echo $langs->transnoentities('DayCapacityModify'); ?>');
+					if(row.capacityLeft!='NA' && (nb_hour_capacity!=row.nb_hour_capacity || nb_ressource!=row.nb_ressource)) {
+						$ws.css({
+							'background-image': 'url(img/star.png)'
+							,'background-repeat':'no-repeat'
+						}).attr('title','<?php echo $langs->transnoentities('DayCapacityModify'); ?>');
+					}
+
 				}
 
 			}
@@ -1457,6 +1462,8 @@ console.log(row);
 				$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_0" style="width:'+w_workstation+'px; "><?php echo $cellsnoo; ?></div>');
 
 			}
+
+			updateWSCapacity(0, <?php echo (int)$range->date_start?>, <?php echo (int)$range->date_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>);
 
 			<?php
 
