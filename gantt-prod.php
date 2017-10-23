@@ -347,7 +347,7 @@ else {
 
 	                								$task->ws = &$ws;
 
-	                								$TData[] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after);
+													$TData[] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after);
 
 													if($task->fk_task_parent>0) {
 														$linkId = count($TLink)+1;
@@ -367,7 +367,7 @@ else {
 
 			_get_events($TData,$TLink);
 		//	var_dump(dol_print_date($t_start),dol_print_date($t_end));exit;
-
+		//	var_dump($TTaskNoOrdoTime);
 			if($range->autotime){
 				if(empty($range->date_start)) {
 					$range->date_start = $range->date_end = time()-86400;
@@ -382,7 +382,7 @@ else {
 
 				if(!empty($conf->workstation->enabled)) {
 				   $PDOdb=new TPDOdb;
-	               echo $formCore->combo('', 'restrictWS',TWorkstation::getWorstations($PDOdb, false, true), GETPOST('restrictWS'));
+				   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , GETPOST('restrictWS'));
 
 				}
 
@@ -497,15 +497,20 @@ else {
 	}
 	gantt.templates.rightside_text = function(start, end, task){
 
+		var r = "";
+
+		if(task.workstation == 0) {
+			r+="<?php echo  addslashes(img_info($langs->trans('NoWorkstationOnThisTask'))); ?>";
+		}
+
 		if(task.time_task_limit_no_before && task.time_task_limit_no_before> (+task.start_date / 1000)){
-			return "<?php echo  addslashes(img_warning().$langs->trans('TooEarly')); ?>";
+			r+="<?php echo  addslashes(img_warning().$langs->trans('TooEarly')); ?>";
 		}
 		else if(task.time_task_limit_no_after && task.time_task_limit_no_after>0 && (+task.end_date/1000)>task.time_task_limit_no_after + 86399 ){
-			return "<?php echo  addslashes(img_warning().$langs->trans('TooLate')); ?>";
+			r+="<?php echo  addslashes(img_warning().$langs->trans('TooLate')); ?>";
 		}
 
-
-		return "";
+		return r;
 	}
 
 	gantt.config.columns = [
@@ -597,6 +602,10 @@ else {
 		    r = "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?>";
 			if(task.start_date) r+= "<br /><?php echo $langs->trans('FromDate') ?> "+task.start_date.toLocaleDateString()
 			if(task.end_date) r+= " <?php echo $langs->trans('ToDate') ?> "+task.end_date.toLocaleDateString();
+		}
+
+		if(task.workstation == 0) {
+			r+="<?php echo  addslashes('<div class="error">'.img_info().$langs->trans('NoWorkstationOnThisTask').'</div>'); ?>";
 		}
 
 		return r;
@@ -1356,7 +1365,7 @@ console.log(row);
 					$ws.css({
 						'background-image': 'url(img/star.png)'
 						,'background-repeat':'no-repeat'
-					}).attr('title','<?php echo $langs->trans('DayCapacityModify'); ?>');
+					}).attr('title','<?php echo $langs->transnoentities('DayCapacityModify'); ?>');
 				}
 
 			}
@@ -1428,6 +1437,31 @@ console.log(row);
 			<?php
 
 		}
+
+		if(!empty($TTaskNoOrdoTime)) {
+
+			$cellsnoo = ''; //TODO in js
+			$t_cur = $range->date_start;
+			while($t_cur<=$range->date_end) {
+
+				$datenoo = date('Y-m-d', $t_cur);
+
+				$cellsnoo.='<div class="gantt_task_cell" date="'.$datenoo.'">'.( empty($TTaskNoOrdoTime[$datenoo]) ? '&nbsp;' : round($TTaskNoOrdoTime[$datenoo]/3600,2) ).'</div>';
+				$t_cur = strtotime('+1day',$t_cur);
+			}
+
+			?>
+			if($("div#workstations_0.gantt_row").length == 0 ) {
+
+				$('div.ws_container_label').append('<div class="gantt_row workstation_0" style="text-align:right; width:'+w_workstation_title+'px;height:13px;padding-right:5px;font-size:10px;"><a href="#" onclick="$(\'#formDate select[name=restrictWS]\').val(0);$(\'#formDate\').submit();"><?php echo $langs->trans('NotOrdonnanced') ?></a></div>');
+				$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_0" style="width:'+w_workstation+'px; "><?php echo $cellsnoo; ?></div>');
+
+			}
+
+			<?php
+
+		}
+
 
 		echo '
 		replicateDates();
@@ -1588,8 +1622,12 @@ console.log(row);
 			if(GETPOST('restrictWS')>0) {
 				$sql.=" AND tex.fk_workstation=".(int)GETPOST('restrictWS');
 			}
-
+			else if(GETPOST('restrictWS','int') == 0 ) {
+				$sql.=" AND (tex.fk_workstation IS NULL) ";
+			}
 		}
+
+
 
 		$sql.=" ORDER BY t.rowid ";
 
@@ -1877,9 +1915,11 @@ console.log(row);
 		}
 
 		if(GETPOST('restrictWS')>0) {
-                                $sql.=" AND tex.fk_workstation=".(int)GETPOST('restrictWS');
-                }
-
+                $sql.=" AND tex.fk_workstation=".(int)GETPOST('restrictWS');
+        }
+        else if(GETPOST('restrictWS','int') == 0 ) {
+             	$sql.=" AND (tex.fk_workstation IS NULL) ";
+        }
 
 		$sql.=" AND t.dateo BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."'";
 
@@ -1944,6 +1984,8 @@ console.log(row);
 		}
 		elseif($object->element == 'project_task') {
 			global $range,$TWS,$workstationList;
+
+			_check_task_wihout_workstation($object);
 
 			if($range->autotime) {
 				if(empty($range->date_start) || $object->date_start<$range->date_start)$range->date_start=$object->date_start;
@@ -2176,5 +2218,30 @@ console.log(row);
 		}
 	}
 
+	function _check_task_wihout_workstation(&$task) {
+		global $TTaskNoOrdoTime;
 
+		if(empty($TTaskNoOrdoTime)) $TTaskNoOrdoTime = array();
+
+		if(empty($task->array_options['options_fk_workstation'])) {
+
+			$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
+			if($duration<1)$duration = 1;
+
+			$t = $task->date_start;
+			$end_no_time = $task->date_start +( $duration * 86400 );
+
+			while($t<$end_no_time) {
+
+				if(empty($TTaskNoOrdoTime[date('Y-m-d',$t)]))$TTaskNoOrdoTime[date('Y-m-d',$t)]=0;
+
+				$TTaskNoOrdoTime[date('Y-m-d',$t)] += (int)($task->planned_workload / $duration);
+
+				$t = strtotime('+1day',$t);
+			}
+
+
+		}
+
+	}
 

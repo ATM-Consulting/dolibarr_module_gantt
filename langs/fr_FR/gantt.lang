@@ -41,3 +41,5 @@ AutoMove=Repositionner
 TaskMovedTo=Tâche déplacée le 
 setWSTime=Etablir le temps du poste
 DayCapacityModify=Capacité du poste personnalisée
+NotOrdonnanced=Non ordonnancé
+NoWorkstationOnThisTask=Pas de poste de charge configuré sur la tâche
