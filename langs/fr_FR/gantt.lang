@@ -43,3 +43,4 @@ setWSTime=Etablir le temps du poste
 DayCapacityModify=Capacité du poste personnalisée
 NotOrdonnanced=Non ordonnancé
 NoWorkstationOnThisTask=Pas de poste de charge configuré sur la tâche
+GANTT_SHOW_WORKSTATION_ON_1PROJECT=Voir la capacité des postes de charge aussi sur la vue d'un projet

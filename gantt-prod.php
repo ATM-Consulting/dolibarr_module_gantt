@@ -374,6 +374,7 @@ else {
 				}
 				$range->date_end+=864000;
 			}
+
 			$formCore=new TFormCore('auto','formDate');
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
@@ -382,16 +383,16 @@ else {
 			$form = new Form($db);
 			echo $form->select_date($range->date_start, 'range_start');
 			echo $form->select_date($range->date_end,'range_end');
-			
+
 			if($fk_project == 0){
 				if(!$open) echo $formCore->btsubmit($langs->trans('OpenAllTask'), 'open');
 				else  echo $formCore->btsubmit($langs->trans('ClosedTask'), 'close');
 
-				if(!empty($conf->workstation->enabled)) {
-				   $PDOdb=new TPDOdb;
-				   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , GETPOST('restrictWS'));
+			}
 
-				}
+			if(!empty($conf->workstation->enabled)) {
+			   $PDOdb=new TPDOdb;
+			   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , (GETPOST('restrictWS') == '' ? -1 : GETPOST('restrictWS')));
 
 			}
 
@@ -610,6 +611,10 @@ else {
 
 		if(task.workstation == 0) {
 			r+="<?php echo  addslashes('<div class="error">'.img_info().$langs->trans('NoWorkstationOnThisTask').'</div>'); ?>";
+		}
+		else if(workstations[task.workstation]){
+			//console.log(workstations[task.workstation]);
+			r+="<?php echo  addslashes('<div class="info">'.img_info()) ?> "+workstations[task.workstation].name+ "</div>";
 		}
 
 		return r;
@@ -1383,7 +1388,7 @@ else {
 	}
 
 	<?php
-	if($fk_project == 0) {
+	if($fk_project == 0 || !empty($conf->global->GANTT_SHOW_WORKSTATION_ON_1PROJECT)) {
 
 		?>
 		var w_workstation = $('div.gantt_bars_area').width();
