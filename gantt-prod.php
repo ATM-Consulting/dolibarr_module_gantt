@@ -330,7 +330,7 @@ else {
                 							if(empty($ws->element)) $ws->element = 'workstation';
                 							//var_dump($ws->element);
 
-                							$ws->ganttid = $fk_parent_of.$ws->ganttid;
+                							$ws->ganttid = 's'.$fk_parent_of.$ws->ganttid;
 
                 							if($ws->element =='milestone' && $ws->date>$time_task_limit_no_before) {
                 								$time_task_limit_no_before = strtotime(date('Y-m-d 00:00:00',$ws->date));
@@ -688,7 +688,7 @@ else {
 
 
 	gantt.attachEvent("onTaskDblClick", function(id,e){
-		if(id[0] == 'T') {
+		if(id[0] === 'T') {
 			var task = gantt.getTask(id);
 
 			task.text = task.title;
@@ -698,16 +698,16 @@ else {
 
 				if(m>0) task.planned_workload = task.planned_workload - m + 900;
 			}
-			console.log(task);
+			/*console.log(task);*/
 			return true;
 		}
-		else if(id[0] == 'P') {
+		else if(id[0] === 'P') {
 			window.open('<?php echo dol_buildpath('/projet/card.php', 1) ?>?id='+id.substr(1));
 		}
-		else if(id[0] == 'O') {
+		else if(id[0] === 'O') {
 			window.open('<?php echo dol_buildpath('/commande/card.php', 1) ?>?id='+id.substr(1));
 		}
-		else if(id[0] == 'M') {
+		else if(id[0] === 'M') {
 			window.open('<?php echo dol_buildpath('/of/fiche_of.php', 1) ?>?id='+id.substr(1));
 		}
 		else {
@@ -1871,7 +1871,7 @@ else {
 			$object->element = 'milestone';
 			$object->title = $object->text = $langs->trans('EndOfOrder', $order->ref, dol_print_date($order->date_livraison));
 			$object->date= $order->date_livraison+ 84399; //23:59:59
-			$object->ganttid = 'ORDER'.$order->id;
+			$object->ganttid = 'JS'.$order->id;
 			$object->bound='after';
 			$object->visible = 1;
 
@@ -1893,7 +1893,7 @@ else {
 			$object->element = 'milestone';
 			$object->title = $object->text = $langs->trans('StartOfProject', $project->ref, dol_print_date($project->date_start));
 			$object->date=$project->date_start;
-			$object->ganttid = 'STARTOF'.$project->id;
+			$object->ganttid = 'JPS'.$project->id;
 			$object->bound='before';
 
 			$TData[$object->ganttid]['object'] = $object;
@@ -1905,7 +1905,7 @@ else {
 			$object->element = 'milestone';
 			$object->title = $object->text = $langs->trans('EndOfProject', $project->ref, dol_print_date($project->date_end));
 			$object->date= $project->date_end + 84399; //23:59:59
-			$object->ganttid = 'RELEASE'.$project->id;
+			$object->ganttid = 'JPE'.$project->id;
 			$object->bound='after';
 
 			$TData[$object->ganttid]['object'] = $object;
@@ -1934,7 +1934,7 @@ else {
 					$object->element = 'milestone';
 					$object->title = $object->text = $langs->trans('AwaitingDelivery', $cmd->ref, dol_print_date($cmd->date_livraison));
 					$object->date= $cmd->date_livraison;
-					$object->ganttid = 'DELIVERY'.$cmd->id;
+					$object->ganttid = 'JSO'.$cmd->id;
 					$object->bound='before';
 					$object->visible = 1;
 
