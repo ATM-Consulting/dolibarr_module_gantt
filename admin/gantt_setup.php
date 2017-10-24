@@ -156,6 +156,31 @@ print '</td></tr>';
 
 $var=!$var;
 print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("GANTT_DISABLE_ORDER_MILESTONE").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="right" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="set_GANTT_DISABLE_ORDER_MILESTONE">';
+echo ajax_constantonoff('GANTT_DISABLE_ORDER_MILESTONE');
+print '</form>';
+print '</td></tr>';
+
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("GANTT_BOUND_ARE_JUST_ALERT").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="right" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="set_GANTT_BOUND_ARE_JUST_ALERT">';
+echo ajax_constantonoff('GANTT_BOUND_ARE_JUST_ALERT');
+print '</form>';
+print '</td></tr>';
+
+
+$var=!$var;
+print '<tr '.$bc[$var].'>';
 print '<td>'.$langs->trans("GANTT_MODIFY_PARENT_DATES_AS_CHILD").'</td>';
 print '<td align="center" width="20">&nbsp;</td>';
 print '<td align="right" width="300">';

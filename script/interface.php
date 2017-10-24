@@ -4,6 +4,7 @@
 	dol_include_once('/projet/class/project.class.php');
 	dol_include_once('/projet/class/task.class.php');
 	dol_include_once('/comm/action/class/actioncomm.class.php');
+	dol_include_once('/gantt/class/gantt.class.php');
 
 	$langs->load("gantt@gantt");
 
@@ -52,6 +53,15 @@
 			__out(_get_ws_capactiy(  GETPOST('wsid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
 
 			break;
+
+		case 'better-pattern':
+			__out(_get_better_pattern(  GETPOST('tasks'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
+			break;
+	}
+
+	function _get_better_pattern($tasks, $t_start, $t_end) {
+
+		return GanttPatern::get_better(explode(',', $tasks), $t_start, $t_end);
 	}
 
 	function _set_ws_time($wsid, $date, $nb_hour_capacity, $nb_ressource) {
@@ -237,23 +247,8 @@
 	}
 
 	function _get_ws_capactiy($wsid, $t_start, $t_end) {
-		global $conf;
 
-		if(empty($conf->workstation->enabled)) return array();
-
-		dol_include_once('/workstation/class/workstation.class.php');
-
-		$PDOdb=new TPDOdb;
-
-		$ws=new TWorkstation;
-		$ws->load($PDOdb, $wsid);
-
-		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end);
-
-		// TODO Faire une PR sur le module workstation pour inclure cette fonction
-		_getCapacityLeftRangeAgenda($PDOdb,$ws,$Tab,$t_start, $t_end);
-
-		return $Tab;
+		return GanttPatern::get_ws_capacity($wsid, $t_start, $t_end);
 	}
 
 	function _put_projects(&$TProject) {

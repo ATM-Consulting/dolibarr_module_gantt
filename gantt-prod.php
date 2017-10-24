@@ -283,7 +283,7 @@ else {
         							$time_task_limit_no_before=$time_task_limit_no_before_init = strtotime(date('Y-m-d 00:00:00',$order->date));
         						}
         						else {
-        							$time_task_limit_no_after = strtotime(date('Y-m-d 23:59:59',$order->date));
+        							$time_task_limit_no_after =$time_task_limit_no_after_init= strtotime(date('Y-m-d 23:59:59',$order->date));
         						}
         					}
 
@@ -295,6 +295,7 @@ else {
         						$fk_parent_order = $fk_parent_project;
         					}
 
+        					$time_task_limit_no_after=$time_task_limit_no_after_init;
 
         					if(!empty($orderData['childs'])) {
 
@@ -305,7 +306,11 @@ else {
 
             						$fk_parent_of = null;
 
-            						if(!empty($conf->of->enabled) && (empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $of->id>0) ) {
+            						if($of->element =='milestone' && $of->date<$time_task_limit_no_after) {
+            							$time_task_limit_no_after= strtotime(date('Y-m-d 23:59:59',$of->date));
+            						}
+
+            						if((!empty($conf->of->enabled) && (empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $of->id>0) ) || $of->element!='of') {
             							$TData[] = _get_json_data($of, $close_init_status, $fk_parent_order, $time_task_limit_no_before,$time_task_limit_no_after);
             							$fk_parent_of= $of->ganttid;
             						}
@@ -606,7 +611,7 @@ else {
 		if(task.text) {
 		    r = "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?>";
 			if(task.start_date) r+= "<br /><?php echo $langs->trans('FromDate') ?> "+task.start_date.toLocaleDateString()
-			if(task.end_date) r+= " <?php echo $langs->trans('ToDate') ?> "+task.end_date.toLocaleDateString();
+			if(task.end_date && task.duration>1) r+= " <?php echo $langs->trans('ToDate') ?> "+task.end_date.toLocaleDateString();
 		}
 
 		if(task.workstation == 0) {
@@ -695,6 +700,15 @@ else {
 			}
 			console.log(task);
 			return true;
+		}
+		else if(id[0] == 'P') {
+			window.open('<?php echo dol_buildpath('/projet/card.php', 1) ?>?id='+id.substr(1));
+		}
+		else if(id[0] == 'O') {
+			window.open('<?php echo dol_buildpath('/commande/card.php', 1) ?>?id='+id.substr(1));
+		}
+		else if(id[0] == 'M') {
+			window.open('<?php echo dol_buildpath('/of/fiche_of.php', 1) ?>?id='+id.substr(1));
 		}
 		else {
 			return false;
@@ -950,6 +964,15 @@ else {
 	}
 
 	function dragTaskLimit(task, diff ,mode) {
+
+		<?php
+
+		if(!empty($conf->global->GANTT_BOUND_ARE_JUST_ALERT)) {
+			echo 'return 0;';
+		}
+
+		?>
+
 		var modes = gantt.config.drag_mode;
 
 		if(leftLimitON && +task.start_date < +leftLimit){
@@ -1808,6 +1831,8 @@ else {
 				_load_child_tasks( $TTask[$project->id]['childs'][$order->id]['childs'], $order);
 			}
 
+			_adding_task_order($order, $TTask[$project->id]['childs'][$order->id]['childs']);
+
 			if(empty($TTask[$project->id]['childs'][$order->id]['childs'][$of->id])) {
 
 				$TTask[$project->id]['childs'][$order->id]['childs'][$of->id]=array(
@@ -1831,6 +1856,28 @@ else {
 		}
 		_load_child_tasks( $TTask);
 		return $TTask;
+
+	}
+
+	function _adding_task_order(&$order,&$TData) {
+
+		global $db, $langs, $conf;
+		if(!empty($conf->global->GANTT_DISABLE_ORDER_MILESTONE)) {
+			return false;
+		}
+
+		if($order->date_livraison>0) {
+			$object=new stdClass();
+			$object->element = 'milestone';
+			$object->title = $object->text = $langs->trans('EndOfOrder', $order->ref, dol_print_date($order->date_livraison));
+			$object->date= $order->date_livraison+ 84399; //23:59:59
+			$object->ganttid = 'ORDER'.$order->id;
+			$object->bound='after';
+			$object->visible = 1;
+
+			$TData[$object->ganttid]['object'] = $object;
+
+		}
 
 	}
 
