@@ -131,7 +131,7 @@ else {
 
 //    				if(empty($fk_project)) {
 
-    					$TData[] = _get_json_data($project, $close_init_status);
+    					$TData[$project->ganttid] = _get_json_data($project, $close_init_status);
     					$fk_parent_project= $project->ganttid;
 
     					_get_events( $TData,$TLink,$project->id);
@@ -156,7 +156,7 @@ else {
         					}
 
         					if(empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $order->id>0 || $order->element!='commande') {
-        						$TData[] = _get_json_data($order, $close_init_status, $fk_parent_project, $time_task_limit_no_before,$time_task_limit_no_after);
+        						$TData[$order->ganttid] = _get_json_data($order, $close_init_status, $fk_parent_project, $time_task_limit_no_before,$time_task_limit_no_after);
         						$fk_parent_order = $order->ganttid;
         					}
         					else {
@@ -179,7 +179,7 @@ else {
             						}
 
             						if((!empty($conf->of->enabled) && (empty($conf->global->GANTT_HIDE_INEXISTANT_PARENT) || $of->id>0) ) || $of->element!='of') {
-            							$TData[] = _get_json_data($of, $close_init_status, $fk_parent_order, $time_task_limit_no_before,$time_task_limit_no_after);
+            							$TData[$of->ganttid] = _get_json_data($of, $close_init_status, $fk_parent_order, $time_task_limit_no_before,$time_task_limit_no_after);
             							$fk_parent_of= $of->ganttid;
             						}
             						else{
@@ -205,7 +205,7 @@ else {
                 							}
 
                 							if((!empty($ws->id) && empty($conf->global->GANTT_HIDE_WORKSTATION)) || ($ws->element!='workstation')) {
-                								$TData[] = _get_json_data($ws, $close_init_status, $fk_parent_of, $time_task_limit_no_before,$time_task_limit_no_after);
+                								$TData[$ws->ganttid] = _get_json_data($ws, $close_init_status, $fk_parent_of, $time_task_limit_no_before,$time_task_limit_no_after);
                 								$fk_parent_ws = $ws->ganttid;
                 							}
 											else{
@@ -220,11 +220,13 @@ else {
 
 	                								$task->ws = &$ws;
 
-													$TData[] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after);
+	                								$TData[$task->ganttid] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after);
 
 													if($task->fk_task_parent>0) {
 														$linkId = count($TLink)+1;
-														$TLink[$linkId] =' {id:'.$linkId.', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
+														//$TLink[$linkId] =' {id:'.$linkId.', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
+
+														$TLink[$linkId] = array('id'=>$linkId, 'source'=>'T'.$task->fk_task_parent, 'target'=>$task->ganttid, 'type'=>'0');
 													}
 
 	                							}
@@ -239,6 +241,8 @@ else {
 			}
 
 			_get_events($TData,$TLink);
+
+		//	pre($TData,1);pre($TLink,1);exit;
 		//	var_dump(dol_print_date($t_start),dol_print_date($t_end));exit;
 		//	var_dump($TTaskNoOrdoTime);
 			if($range->autotime){
@@ -328,7 +332,15 @@ else {
 
 	    ],
 	    links:[
-	       <?php echo implode(',',$TLink); ?>
+	       <?php
+	       $Tmp=array();
+	       foreach($TLink as $k=>&$link) {
+	       		if(isset($TData[$link['source']])) {
+	       			$Tmp[$linkId] =' {id:'.$link['id'].', source:"'.$link['source'].'", target:"'.$link['target'].'", type:"'.$link['type'].'"}';
+	       		}
+	       }
+
+	       echo implode(',',$Tmp); ?>
 	    ]
 	};
 
@@ -836,15 +848,20 @@ else {
 		}).done(function(data) {
 
 			$.each(data, function(i, item) {
-				var t = gantt.getTask('T'+i);
 
-				t.duration = item.duration;
-				t.start_date = new Date(item.start * 1000);
-				t.end_date = new Date(+task.start_date + (86400000 * t.duration ) - 1 );
+				if(item.duration>0) {
 
-				gantt.refreshTask(t.id);
-				gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+t.start_date.toLocaleDateString());
-				saveTask(t);
+					var t = gantt.getTask('T'+i);
+
+					t.duration = item.duration;
+					t.start_date = new Date(item.start * 1000);
+					t.end_date = new Date(+task.start_date + (86400000 * t.duration ) - 1 );
+
+					gantt.refreshTask(t.id);
+					gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+t.start_date.toLocaleDateString());
+					saveTask(t);
+
+				}
 			});
 
 		});

@@ -70,7 +70,7 @@ class GanttPatern {
 
 				$fk_workstation = (int)$task->array_options['options_fk_workstation'];
 
-				if($fk_workstation>0 ) {
+				if($fk_workstation>0 && $task->progress < 100) {
 					if(empty($TWS[$fk_workstation])) $TWS[$fk_workstation] = self::get_ws_capacity($fk_workstation, $t_start, $t_end, $task->id);
 					$Tab[$task->id] = self::gb_search($TWS[$fk_workstation], $task, $t_start, $t_end);
 
