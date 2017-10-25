@@ -55,13 +55,13 @@
 			break;
 
 		case 'better-pattern':
-			__out(_get_better_pattern(  GETPOST('tasks'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
+			__out(_get_better_pattern(  GETPOST('tasksid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
 			break;
 	}
 
-	function _get_better_pattern($tasks, $t_start, $t_end) {
+	function _get_better_pattern($tasksid, $t_start, $t_end) {
 
-		return GanttPatern::get_better(explode(',', $tasks), $t_start, $t_end);
+		return GanttPatern::get_better(explode(',', $tasksid), $t_start, $t_end);
 	}
 
 	function _set_ws_time($wsid, $date, $nb_hour_capacity, $nb_ressource) {

@@ -1,0 +1,127 @@
+#gantt_here {
+	margin-bottom:500px;
+}
+.gantt_task_line.gantt_milestone,.gantt_task_line.gantt_release {
+
+    background-color: #d33daf;
+    border: 0 solid #61164f;
+    /*visibility: hidden;
+    box-sizing: content-box;
+    -moz-box-sizing: content-box;
+    height: 30px;
+	line-height: 30px;
+	width: 30px;
+	font-size: 1px;
+    content:'';*/
+}
+
+.gantt_task_line.gantt_of {
+    background-color: #d3af3d;
+    border: 0 solid #d3af3d;
+    box-sizing: content-box;
+    -moz-box-sizing: content-box;
+
+}
+
+.gantt_task_line.gantt_order {
+    background-color: #d3d13a;
+    border: 0 solid #d3d13a;
+    box-sizing: content-box;
+    -moz-box-sizing: content-box;
+
+}
+
+div.ws_container,div.ws_container_label {
+	position: fixed;
+	bottom:0px;
+	overflow: hidden;
+	background-color:#fff;
+}
+div.ws_container {
+	overflow-y:hidden;
+	overflow-x: scroll;
+}
+div.ws_container div.gantt_task_cell {
+	width:70px;
+	text-align:center;
+}
+div.ws_container div.gantt_task_cell,div.ws_container_label div.div.gantt_row,div.ws_container div.gantt_row {
+	line-height:12px;
+	overflow:visible;
+}
+       div.ws_container div.gantt_task_cell.normal {
+	background-color:#7caa43;
+}
+       div.ws_container div.gantt_task_cell.pasassez {
+               background-color:rgb(255, 10, 10);
+       }
+      div.ws_container div.gantt_row:nth-child(odd) div.gantt_task_cell.pasassez {
+               background-color:rgb(255, 100, 100);
+       }
+
+       div.ws_container div.gantt_task_cell.justeassez {
+               background-color:rgb(255, 165, 0);
+       }
+       div.ws_container div.gantt_task_cell.onestlarge {
+               background-color:rgb(124, 236, 67);
+       }
+ div.ws_container div.gantt_row:nth-child(odd) div.gantt_task_cell.onestlarge {
+               background-color:rgb(110, 222, 53);
+       }
+div.ws_container div.gantt_task_cell.closed {
+               background-color:#ccc;
+       }
+
+
+   .gantt_task_progress{
+   	text-align:left;
+   	padding-left:10px;
+       box-sizing: border-box;
+   	color:white;
+   	font-weight: bold;
+   }
+ .gantt_cal_light_wide .gantt_cal_lsection {
+	width:120px;
+}
+
+.modalwaiter {
+    display:    none;
+    position:   fixed;
+    z-index:    1000;
+    top:        0;
+    left:       0;
+    height:     100%;
+    width:      100%;
+    background: rgba( 255, 255, 255, .8 )
+                url('img/ajax-loader.gif')
+                50% 50%
+                no-repeat;
+}
+
+/* When the body has the loading class, we turn
+   the scrollbar off with overflow:hidden */
+body.loading {
+    overflow: hidden;
+}
+
+/* Anytime the body has the loading class, our
+   modal element will be visible */
+body.loading .modalwaiter {
+    display: block;
+}
+
+.lateDay {
+	background-color:#ffdddd;
+}
+
+.gantt_side_content.gantt_right {
+
+	padding-left : 5px;
+	overflow:visible;
+
+}
+
+   div.edit_task_button_set, div.automove_set, div.split_set {
+	border-radius: 4px;
+	border:1px solid #ccc;
+   }
