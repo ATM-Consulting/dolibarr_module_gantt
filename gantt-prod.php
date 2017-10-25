@@ -957,10 +957,22 @@ else {
 
 					var diff = +parent.end_date - parent.start_date ;
 
-					if(parent.end_date > task.end_date ) {
+					if(parent.duration>=task.duration &&  parent.end_date > task.end_date ) {
 
 						parent.end_date = task.end_date;
 						parent.start_date = new Date(+parent.end_date - diff + 1000);
+
+						TAnotherTaskToSave[parent.id] = true;
+
+						var modes = gantt.config.drag_mode;
+					    dragTaskLimit(parent, +parent.duration * 86400000,modes.move);
+
+					    gantt.refreshTask(parent.id, true);
+					}
+					else if(parent.duration<task.duration &&  parent.start_date > task.start_date ) {
+
+						parent.start_date = task.start_date ;
+						parent.end_date = new Date(+parent.start_date + diff - 1000 );
 
 						TAnotherTaskToSave[parent.id] = true;
 
@@ -1075,6 +1087,7 @@ else {
 	gantt.config.drag_links = false;
 	gantt.config.autoscroll = false;
 	//gantt.config.autosize = "x";
+	gantt.config.fit_tasks = true;
 
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $range->date_start) ?>"), new Date("<?php echo date('Y-m-d', $range->date_end) ?>"));
 	modSampleHeight();
@@ -1083,6 +1096,9 @@ else {
 	<?php
 	if(GETPOST('scrollLeft')>0) {
 		echo 'gantt.scrollTo('.(int)GETPOST('scrollLeft').',0);';
+	}
+	else {
+		echo ' updateWSRangeCapacity(0); ';
 	}
 	?>
 
@@ -1387,12 +1403,6 @@ else {
 		if($("div.ws_container_label").length == 0) {
 			$("body").append(\'<div class="ws_container_label"></div>\');
 			$("body").append(\'<div class="ws_container"><div></div></div>\');
-
-			$("div.ws_container").scroll(function(e) {
-/*console.log($(this).scrollLeft(),e);*/
-				gantt.scrollTo($(this).scrollLeft(),null);
-				replicateDates();
-			});
 		}
 
 
@@ -1408,7 +1418,7 @@ else {
 
 			}
 
-			updateWSCapacity(<?php echo $ws->id ?>, <?php echo (int)$range->date_start?>, <?php echo (int)$range->date_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>);
+		/*	updateWSCapacity(<?php echo $ws->id ?>, <?php echo (int)$range->date_start?>, <?php echo (int)$range->date_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>); */
 			<?php
 
 		}
@@ -1433,8 +1443,6 @@ else {
 
 			}
 
-			updateWSCapacity(0, <?php echo (int)$range->date_start?>, <?php echo (int)$range->date_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>);
-
 			<?php
 
 		}
@@ -1453,12 +1461,7 @@ else {
 			,height : $("div.ws_container").outerHeight()
 		}); ';
 
-		/*
-		echo '$(".gantt_task_line.gantt_milestone").css({
-			width:"'.$row_height.'px"
-			,height:"'.$row_height.'px"
-		});';
-		*/
+
 		echo ' }
 
 		updateAllCapacity(); ';
@@ -1471,9 +1474,6 @@ else {
 		if($("div.ws_container_label").length == 0) {
                         $("body").append('<div class="ws_container"><div>&nbsp;</div></div>');
 
-                        $("div.ws_container").scroll(function(e) {
-                                gantt.scrollTo($(this).scrollLeft(),null);
-                        });
                 }
 
                 $("div.ws_container").css({
@@ -1488,6 +1488,45 @@ else {
 	}
 
 	?>
+
+	var start_refresh_ws = 0;
+	var end_refresh_ws = 0;
+
+	function updateWSRangeCapacity(sl) {
+		var sr = sl + $('#gantt_here div.gantt_task').width();
+
+		var date_start = gantt.dateFromPos(sl).setHours(0,0,0,0) / 1000 - (86400 * 2);
+		var date_end = gantt.dateFromPos(sr).setHours(23,59,59,0) / 1000 + (86400 * 2);
+
+		if(date_start < start_refresh_ws - (86400*2) || date_start > start_refresh_ws + (86400*2)) {
+
+			start_refresh_ws = date_start;
+			end_refresh_ws = date_end;
+
+			updateWSCapacity(0, date_start, date_end);
+			<?php
+
+				foreach($TWS as &$ws) {
+
+					?> updateWSCapacity(<?php echo $ws->id ?>,  date_start, date_end); <?php
+
+				}
+
+			?>
+
+		}
+	}
+
+	$("div.ws_container").scroll(function(e) {
+		var sl = $(this).scrollLeft();
+
+		gantt.scrollTo(sl,null);
+		updateWSRangeCapacity(sl);
+
+	    replicateDates();
+
+	});
+
 
 	/*
 	*	Recalcul la taille des colonnes du workflow
