@@ -1098,7 +1098,7 @@ else {
 		echo 'gantt.scrollTo('.(int)GETPOST('scrollLeft').',0);';
 	}
 	else {
-		echo ' updateWSRangeCapacity(0); ';
+		echo '$(document).ready(function() { updateWSRangeCapacity(0); });';
 	}
 	?>
 
@@ -1418,28 +1418,18 @@ else {
 
 			}
 
-		/*	updateWSCapacity(<?php echo $ws->id ?>, <?php echo (int)$range->date_start?>, <?php echo (int)$range->date_end?>,<?php echo (double)$ws->nb_hour_capacity; ?>); */
 			<?php
 
 		}
 
-		if(!empty($TTaskNoOrdoTime)) {
-
-			$cellsnoo = ''; //TODO in js
-			$t_cur = $range->date_start;
-			while($t_cur<=$range->date_end) {
-
-				$datenoo = date('Y-m-d', $t_cur);
-
-				$cellsnoo.='<div class="gantt_task_cell" date="'.$datenoo.'">'.( empty($TTaskNoOrdoTime[$datenoo]) ? '&nbsp;' : round($TTaskNoOrdoTime[$datenoo]/3600,2) ).'</div>';
-				$t_cur = strtotime('+1day',$t_cur);
-			}
+		if(!empty($TTaskNoOrdoTime)) {//TODO replace by boolean
 
 			?>
+
 			if($("div#workstations_0.gantt_row").length == 0 ) {
 
 				$('div.ws_container_label').append('<div class="gantt_row workstation_0" style="text-align:right; width:'+w_workstation_title+'px;height:13px;padding-right:5px;font-size:10px;"><a href="#" onclick="$(\'#formDate select[name=restrictWS]\').val(0);$(\'#formDate\').submit();"><?php echo $langs->trans('NotOrdonnanced') ?></a></div>');
-				$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_0" style="width:'+w_workstation+'px; "><?php echo $cellsnoo; ?></div>');
+				$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_0" style="width:'+w_workstation+'px; "><?php echo $cells; ?></div>');
 
 			}
 
@@ -1464,7 +1454,7 @@ else {
 
 		echo ' }
 
-		updateAllCapacity(); ';
+		';
 
 
 	}
@@ -1472,17 +1462,17 @@ else {
 
 		?>$( document ).ready(function(){
 		if($("div.ws_container_label").length == 0) {
-                        $("body").append('<div class="ws_container"><div>&nbsp;</div></div>');
+           $("body").append('<div class="ws_container"><div>&nbsp;</div></div>');
 
-                }
+           }
 
                 $("div.ws_container").css({
                         width : $("#gantt_here div.gantt_task").width()
                         , left:$("#gantt_here div.gantt_task").offset().left
                 });
-		$("div.ws_container>div").css({
-			 width : $("#gantt_here div.gantt_task div.gantt_data_area").width()
-		});
+			$("div.ws_container>div").css({
+				 width : $("#gantt_here div.gantt_task div.gantt_data_area").width()
+			});
 		});
 		<?php
 	}
@@ -1517,6 +1507,8 @@ else {
 		}
 	}
 
+	updateAllCapacity();
+
 	$("div.ws_container").scroll(function(e) {
 		var sl = $(this).scrollLeft();
 
@@ -1526,7 +1518,6 @@ else {
 	    replicateDates();
 
 	});
-
 
 	/*
 	*	Recalcul la taille des colonnes du workflow

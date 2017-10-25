@@ -114,7 +114,7 @@ function _get_task_for_of($fk_project = 0) {
 	if(GETPOST('restrictWS')>0) {
 		$sql.=" AND tex.fk_workstation=".(int)GETPOST('restrictWS');
 	}
-	else if(GETPOST('restrictWS','int') == 0 ) {
+	else if(GETPOST('restrictWS','int') === '0' ) {
 		$sql.=" AND (tex.fk_workstation IS NULL) ";
 	}
 
@@ -124,7 +124,7 @@ function _get_task_for_of($fk_project = 0) {
 	if($res===false) {
 		var_dump($db);exit;
 	}
-	//echo $sql;
+
 	$TTask=array();
 	if($fk_project == 0 && !empty($conf->global->GANTT_INCLUDE_PROJECT_WIHOUT_TASK)) {
 		_add_project_included_into_date($TTask);
