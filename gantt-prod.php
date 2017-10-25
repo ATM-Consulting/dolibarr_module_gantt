@@ -957,10 +957,10 @@ else {
 
 					var diff = +parent.end_date - parent.start_date ;
 
-					if(parent.start_date > task.start_date ) {
+					if(parent.end_date > task.end_date ) {
 
-						parent.start_date = task.start_date;
-						parent.end_date = new Date(+parent.start_date + diff);
+						parent.end_date = task.end_date;
+						parent.start_date = new Date(+parent.end_date - diff + 1000);
 
 						TAnotherTaskToSave[parent.id] = true;
 
