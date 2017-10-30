@@ -47,3 +47,5 @@ NoWorkstationOnThisTask=Pas de poste de charge configuré sur la tâche
 GANTT_SHOW_WORKSTATION_ON_1PROJECT=Voir la capacité des postes de charge aussi sur la vue d'un projet
 GANTT_DISABLE_ORDER_MILESTONE=Désactiver le jalon de livraison de la commande client
 GANTT_BOUND_ARE_JUST_ALERT=Les jalons ne sont que des alertes
+GANTT_DO_NOT_SHOW_PROJECTS=Ne pas afficher l'entête projet
+GANTT_SET_TASK_DATES_ON_CREATE=Recalculer les dates de la tâche à sa création 

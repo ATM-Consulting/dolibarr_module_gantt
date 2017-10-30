@@ -227,7 +227,6 @@ echo ajax_constantonoff('GANTT_INCLUDE_PROJECT_WIHOUT_TASK');
 print '</form>';
 print '</td></tr>';
 
-
 $var=!$var;
 print '<tr '.$bc[$var].'>';
 print '<td>'.$langs->trans("GANTT_SHOW_WORKSTATION_ON_1PROJECT").'</td>';
@@ -240,7 +239,29 @@ echo ajax_constantonoff('GANTT_SHOW_WORKSTATION_ON_1PROJECT');
 print '</form>';
 print '</td></tr>';
 
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("GANTT_DO_NOT_SHOW_PROJECTS").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="right" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="set_GANTT_DO_NOT_SHOW_PROJECTS">';
+echo ajax_constantonoff('GANTT_DO_NOT_SHOW_PROJECTS');
+print '</form>';
+print '</td></tr>';
 
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("GANTT_SET_TASK_DATES_ON_CREATE").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="right" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="set_GANTT_SET_TASK_DATES_ON_CREATE">';
+echo ajax_constantonoff('GANTT_SET_TASK_DATES_ON_CREATE');
+print '</form>';
+print '</td></tr>';
 // Example with a yes / no select
 $var=!$var;
 print '<tr '.$bc[$var].'>';

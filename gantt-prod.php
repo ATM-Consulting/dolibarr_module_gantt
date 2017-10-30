@@ -129,13 +129,12 @@ else {
 
     				$fk_parent_project = null;
 
-//    				if(empty($fk_project)) {
-
+    				if(empty($conf->global->GANTT_DO_NOT_SHOW_PROJECTS)) {
     					$TData[$project->ganttid] = _get_json_data($project, $close_init_status);
     					$fk_parent_project= $project->ganttid;
+    				}
 
-    					_get_events( $TData,$TLink,$project->id);
-  //  				}
+    				_get_events( $TData,$TLink,$project->id);
 
     				$time_task_limit_no_after = $time_task_limit_no_before_init = $time_task_limit_no_before = 0;
 
@@ -1534,8 +1533,8 @@ else {
 
 
 	<style type="text/css" media="screen">
-		.weekend{ background: #f4f7f4 !important;}
-		.gantt_selected .weekend{
+		.weekend { background: #f4f7f4 !important; }
+		.gantt_selected .weekend {
 			background:#FFF3A1 !important;
 		}
 

@@ -41,15 +41,15 @@ class modGantt extends DolibarrModules
 	function __construct($db)
 	{
 		global $langs,$conf;
-		
+
 		$this->db = $db;
-		
+
 		// Id for module (must be unique).
 		// Use here a free id (See in Home -> System information -> Dolibarr for list of used modules id).
 		$this->numero = 104039; // 104000 to 104999 for ATM CONSULTING
 		// Key text used to identify module (for permissions, menus, etc...)
 		$this->rights_class = 'gantt';
-		
+
 		// Family can be 'crm','financial','hr','projects','products','ecm','technic','other'
 		// It is used to group modules in module setup page
 		$this->family = "ATM";
@@ -67,7 +67,7 @@ class modGantt extends DolibarrModules
 		// If file is in theme/yourtheme/img directory under name object_pictovalue.png, use this->picto='pictovalue'
 		// If file is in module/img directory under name object_pictovalue.png, use this->picto='pictovalue@module'
 		$this->picto='gantt@gantt';
-		
+
 		// Defined all module parts (triggers, login, substitutions, menus, css, etc...)
 		// for default path (eg: /gantt/core/xxxxx) (0=disable, 1=enable)
 		// for specific path of parts (eg: /gantt/core/modules/barcode)
@@ -87,15 +87,17 @@ class modGantt extends DolibarrModules
 		//							'dir' => array('output' => 'othermodulename'),      // To force the default directories names
 		//							'workflow' => array('WORKFLOW_MODULE1_YOURACTIONTYPE_MODULE2'=>array('enabled'=>'! empty($conf->module1->enabled) && ! empty($conf->module2->enabled)', 'picto'=>'yourpicto@gantt')) // Set here all workflow context managed by module
 		//                        );
-		$this->module_parts = array();
-		
+		$this->module_parts = array(
+				'triggers'=>1
+		);
+
 		// Data directories to create when module is enabled.
 		// Example: this->dirs = array("/gantt/temp");
 		$this->dirs = array();
-		
+
 		// Config pages. Put here list of php page, stored into gantt/admin directory, to use to setup module.
 		$this->config_page_url = array("gantt_setup.php@gantt");
-		
+
 		// Dependencies
 		$this->hidden = false;			// A condition to hide module
 		$this->depends = array();		// List of modules id that must be enabled if this module is enabled
@@ -104,14 +106,14 @@ class modGantt extends DolibarrModules
 		$this->phpmin = array(5,0);					// Minimum version of PHP required by module
 		$this->need_dolibarr_version = array(3,0);	// Minimum version of Dolibarr required by module
 		$this->langfiles = array("gantt@gantt");
-		
+
 		// Constants
 		// List of particular constants to add when module is enabled (key, 'chaine', value, desc, visible, 'current' or 'allentities', deleteonunactive)
 		// Example: $this->const=array(0=>array('MYMODULE_MYNEWCONST1','chaine','myvalue','This is a constant to add',1),
 		//                             1=>array('MYMODULE_MYNEWCONST2','chaine','myvalue','This is another constant to add',0, 'current', 1)
 		// );
 		$this->const = array();
-		
+
 		// Array to add new pages in new tabs
 		// Example: $this->tabs = array('objecttype:+tabname1:Title1:mylangfile@gantt:$user->rights->gantt->read:/gantt/mynewtab1.php?id=__ID__',  	// To add a new tab identified by code tabname1
 		//                              'objecttype:+tabname2:Title2:mylangfile@gantt:$user->rights->othermodule->read:/gantt/mynewtab2.php?id=__ID__',  	// To add another new tab identified by code tabname2
@@ -140,7 +142,7 @@ class modGantt extends DolibarrModules
 				'project:+anotherGantt:Gantt:gantt@gantt::/gantt/gantt-prod.php?fk_project=__ID__'
 				,'project:-gantt'
 		);
-		
+
 		// Dictionaries
 		if (! isset($conf->gantt->enabled))
 		{
@@ -163,17 +165,17 @@ class modGantt extends DolibarrModules
 		 'tabcond'=>array($conf->gantt->enabled,$conf->gantt->enabled,$conf->gantt->enabled)												// Condition to show each dictionary
 		 );
 		 */
-		
+
 		// Boxes
 		// Add here list of php file(s) stored in core/boxes that contains class to show a box.
 		$this->boxes = array();			// List of boxes
 		// Example:
 		//$this->boxes=array(array(0=>array('file'=>'myboxa.php','note'=>'','enabledbydefaulton'=>'Home'),1=>array('file'=>'myboxb.php','note'=>''),2=>array('file'=>'myboxc.php','note'=>'')););
-		
+
 		// Permissions
 		$this->rights = array();		// Permission array used by this module
 		$r=0;
-		
+
 		// Add here list of permission defined by an id, a label, a boolean and two constant strings.
 		// Example:
 		// $this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
@@ -182,12 +184,12 @@ class modGantt extends DolibarrModules
 		// $this->rights[$r][4] = 'level1';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		// $this->rights[$r][5] = 'level2';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		// $r++;
-		
-		
+
+
 		// Main menu entries
 		$this->menu = array();			// List of menus to add
 		$r=0;
-		
+
 		$this->menu[$r]=array(	'fk_menu'=>'fk_mainmenu=of',			// Put 0 if this is a top menu
 				'type'=>'left',			// This is a Top menu entry
 				'titre'=>'Gantt',
@@ -200,10 +202,10 @@ class modGantt extends DolibarrModules
 				'target'=>'',
 				'user'=>2);
 		$r++;
-		
+
 		// Exports
 		$r=1;
-		
+
 		// Example:
 		// $this->export_code[$r]=$this->rights_class.'_'.$r;
 		// $this->export_label[$r]='CustomersInvoicesAndInvoiceLines';	// Translation key (used only if key ExportDataset_xxx_z not found)
@@ -218,7 +220,7 @@ class modGantt extends DolibarrModules
 		// $this->export_sql_order[$r] .=' ORDER BY s.nom';
 		// $r++;
 	}
-	
+
 	/**
 	 *		Function called when module is enabled.
 	 *		The init function add constants, boxes, permissions and menus (defined in constructor) into Dolibarr database.
@@ -230,57 +232,57 @@ class modGantt extends DolibarrModules
 	function init($options='')
 	{
 		$sql = array();
-		
+
 		define('INC_FROM_DOLIBARR',true);
-		
+
 		dol_include_once('/gantt/config.php');
 		dol_include_once('/gantt/script/create-maj-base.php');
-		
+
 		/*
 		 $e=new ExtraFields($this->db);
 		 $param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
 		 $e->addExtraField('fk_parent_task', 'Tâche parente', 'int', 1, '', 'projet_task',0,0,'',$param);
 		 */
-		
+
 		// Create link to parent gantt task
 		$e=new ExtraFields($this->db);
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
 		$e->addExtraField('fk_gantt_parent_task', 'Tâche parente Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);
-		
+
 		// add gantt color // TODO : use scrumboard color
 		$e=new ExtraFields($this->db);
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
 		$e->addExtraField('color', '	Couleur', 'varchar', 1, 9, 'projet_task',0,0,'',$param);
 		$e->addExtraField('color', '	Couleur', 'varchar', 1, 9, 'projet',0,0,'',$param);
-		
+
 		// Create link to parent gantt task
 		$e=new ExtraFields($this->db);
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
 		$e->addExtraField('fk_gantt_parent_task', 'Tâche parente Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);
-		
-		// add gantt link 
+
+		// add gantt link
 		/*$e=new ExtraFields($this->db);
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
 		$e->addExtraField('gantt_link', 'Lien Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);*/
-		
+
 		dol_include_once('/projet/class/project.class.php');
 		global $user, $langs;
 		$p=new Project($this->db);
 		if($p->fetch(0,'PREVI')<=0) {
-			
+
 			$p->ref='PREVI';
 			$p->title = $langs->trans('Provisionnal');
-			
+
 			$p->create($user);
 		}
-		
-		
-		
+
+
+
 		$result=$this->_load_tables('/gantt/sql/');
-		
+
 		return $this->_init($sql, $options);
 	}
-	
+
 	/**
 	 *		Function called when module is disabled.
 	 *      Remove from database constants, boxes and permissions from Dolibarr database.
@@ -292,8 +294,8 @@ class modGantt extends DolibarrModules
 	function remove($options='')
 	{
 		$sql = array();
-		
+
 		return $this->_remove($sql, $options);
 	}
-	
+
 }
