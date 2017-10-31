@@ -518,7 +518,15 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 
 		$needed_ressource= $object->array_options['options_needed_ressource']>0 ? $object->array_options['options_needed_ressource'] : 1;
 
-		return ' {"id":"'.$object->ganttid.'",needed_ressource:'.(int)$needed_ressource.',time_task_limit_no_before:'.(int)$time_task_limit_no_before.',time_task_limit_no_after:'.(int)$time_task_limit_no_after.',planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task , open: '.$close_init_status.'}';
+		$taskColorCode='';
+		// Check if a color is define for this task
+		if(!empty($object->array_options['options_color']) && ColorTools::validate_color($object->array_options['options_color']))
+		{
+			$taskColor = $object->array_options['options_color'];
+			$taskColorCode= ',color:"'.$taskColor.'"';
+		}
+
+		return ' {"id":"'.$object->ganttid.'"'.$taskColorCode.',needed_ressource:'.(int)$needed_ressource.',time_task_limit_no_before:'.(int)$time_task_limit_no_before.',time_task_limit_no_after:'.(int)$time_task_limit_no_after.',planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task , open: '.$close_init_status.'}';
 
 	}
 	else if($object->element== 'milestone' || $object->element == 'release') {
@@ -535,66 +543,6 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 	}
 
 	return '{ nonObjectManaged:"'.$object->element.'" }';
-}
-
-/*
- * @deprecated
- * @param taskColor		web hexa color format like #FFFFFF
- */
-function _format_task_for_gantt(&$tasksList, &$TData,&$TLink,$owner=0,$t_start=false,$t_end=false, $taskColor=false)
-{
-	return false;
-
-	if(!empty($tasksList))
-	{
-		foreach($tasksList as &$task) {
-			if(empty($t_start) || $task->date_start<$t_start)$t_start=$task->date_start;
-			if(empty($t_end) || $t_end<$task->date_end)$t_end=$task->date_end;
-			$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
-			if($duration<1)$duration = 1;
-
-			$type = ',type:gantt.config.types.task';
-			if(empty($task->fk_task_parent) && empty($task->array_options['options_fk_gantt_parent_task'])) {
-				$type = ',type:gantt.config.types.project';
-			}
-
-			// Check if a color is define for this task
-			if(!empty($task->array_options['options_color']) && ColorTools::validate_color($task->array_options['options_color']))
-			{
-				$taskColor = $task->array_options['options_color'];
-			}
-
-			$taskColorCode='';
-			if(ColorTools::validate_color($taskColor))
-			{
-				$taskColorCode= ',color:"'.$taskColor.'"';
-			}
-
-			$workstation = ',workstation:0';
-			if(!empty($task->array_options['options_fk_workstation']))
-			{
-				$workstation = ',workstation:'.$task->array_options['options_fk_workstation'];
-			}
-
-			$needed_ressource= ',needed_ressource:0';
-			if(!empty($event->array_options['options_needed_ressource']))
-			{
-				$needed_ressource= ',needed_ressource:'.(int)$event->array_options['options_needed_ressource'];
-			}
-
-			if( $type == ',type:gantt.config.types.project') {
-				$TData[] = ' {id:"'.$task->ganttid.'",objId:"'.$task->id.'",objElement:"'.$task->element .'",text:"'.$task->text.'", "title":"'.$task->title.'"'.$type.' '.$taskColorCode.'}';
-			}
-			else {
-				$TData[] = ' {"id":"'.$task->ganttid.'"'.$needed_ressource.',objId:"'.$task->id.'",objElement:"'.$task->element.(empty($task->array_options['options_fk_gantt_parent_task']) ? '' : '", source:"'.$task->array_options['options_fk_gantt_parent_task'].'"').', "text":"'.$task->text.'", "title":"'.$task->title.'", "start_date":"'.date('d-m-Y',$task->date_start).'", "duration":"'.$duration.'"'.(!is_null($task->array_options['options_fk_gantt_parent_task']) ? ' ,parent:"'.$task->array_options['options_fk_gantt_parent_task'].'" ' : '' ).', progress: '.($task->progress / 100).',owner:"'.$owner.'" '.$type.' '.$taskColorCode.$workstation.'}';
-			}
-
-
-			if($task->fk_task_parent>0) {
-				// $TLink[] = ' {id:'.(count($TLink)+1).', source:"'.$task->array_options['options_fk_gantt_parent_task'].'", target:"'.$task->ganttid.'", type:"0"}';
-			}
-		}
-	}
 }
 
 /*
