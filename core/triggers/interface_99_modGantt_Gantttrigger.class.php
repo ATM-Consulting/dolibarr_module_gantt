@@ -123,7 +123,10 @@ class InterfaceGantttrigger
 
 			$t_current = time();
 			$t_start =  max( $project->date_start, $t_current);
-			$t_end =  $project->date_end > 0 ? $project->date_end : strtotime('+2 month', $t_start);
+			
+			$day_range = empty($conf->global->GANTT_DAY_RANGE_FROM_NOW) ? 90 : $conf->global->GANTT_DAY_RANGE_FROM_NOW;
+			
+			$t_end =  $project->date_end > 0 ? $project->date_end : strtotime('+'.$day_range.' day', $t_start);
 
 			if($t_end>=$t_current) {
 				$TWS=array();

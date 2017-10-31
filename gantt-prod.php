@@ -212,7 +212,7 @@ else {
 											}
 
                 							$taskColor='';
-                							if($ws->element=='workstation' && !empty($ws->background)) {
+                							if($ws->element=='workstation' && !empty($ws->background) && !empty($conf->global->GANTT_HIDE_WORKSTATION)) {
                 								$taskColor = $ws->background;
                 							}
 
@@ -746,7 +746,7 @@ else {
 	gantt.parse(tasks);
 
 	<?php
-	if(GETPOST('scrollLeft')>0) {
+	if(GETPOST('scrollLeft')>10) {
 		echo 'gantt.scrollTo('.(int)GETPOST('scrollLeft').',0);';
 	}
 	else {
@@ -909,16 +909,10 @@ else {
 			$color = $ws->background;
 			if(strlen($color) == 7) {
 
-				$darkest = ColorTools::adjustBrightness($color, -30);
-				$border= ColorTools::adjustBrightness($color, -50);
-
-				echo '.workstation_'.$ws->id.'{
+				echo '.ws_container_label .workstation_'.$ws->id.'{
 					background:'.$color.';
-					border-color:'.$darkest.';
-				}
-				.workstation_'.$ws->id.' .gantt_task_progress{
-					background:'.$border.';
 				}';
+				
 			}
 		}
 

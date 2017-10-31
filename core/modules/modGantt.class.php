@@ -261,14 +261,10 @@ class modGantt extends DolibarrModules
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
 		$e->addExtraField('fk_gantt_parent_task', 'Tâche parente Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);
 
-		// add gantt link
-		/*$e=new ExtraFields($this->db);
-		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
-		$e->addExtraField('gantt_link', 'Lien Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);*/
-
-
+		$e->addExtraField('needed_ressource', 'NeededRessource', 'int', 0, '', 'projet_task');
+		
 		$e->addExtraField('date_start_prod', 'DateStartProd', 'date', 1, 0, 'projet');
-
+		
 		dol_include_once('/projet/class/project.class.php');
 		global $user, $langs;
 		$p=new Project($this->db);

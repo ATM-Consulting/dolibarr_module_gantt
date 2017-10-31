@@ -69,7 +69,9 @@ class ActionsGantt
 				?>
 				<script type="text/javascript">
 				$(document).ready(function() {
-					$('input[name=options_color]').attr('type','color');
+					$input = $('input[name=options_color]');
+					if($input.val() == '') $input.val('#ffffff');
+					$input.attr('type','color');
 				});
 				</script>
 

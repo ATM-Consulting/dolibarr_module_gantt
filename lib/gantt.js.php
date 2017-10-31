@@ -182,7 +182,7 @@ function taskAutoMove(task) {
 
 				t.duration = item.duration;
 				t.start_date = new Date(item.start * 1000);
-				t.end_date = new Date(+task.start_date + (86400000 * t.duration ) - 1 );
+				t.end_date = new Date((item.start + (86400 * t.duration ) - 1) * 1000 );
 
 				gantt.refreshTask(t.id);
 				gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+t.start_date.toLocaleDateString());

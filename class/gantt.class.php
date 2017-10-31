@@ -15,7 +15,7 @@ class GanttPatern {
 		$ws=new TWorkstation;
 		$ws->load($PDOdb, $wsid);
 
-		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end,array($fk_task));
+		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end, true, $fk_task);
 
 		// TODO Faire une PR sur le module workstation pour inclure cette fonction
 		self::getCapacityLeftRangeAgenda($PDOdb,$ws,$Tab,$t_start, $t_end);
@@ -58,23 +58,94 @@ class GanttPatern {
 	}
 
 	static function gb_search(&$TDates, &$task, $t_start, $t_end, $duration = 1) {
-
+		global $conf,$db, $TCacheProject,$TCacheTask, $TCacheOFSupplierOrder;
+		
+		if(empty($TCacheProject))$TCacheProject=array();
+		if(empty($TCacheOFSupplierOrder))$TCacheOFSupplierOrder=array();
+		
 		$row = array('start'=>-1, 'duration'=>$duration);
 
-		$hour_needed = $task->planned_workload * ((100 - $task->progress) / 100) / 3600 / $duration;
+		$needed_ressource = empty($task->array_options['options_needed_ressource']) ? 1 : (int)$task->array_options['options_needed_ressource'];
+		
+		$hour_needed = $task->planned_workload * $needed_ressource* ((100 - $task->progress) / 100) / 3600 / $duration;
 
-		if($duration<10 || $hour_needed<=0) {
+		if($duration<50 || $hour_needed<=0) {
+			
+			if($task->fk_task_parent>0) { // s'il y a une tâche parente
+				if(isset($TCacheTask[$task->fk_task_parent])) $parent = $TCacheTask[$task->fk_task_parent];
+				else {
+					$parent = new Task($db);
+					$parent->fetch($task->fk_task_parent);
+					$TCacheTask[$task->fk_task_parent] = $parent;
+				}
+				
+				$parent_duration = floor(($parent->date_end - $parent->date_start) / 86400 ) + 1;
+				
+				if($parent_duration>$duration) $t_start_bound = $parent->date_end - ($duration * 86400); // alors le début est soit la durée de la tâche en partant de la fin de la tâche parente
+				else $t_start_bound= $parent->date_start; // où le début de la tâche parente
+				
+				$t_start_bound=strtotime('midnight',$t_start_bound);
+				if($t_start_bound>$t_start) $t_start = $t_start_bound;
+			}
+			
+			if(empty($conf->global->GANTT_DISABLE_PROJECT_MILESTONE)) {
+				
+				if(isset($TCacheProject[$task->fk_project])) $project = $TCacheProject[$task->fk_project];
+				else {
+					$project= new Project($db);
+					$project->fetch($task->fk_project);
+					$TCacheProject[$task->fk_project] = $project;
+				}
+				if($project->date_start>$t_start) $t_start = $project->date_start;
+				if($project->date_start>$t_start) $t_start = $project->date_start;
+				if($project->date_end<$t_end) $t_end = $project->date_end;
+				
+			}
+			
+			if(empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE) && $task->array_options['options_fk_of']>0) {
+			
+				dol_include_once('/fourn/class/fournisseur.commande.class.php');
+				dol_include_once('/of/class/ordre_fabrication_asset.class.php');
+				
+				if(isset($TCacheOFSupplierOrder[$task->array_options['options_fk_of']]))$TIdCommandeFourn = $TCacheOFSupplierOrder[$task->array_options['options_fk_of']];
+				else {
+				
+					$PDOdb=new TPDOdb;
+					$of=new TAssetOF();
+					$of->load($PDOdb, $task->array_options['options_fk_of']);
+					$TIdCommandeFourn = $TCacheOFSupplierOrder[$task->array_options['options_fk_of']] = $of->getElementElement($PDOdb);
+				
+				}
+				
+				if(count($TIdCommandeFourn)){
+					foreach($TIdCommandeFourn as $idcommandeFourn){
+						$cmd = new CommandeFournisseur($db);
+						$cmd->fetch($idcommandeFourn);
+						
+						if($cmd->statut>0 && $cmd->statut<5 && $cmd->date_livraison>0 &&  $cmd->date_livraison < $t_start) {
+							$t_start =  $cmd->date_livraison ;
+						}
+					}
+				}
+				
+			}
+			
 			$find = false;
 			foreach($TDates as $date=>&$data) {
-			//	var_dump(array($date,$task->id,  $data['capacityLeft'],$hour_needed));
+			
+				$time = strtotime($date);
+				
+				if($time>$t_end || $time < $t_start) continue;
+			
 				if($data['capacityLeft'] - $hour_needed >0) {
 
 					$data['capacityLeft'] -= $hour_needed;
 
 					$find = true;
 
-					$row['start'] = strtotime($date);
-
+					$row['start'] = $time;
+					$row['date_start'] = date('Y-m-d H:i:s',$time); //juste pour debug
+					
 					break;
 				}
 
@@ -88,7 +159,7 @@ class GanttPatern {
 	}
 
 	static function get_better_task(&$TWS, &$task, $t_start, $t_end) {
-
+		
 		$fk_workstation = (int)$task->array_options['options_fk_workstation'];
 
 		if($fk_workstation>0 && $task->progress < 100) {
@@ -107,10 +178,12 @@ class GanttPatern {
 	}
 
 	static function get_better($TTaskId, $t_start, $t_end) {
-		global $db;
-
+		global $db,$TCacheTask;
+		
+		if(empty($TCacheTask))$TCacheTask=array();
+		
 		if(!is_array($TTaskId))$TTaskId=array($TTaskId);
-
+		
 		if($t_start < time())$t_start = time();
 
 		$TWS = $Tab = array();
@@ -122,8 +195,17 @@ class GanttPatern {
 				$task = new Task($db);
 				$task->fetch($fk_task);
 
+				$fk_workstation = (int)$task->array_options['options_fk_workstation'];
+				if(empty($TWS[$fk_workstation])) $TWS[$fk_workstation] = self::get_ws_capacity($fk_workstation, $t_start, $t_end, $TTaskId);
 				$Tab[$task->id] = self::get_better_task($TWS, $task, $t_start, $t_end);
 
+				if( $Tab[$task->id]['start']> 0) {
+					$task->date_start = $Tab[$task->id]['start'];
+					$task->date_end = $Tab[$task->id]['start'] + ($Tab[$task->id]['duration']*86400 ) - 1;
+				}
+				
+				$TCacheTask[$task->id] = $task;
+				
 			}
 
 		}

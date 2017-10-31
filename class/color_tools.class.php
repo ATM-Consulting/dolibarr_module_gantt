@@ -37,8 +37,11 @@ class ColorTools
 	{
 	}
 
-	static function validate_color($color)
+	static function validate_color($color, $allow_white = false)
 	{
+		
+		if(!$allow_white && ($color === '#fff' || $color === '#ffffff') ) return false;
+		
 		if(preg_match('/^#[a-f0-9]{6}$/i', $color)) //hex color is valid
 		{
 			return true;
