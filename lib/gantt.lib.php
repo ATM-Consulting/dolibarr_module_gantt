@@ -337,14 +337,18 @@ function _adding_task_project_end(&$project,&$TData) {
 		return false;
 	}
 
-	if($project->date_start>0) {
+	$date_start = !empty($project->array_options['options_date_start_prod']) ? strtotime( $project->array_options['options_date_start_prod'] ): $project->date_start;
+
+	if($date_start>0) {
 
 		$object=new stdClass();
 		$object->element = 'milestone';
-		$object->title = $object->text = $langs->trans('StartOfProject', $project->ref, dol_print_date($project->date_start));
-		$object->date=$project->date_start;
+		$object->title = $object->text = $langs->trans('StartOfProject', $project->ref, dol_print_date($date_start));
+		$object->date=$date_start;
 		$object->ganttid = 'JPS'.$project->id;
 		$object->bound='before';
+
+		if($date_start>$project->date_start)$object->visible = 1;
 
 		$TData[$object->ganttid]['object'] = $object;
 
