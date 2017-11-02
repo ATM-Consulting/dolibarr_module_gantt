@@ -190,7 +190,13 @@ function moveTasks(tasksid) {
 			}
 
 		});
-
+/*
+		window.setTimeout(function() {
+			var sl = $("div.ws_container").scrollLeft();
+			console.log(sl);
+			updateWSRangeCapacity(sl);
+		},2000);
+*/
 	});
 
 }

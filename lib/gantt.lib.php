@@ -149,7 +149,7 @@ function _get_task_for_of($fk_project = 0) {
 
 			$of=new TAssetOF();
 			$of->load($PDOdb, $task->array_options['options_fk_of']);
-
+			$of->title = $of->numero.' '.$of->getLibStatus(true);
 		}
 		else{
 
@@ -157,6 +157,7 @@ function _get_task_for_of($fk_project = 0) {
 			$of->id = 0;
 			$of->numero = 'None';
 			$of->fk_commande = 0;
+			$of->element = 'of';
 		}
 
 		if($of->id>0) {
@@ -165,8 +166,6 @@ function _get_task_for_of($fk_project = 0) {
 		else {
 			$of->ganttid = 'MNA'.$idNoAffectation; $idNoAffectation++;
 		}
-
-		$of->title = $of->numero.' '.$of->getLibStatus(true);
 
 		if($of->fk_commande>0) {
 
@@ -553,7 +552,7 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 
 	}
 
-	var_dump($object);exit;
+	var_dump('nonObjectManaged', $object);exit;
 
 	return '{ nonObjectManaged:"'.$object->element.'" }';
 }
