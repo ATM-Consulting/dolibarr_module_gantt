@@ -257,7 +257,8 @@ class GanttPatern {
 
 		if(!is_array($TTaskId))$TTaskId=array($TTaskId);
 
-		if($t_start < time())$t_start = time();
+		$midnight = strtotime('midnight');
+		if($t_start < $midnight)$t_start = $midnight;
 
 		$TWS = $Tab = array();
 

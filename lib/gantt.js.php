@@ -214,8 +214,7 @@ function taskAutoMove(task) {
 
 function regularizeHour(task) {
 	task.start_date.setHours(0,0,0,0);
-
-	task.end_date = new Date(+task.start_date + task.duration * 86400000 - 1000);
+	task.end_date = new Date(+task.start_date + (task.duration * 86400000) - 1000);
 }
 
 function dragTaskLimit(task, diff ,mode) {

@@ -647,12 +647,9 @@ else {
 	});
 
 	gantt.attachEvent("onAfterTaskDrag", function(id, mode, e){
-
-		/*console.log(TAnotherTaskToSave);*/
 		for(idTask in TAnotherTaskToSave) {
 
 			task = gantt.getTask(idTask);
-
 			regularizeHour(task);
 			gantt.refreshTask(task.id);
 
@@ -819,7 +816,7 @@ else {
 
 		}
 
-		if(!empty($TTaskNoOrdoTime)) {//TODO replace by boolean
+		if($flag_task_not_ordonnanced) {
 
 			?>
 
@@ -863,13 +860,13 @@ else {
 
            }
 
-                $("div.ws_container").css({
-                        width : $("#gantt_here div.gantt_task").width()
-                        , left:$("#gantt_here div.gantt_task").offset().left
-                });
-			$("div.ws_container>div").css({
+           $("div.ws_container").css({
+                 width : $("#gantt_here div.gantt_task").width()
+                , left:$("#gantt_here div.gantt_task").offset().left
+           });
+		   $("div.ws_container>div").css({
 				 width : $("#gantt_here div.gantt_task div.gantt_data_area").width()
-			});
+		   });
 		});
 		<?php
 	}

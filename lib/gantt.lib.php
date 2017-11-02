@@ -699,30 +699,13 @@ function _get_events( &$TData,&$TLink,$fk_project=0,$owner=0,$taskColor= '#f7d60
 	}
 }
 
-//TODO useless, just tell if there or not task without workstation
 function _check_task_wihout_workstation(&$task) {
-	global $TTaskNoOrdoTime;
+	global $flag_task_not_ordonnanced;
 
-	if(empty($TTaskNoOrdoTime)) $TTaskNoOrdoTime = array();
+	if(!isset($flag_task_not_ordonnanced)) $flag_task_not_ordonnanced= false;
 
 	if(empty($task->array_options['options_fk_workstation'])) {
-
-		$duration = $task->date_end>0 ? ceil( ($task->date_end - $task->date_start) / 86400 ) : ceil($task->planned_workload / (3600 * 7));
-		if($duration<1)$duration = 1;
-
-		$t = $task->date_start;
-		$end_no_time = $task->date_start +( $duration * 86400 );
-
-		while($t<$end_no_time) {
-
-			if(empty($TTaskNoOrdoTime[date('Y-m-d',$t)]))$TTaskNoOrdoTime[date('Y-m-d',$t)]=0;
-
-			$TTaskNoOrdoTime[date('Y-m-d',$t)] += (int)($task->planned_workload / $duration);
-
-			$t = strtotime('+1day',$t);
-		}
-
-
+		$flag_task_not_ordonnanced= true;
 	}
 
 }
