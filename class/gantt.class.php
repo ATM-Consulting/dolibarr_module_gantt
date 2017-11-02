@@ -57,39 +57,64 @@ class GanttPatern {
 		return $TDate;
 	}
 
-	static function gb_search(&$TDates, &$task, $t_start, $t_end, $duration = 1) {
-		global $conf,$db, $TCacheProject,$TCacheTask, $TCacheOFSupplierOrder;
-		
+	static function gb_search_set_bound(&$task, &$t_start, &$t_end) {
+		global $conf,$db, $TCacheProject,$TCacheTask, $TCacheOFSupplierOrder,$TCacheOFOrder;
+
 		if(empty($TCacheProject))$TCacheProject=array();
 		if(empty($TCacheOFSupplierOrder))$TCacheOFSupplierOrder=array();
-		
-		$row = array('start'=>-1, 'duration'=>$duration);
+		if(empty($TCacheOFOrder))$TCacheOFOrder=array();
+		if(empty($TCacheProject))$TCacheProject=array();
 
-		$needed_ressource = empty($task->array_options['options_needed_ressource']) ? 1 : (int)$task->array_options['options_needed_ressource'];
-		
-		$hour_needed = $task->planned_workload * $needed_ressource* ((100 - $task->progress) / 100) / 3600 / $duration;
 
-		if($duration<50 || $hour_needed<=0) {
-			
-			if($task->fk_task_parent>0) { // s'il y a une tâche parente
-				if(isset($TCacheTask[$task->fk_task_parent])) $parent = $TCacheTask[$task->fk_task_parent];
-				else {
-					$parent = new Task($db);
-					$parent->fetch($task->fk_task_parent);
-					$TCacheTask[$task->fk_task_parent] = $parent;
-				}
-				
-				$parent_duration = floor(($parent->date_end - $parent->date_start) / 86400 ) + 1;
-				
-				if($parent_duration>$duration) $t_start_bound = $parent->date_end - ($duration * 86400); // alors le début est soit la durée de la tâche en partant de la fin de la tâche parente
-				else $t_start_bound= $parent->date_start; // où le début de la tâche parente
-				
-				$t_start_bound=strtotime('midnight',$t_start_bound);
-				if($t_start_bound>$t_start) $t_start = $t_start_bound;
+		if($task->fk_task_parent>0) { // s'il y a une tâche parente
+			if(isset($TCacheTask[$task->fk_task_parent])) $parent = $TCacheTask[$task->fk_task_parent];
+			else {
+				$parent = new Task($db);
+				$parent->fetch($task->fk_task_parent);
+				$TCacheTask[$task->fk_task_parent] = $parent;
 			}
-			
+
+			$parent_duration = floor(($parent->date_end - $parent->date_start) / 86400 ) + 1;
+
+			if($parent_duration>$duration) $t_start_bound = $parent->date_end - ($duration * 86400); // alors le début est soit la durée de la tâche en partant de la fin de la tâche parente
+			else $t_start_bound= $parent->date_start; // où le début de la tâche parente
+
+			$t_start_bound=strtotime('midnight',$t_start_bound);
+			if($t_start_bound>$t_start) $t_start = $t_start_bound;
+		}
+
+		if(empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE) && $task->array_options['options_fk_of']>0) {
+
+			dol_include_once('/fourn/class/fournisseur.commande.class.php');
+			dol_include_once('/of/class/ordre_fabrication_asset.class.php');
+
+			if(isset($TCacheOFSupplierOrder[$task->array_options['options_fk_of']]))$TIdCommandeFourn = $TCacheOFSupplierOrder[$task->array_options['options_fk_of']];
+			else {
+
+				$PDOdb=new TPDOdb;
+				$of=new TAssetOF();
+				$of->load($PDOdb, $task->array_options['options_fk_of']);
+				$TIdCommandeFourn = $TCacheOFSupplierOrder[$task->array_options['options_fk_of']] = $of->getElementElement($PDOdb);
+
+			}
+
+			if(count($TIdCommandeFourn)){
+				foreach($TIdCommandeFourn as $idcommandeFourn){
+					$cmd = new CommandeFournisseur($db);
+					$cmd->fetch($idcommandeFourn);
+
+					if($cmd->statut>0 && $cmd->statut<5 && $cmd->date_livraison>0 &&  $cmd->date_livraison < $t_start) {
+						$t_start =  $cmd->date_livraison ;
+					}
+				}
+			}
+
+		}
+
+		if(empty($conf->global->GANTT_BOUND_ARE_JUST_ALERT)) {
+
 			if(empty($conf->global->GANTT_DISABLE_PROJECT_MILESTONE)) {
-				
+
 				if(isset($TCacheProject[$task->fk_project])) $project = $TCacheProject[$task->fk_project];
 				else {
 					$project= new Project($db);
@@ -99,59 +124,101 @@ class GanttPatern {
 				if($project->date_start>$t_start) $t_start = $project->date_start;
 				if($project->date_start>$t_start) $t_start = $project->date_start;
 				if($project->date_end<$t_end) $t_end = $project->date_end;
-				
+
 			}
-			
-			if(empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE) && $task->array_options['options_fk_of']>0) {
-			
-				dol_include_once('/fourn/class/fournisseur.commande.class.php');
+
+			if(empty($conf->global->GANTT_DISABLE_ORDER_MILESTONE) && $task->array_options['options_fk_of']>0) {
 				dol_include_once('/of/class/ordre_fabrication_asset.class.php');
-				
-				if(isset($TCacheOFSupplierOrder[$task->array_options['options_fk_of']]))$TIdCommandeFourn = $TCacheOFSupplierOrder[$task->array_options['options_fk_of']];
+				dol_include_once('/commande/class/commande.class.php');
+
+				if(isset($TCacheOFOrder[$task->array_options['options_fk_of']]))$order = $TCacheOFOrder[$task->array_options['options_fk_of']];
 				else {
-				
+
 					$PDOdb=new TPDOdb;
 					$of=new TAssetOF();
 					$of->load($PDOdb, $task->array_options['options_fk_of']);
-					$TIdCommandeFourn = $TCacheOFSupplierOrder[$task->array_options['options_fk_of']] = $of->getElementElement($PDOdb);
-				
+					$order = new Commande($db);
+					if($of->fk_commande) $order->fetch($of->fk_commande);
+
+					$TCacheOFOrder[$task->array_options['options_fk_of']] = $order;
+
 				}
-				
-				if(count($TIdCommandeFourn)){
-					foreach($TIdCommandeFourn as $idcommandeFourn){
-						$cmd = new CommandeFournisseur($db);
-						$cmd->fetch($idcommandeFourn);
-						
-						if($cmd->statut>0 && $cmd->statut<5 && $cmd->date_livraison>0 &&  $cmd->date_livraison < $t_start) {
-							$t_start =  $cmd->date_livraison ;
-						}
-					}
+
+				if($order->date_livraison>0) {
+					$t_end_bound = $order->date_livraison+ 84399; //23:59:59
+					if($t_end_bound<$t_end) $t_end = $t_end_bound;
+
 				}
-				
 			}
-			
-			$find = false;
-			foreach($TDates as $date=>&$data) {
-			
-				$time = strtotime($date);
-				
-				if($time>$t_end || $time < $t_start) continue;
-			
-				if($data['capacityLeft'] - $hour_needed >0) {
 
-					$data['capacityLeft'] -= $hour_needed;
+		}
 
-					$find = true;
+	}
 
-					$row['start'] = $time;
-					$row['date_start'] = date('Y-m-d H:i:s',$time); //juste pour debug
-					
+	static function gb_search_days(&$TDates, &$task, $t_start, $t_end ) {
+		$row = array('start'=>-1, 'duration'=>$task->duration);
+
+		foreach($TDates as $date=>&$data) {
+
+			$time = strtotime($date);
+			if($time>$t_end || $time < $t_start) continue;
+
+			$task->start = $time;
+			$task->end = $time + (86400 * $task->duration) - 1;
+
+			$timetest= $task->start;
+			$datetest = $date;
+			$ok = true;
+			$DateOk=array();
+			while(!empty($TDates[$datetest]) && $timetest<=$task->end && $ok) {
+
+				$data = &$TDates[$datetest];
+
+				if($data['capacityLeft'] - $task->hour_needed < 0) {
+					$ok =false;
 					break;
 				}
 
+				$timetest= strtotime('+1day', $timetest);
+				$datetest = date('Y-m-d', $timetest);
+				$DateOk[] = $datetest; //juste pour éviter ensuite le reparcours calculé
 			}
 
-			if(!$find) $row = self::gb_search($TDates, $task, $t_start, $t_end, $duration + 1);
+			if($ok) {
+
+				foreach($DateOk as $date) {
+					$data2 = &$TDates[$datetest];
+					$data2['capacityLeft'] -= $task->hour_needed;
+
+				}
+
+				$row['start'] = $time;
+				$row['date_start'] = date('Y-m-d H:i:s',$time); //juste pour debug
+
+				return $row;
+			}
+
+		}
+
+		return $row;
+	}
+
+	static function gb_search(&$TDates, &$task, $t_start, $t_end, $duration = 1) {
+		global $conf,$db;
+
+		$row = array('start'=>-1, 'duration'=>-1);
+
+		$needed_ressource = empty($task->array_options['options_needed_ressource']) ? 1 : (int)$task->array_options['options_needed_ressource'];
+
+		$task->hour_needed = $task->planned_workload * $needed_ressource* ((100 - $task->progress) / 100) / 3600 / $duration;
+		$task->duration = $duration;
+
+		if($duration<50 || $hour_needed<=0) {
+
+			self::gb_search_set_bound($task, $t_start, $t_end);
+			$row = self::gb_search_days($TDates, $task, $t_start, $t_end);
+
+			if($row['start'] == -1) $row = self::gb_search($TDates, $task, $t_start, $t_end, $duration + 1);
 
 		}
 
@@ -159,7 +226,7 @@ class GanttPatern {
 	}
 
 	static function get_better_task(&$TWS, &$task, $t_start, $t_end) {
-		
+
 		$fk_workstation = (int)$task->array_options['options_fk_workstation'];
 
 		if($fk_workstation>0 && $task->progress < 100) {
@@ -179,11 +246,11 @@ class GanttPatern {
 
 	static function get_better($TTaskId, $t_start, $t_end) {
 		global $db,$TCacheTask;
-		
+
 		if(empty($TCacheTask))$TCacheTask=array();
-		
+
 		if(!is_array($TTaskId))$TTaskId=array($TTaskId);
-		
+
 		if($t_start < time())$t_start = time();
 
 		$TWS = $Tab = array();
@@ -203,9 +270,9 @@ class GanttPatern {
 					$task->date_start = $Tab[$task->id]['start'];
 					$task->date_end = $Tab[$task->id]['start'] + ($Tab[$task->id]['duration']*86400 ) - 1;
 				}
-				
+
 				$TCacheTask[$task->id] = $task;
-				
+
 			}
 
 		}

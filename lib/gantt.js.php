@@ -153,11 +153,7 @@ function _getChild(tasksid, task) {
 
 }
 
-function taskAutoMove(task) {
-
-	var tasksid = [];
-	tasksid.push(task.objId);
-	_getChild(tasksid, task);
+function moveTasks(tasksid) {
 
 	var t_start = <?php echo (int)$range->date_start ?>;
 	var t_end = <?php echo (int)$range->date_end ?>;
@@ -166,7 +162,7 @@ function taskAutoMove(task) {
 		url:"script/interface.php"
 		,data:{
 			get:"better-pattern"
-			,tasksid:tasksid.join(',')
+			,tasksid:tasksid
 			,t_start : t_start
 			,t_end : t_end
 		}
@@ -191,7 +187,17 @@ function taskAutoMove(task) {
 				}
 			});
 
-		});
+	});
+
+}
+
+function taskAutoMove(task) {
+
+	var tasksid = [];
+	tasksid.push(task.objId);
+	_getChild(tasksid, task);
+
+	moveTasks(tasksid.join(','));
 
 }
 
@@ -238,10 +244,10 @@ function dragTaskLimit(task, diff ,mode) {
             }
             return -1;
         }
-		<?php 
-		
+		<?php
+
 	}
-	
+
 		?>
 	}
 
@@ -293,8 +299,8 @@ function moveParentIfNeccessary(task) {
 			}
 		});
 	}
-	
-	<?php 
+
+	<?php
 	}
 	?>
 }
@@ -331,7 +337,7 @@ function moveChild(task,diff) {
 			}
 		});
 	}
-	<?php 
+	<?php
 	}
 	?>
 }

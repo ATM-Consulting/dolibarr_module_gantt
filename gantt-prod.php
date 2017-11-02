@@ -110,7 +110,7 @@ else {
 
 	_get_workstation(); // init tableau de WS
 
-	$TData=array(); $TWS=array(); $TLink=array();
+	$TData = $TWS = $TLink = $TTask = array();
 
 	$open = false;
 	if(GETPOST('open')) $open = true;
@@ -221,6 +221,8 @@ else {
 
 	                								$task->ws = &$ws;
 
+	                								$TTask[] = $task->id;
+
 	                								$TData[$task->ganttid] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after,$taskColor);
 
 													if($task->fk_task_parent>0) {
@@ -243,15 +245,16 @@ else {
 
 			_get_events($TData,$TLink);
 
-		//	pre($TData,1);pre($TLink,1);exit;
-		//	var_dump(dol_print_date($t_start),dol_print_date($t_end));exit;
-		//	var_dump($TTaskNoOrdoTime);
 			if($range->autotime){
 				if(empty($range->date_start)) {
 					$range->date_start = $range->date_end = time()-86400;
 				}
 				$range->date_end+=864000;
 			}
+
+			?>
+			<table border="0" width="100%"><tr><td>
+			<?php
 
 			$formCore=new TFormCore('auto','formDate');
 			echo $formCore->hidden('open_status',(int)$open);
@@ -281,18 +284,21 @@ else {
 			echo $formCore->btsubmit($langs->trans('ok'), 'bt_select_date');
 
 			$formCore->end();
+
+			//onclick="$(this).remove()"
 			?>
+			</td><td align="right">
+
+			<a href="javascript:moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
+
+			</td></tr></table>
+
 			<div id="gantt_here" style='width:100%; height:100%;'></div>
 
 			<script type="text/javascript">
 			$body = $("body");
 			$body.addClass("loading");
-/*
-			$(document).on({
-			     ajaxStart: function() { $body.addClass("loading");    },
-			     ajaxStop: function() { $body.removeClass("loading"); }
-			});
-*/
+
 			<?php
 
 				echo 'var workstations = '.json_encode($workstationList).';';
@@ -490,7 +496,7 @@ else {
 
 		var r ='';
 		if(task.text) {
-		    r = "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?>";
+		    r = "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?> / "+(Math.round(task.planned_workload / 3600 * 10) / 10)+" <?php echo $langs->trans('hours') ?>";
 			if(task.start_date) r+= "<br /><?php echo $langs->trans('FromDate') ?> "+task.start_date.toLocaleDateString()
 			if(task.end_date && task.duration>1) r+= " <?php echo $langs->trans('ToDate') ?> "+task.end_date.toLocaleDateString();
 		}
@@ -752,7 +758,7 @@ else {
 	else {
 		echo '$(document).ready(function() { updateWSRangeCapacity(0); });';
 	}
-	
+
 	?>
 
 	<?php
@@ -869,7 +875,7 @@ else {
 	}
 
 	require 'lib/gantt.js.php';
-	
+
 	?>
 
 	$("div.ws_container").scroll(function(e) {
@@ -912,7 +918,7 @@ else {
 				echo '.ws_container_label .workstation_'.$ws->id.'{
 					background:'.$color.';
 				}';
-				
+
 			}
 		}
 

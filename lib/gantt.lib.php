@@ -141,7 +141,7 @@ function _get_task_for_of($fk_project = 0) {
 		$task->title = $task->label;
 		$task->text = $task->ref.' '.$task->label;
 		if($task->planned_workload>0) {
-			$task->text.=' '.dol_print_date($task->planned_workload,'hour');
+			$task->text.=' '.round($task->planned_workload / 3600,1).'h';
 		}
 
 		if($task->array_options['options_fk_of']>0) {
@@ -489,8 +489,8 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 			$taskColor = $object->background;
 			$taskColorCode= ',color:"'.$taskColor.'"';
 		}
-		
-		
+
+
 		return ' {"id":"'.$object->ganttid.'"'.$taskColorCode.',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: true}';
 	}
 	else if($object->element == 'project') {
@@ -533,7 +533,7 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 		{
 			$taskColor = $object->array_options['options_color'];
 		}
-		
+
 		if(!empty($taskColor))$taskColorCode= ',color:"'.$taskColor.'"';
 
 		return ' {"id":"'.$object->ganttid.'"'.$taskColorCode.',needed_ressource:'.(int)$needed_ressource.',time_task_limit_no_before:'.(int)$time_task_limit_no_before.',time_task_limit_no_after:'.(int)$time_task_limit_no_after.',planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task , open: '.$close_init_status.'}';
@@ -553,7 +553,7 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 	}
 
 	var_dump($object);exit;
-	
+
 	return '{ nonObjectManaged:"'.$object->element.'" }';
 }
 
@@ -611,7 +611,7 @@ function _get_events( &$TData,&$TLink,$fk_project=0,$owner=0,$taskColor= '#f7d60
 	global $db,$range;
 
 	return false;// TODO rewrite this function
-	
+
 	$day_range = empty($conf->global->GANTT_DAY_RANGE_FROM_NOW) ? 90 : $conf->global->GANTT_DAY_RANGE_FROM_NOW;
 
 	$sql = "SELECT a.id
