@@ -47,7 +47,9 @@ div.ws_container div.gantt_task_cell {
 }
 div.ws_container div.gantt_task_cell,div.ws_container_label div.div.gantt_row,div.ws_container div.gantt_row {
 	line-height:12px;
-	overflow:visible;
+	overflow:hidden;
+	height:12px;
+	text-overflow: ellipsis;
 }
        div.ws_container div.gantt_task_cell.normal {
 	background-color:#7caa43;
