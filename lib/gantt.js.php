@@ -171,10 +171,9 @@ function moveTasks(tasksid) {
 	}).done(function(data) {
 
 		$.each(data, function(i, item) {
+			var t = gantt.getTask('T'+i);
 
 			if(item.duration>0) {
-
-				var t = gantt.getTask('T'+i);
 
 				t.duration = item.duration;
 				t.start_date = new Date(item.start * 1000);
@@ -184,8 +183,13 @@ function moveTasks(tasksid) {
 				gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+t.start_date.toLocaleDateString());
 					saveTask(t);
 
-				}
-			});
+			}
+			else {
+				gantt.message(t.ref + ' : <?php echo $langs->trans('TaskCannobBeMovedTo') ?> ','error');
+
+			}
+
+		});
 
 	});
 

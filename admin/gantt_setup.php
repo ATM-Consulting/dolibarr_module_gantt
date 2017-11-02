@@ -262,6 +262,22 @@ print '<input type="hidden" name="action" value="set_GANTT_SET_TASK_DATES_ON_CRE
 echo ajax_constantonoff('GANTT_SET_TASK_DATES_ON_CREATE');
 print '</form>';
 print '</td></tr>';
+
+
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("GANTT_OVERLOAD_TOLERANCE").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="right" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="set_GANTT_OVERLOAD_TOLERANCE">';
+print '<input type="number" step="0.1" name="GANTT_OVERLOAD_TOLERANCE" value="'.(float)$conf->global->GANTT_OVERLOAD_TOLERANCE.'" />';
+print '<input type="submit" value="'.$langs->trans('Ok').'" />';
+print '</form>';
+print '</td></tr>';
+
+
 // Example with a yes / no select
 $var=!$var;
 print '<tr '.$bc[$var].'>';

@@ -139,6 +139,7 @@ function _get_task_for_of($fk_project = 0) {
 		$task->ganttid = 'T'.$task->id;
 		$task->label = strip_tags(strtr($task->label, array("\n"=>' ',"\r"=>'')));
 		$task->title = $task->label;
+		$task->ref= $task->ref;
 		$task->text = $task->ref.' '.$task->label;
 		if($task->planned_workload>0) {
 			$task->text.=' '.round($task->planned_workload / 3600,1).'h';
@@ -536,7 +537,7 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 
 		if(!empty($taskColor))$taskColorCode= ',color:"'.$taskColor.'"';
 
-		return ' {"id":"'.$object->ganttid.'"'.$taskColorCode.',needed_ressource:'.(int)$needed_ressource.',time_task_limit_no_before:'.(int)$time_task_limit_no_before.',time_task_limit_no_after:'.(int)$time_task_limit_no_after.',planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task , open: '.$close_init_status.'}';
+		return ' {"id":"'.$object->ganttid.'"'.$taskColorCode.',ref:"'.$object->ref.'",needed_ressource:'.(int)$needed_ressource.',time_task_limit_no_before:'.(int)$time_task_limit_no_before.',time_task_limit_no_after:'.(int)$time_task_limit_no_after.',planned_workload:'.(int)$object->planned_workload.' ,objElement:"'.$object->element.'",objId:"'.$object->id.'", workstation:'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'", "duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', progress: '.($object->progress / 100).',owner:"'.$fk_workstation.'", type:gantt.config.types.task , open: '.$close_init_status.'}';
 
 	}
 	else if($object->element== 'milestone' || $object->element == 'release') {

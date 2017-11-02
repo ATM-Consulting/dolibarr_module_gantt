@@ -53,3 +53,4 @@ GANTT_SET_TASK_DATES_ON_CREATE=Recalculer les dates de la tâche à sa création
 DateStartProd=Date de début de production
 MoveAllTasks=Déplacer toutes les tâches
 hours=heures
+TaskCannobBeMovedTo=Impossible de déplacer cette tâche à cause des restrictions

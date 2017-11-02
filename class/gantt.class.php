@@ -73,7 +73,6 @@ class GanttPatern {
 				$parent->fetch($task->fk_task_parent);
 				$TCacheTask[$task->fk_task_parent] = $parent;
 			}
-
 			$parent_duration = floor(($parent->date_end - $parent->date_start) / 86400 ) + 1;
 
 			if($parent_duration>$duration) $t_start_bound = $parent->date_end - ($duration * 86400); // alors le début est soit la durée de la tâche en partant de la fin de la tâche parente
@@ -81,6 +80,9 @@ class GanttPatern {
 
 			$t_start_bound=strtotime('midnight',$t_start_bound);
 			if($t_start_bound>$t_start) $t_start = $t_start_bound;
+
+		//	var_dump(array($task->fk_task_parent,$task->ref, $parent->ref, $parent->id,date('YmdHis',$t_start)));
+
 		}
 
 		if(empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE) && $task->array_options['options_fk_of']>0) {
@@ -103,7 +105,7 @@ class GanttPatern {
 					$cmd = new CommandeFournisseur($db);
 					$cmd->fetch($idcommandeFourn);
 
-					if($cmd->statut>0 && $cmd->statut<5 && $cmd->date_livraison>0 &&  $cmd->date_livraison < $t_start) {
+					if($cmd->statut>0 && $cmd->statut<5 && $cmd->date_livraison>0 &&  $cmd->date_livraison > $t_start) {
 						$t_start =  $cmd->date_livraison ;
 					}
 				}
@@ -156,6 +158,10 @@ class GanttPatern {
 	}
 
 	static function gb_search_days(&$TDates, &$task, $t_start, $t_end ) {
+		global $conf;
+
+		$tolerance = empty($conf->global->GANTT_OVERLOAD_TOLERANCE) ? 0 : -(float)$conf->global->GANTT_OVERLOAD_TOLERANCE;
+
 		$row = array('start'=>-1, 'duration'=>$task->duration);
 
 		foreach($TDates as $date=>&$data) {
@@ -174,26 +180,26 @@ class GanttPatern {
 
 				$data = &$TDates[$datetest];
 
-				if($data['capacityLeft'] - $task->hour_needed < 0) {
+				if($data['capacityLeft'] - $task->hour_needed < $tolerance) {
 					$ok =false;
 					break;
 				}
+				$DateOk[] = $datetest; //juste pour éviter ensuite le reparcours calculé
 
 				$timetest= strtotime('+1day', $timetest);
 				$datetest = date('Y-m-d', $timetest);
-				$DateOk[] = $datetest; //juste pour éviter ensuite le reparcours calculé
+
 			}
 
 			if($ok) {
-
 				foreach($DateOk as $date) {
-					$data2 = &$TDates[$datetest];
+					$data2 = &$TDates[$date];
 					$data2['capacityLeft'] -= $task->hour_needed;
-
 				}
 
 				$row['start'] = $time;
-				$row['date_start'] = date('Y-m-d H:i:s',$time); //juste pour debug
+				$row['hour_needed'] = $task->hour_needed; //juste pour debug TODO remove
+				$row['date_start'] = date('Y-m-d H:i:s',$time); //juste pour debug TODO remove
 
 				return $row;
 			}
@@ -213,7 +219,7 @@ class GanttPatern {
 		$task->hour_needed = $task->planned_workload * $needed_ressource* ((100 - $task->progress) / 100) / 3600 / $duration;
 		$task->duration = $duration;
 
-		if($duration<50 || $hour_needed<=0) {
+		if($duration<50 && $task->hour_needed>0) {
 
 			self::gb_search_set_bound($task, $t_start, $t_end);
 			$row = self::gb_search_days($TDates, $task, $t_start, $t_end);
