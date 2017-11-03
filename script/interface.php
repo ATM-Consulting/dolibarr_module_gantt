@@ -87,9 +87,9 @@
 
 		$wssc->save($PDOdb);
 
-		if($wssc->nb_ressource == 0)$wssc->delete($PDOdb);
+		if($wssc->nb_ressource == 0 && $wssc->nb_hour_capacity == $ws->nb_hour_capacity)$wssc->delete($PDOdb);
 
-		return $wssc->id;
+		return $wssc->getId();
 	}
 
 	function _split_task($taskid, $task1time, $task2time) {
