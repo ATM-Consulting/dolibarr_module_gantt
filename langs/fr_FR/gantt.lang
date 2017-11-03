@@ -54,3 +54,4 @@ DateStartProd=Date de début de production
 MoveAllTasks=Repositionner toutes les tâches
 hours=heures
 TaskCannobBeMovedTo=Impossible de déplacer cette tâche à cause des restrictions
+Set=Définir

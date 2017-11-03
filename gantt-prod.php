@@ -496,7 +496,11 @@ else {
 
 		var r ='';
 		if(task.text) {
-		    r = "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> " + task.duration + " <?php echo $langs->trans('days') ?> / "+(Math.round(task.planned_workload / 3600 * 10) / 10)+" <?php echo $langs->trans('hours') ?>";
+		    r = "<strong>"+task.text+"</strong><br/><?php echo $langs->trans('Duration') ?> "
+		   			+ task.duration + " <?php echo $langs->trans('days') ?>";
+		   	if(task.planned_workload) r+=" / "+(Math.round(task.planned_workload / 3600 * 10) / 10)+" <?php echo $langs->trans('hours') ?>";
+			if(task.needed_ressource) r+="<br/><?php echo $langs->trans('NeededRessource') ?> : "+task.needed_ressource;
+
 			if(task.start_date) r+= "<br /><?php echo $langs->trans('FromDate') ?> "+task.start_date.toLocaleDateString()
 			if(task.end_date && task.duration>1) r+= " <?php echo $langs->trans('ToDate') ?> "+task.end_date.toLocaleDateString();
 		}

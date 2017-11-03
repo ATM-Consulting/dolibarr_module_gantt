@@ -45,6 +45,10 @@
 			__out(_set_ws_time(GETPOST('wsid'), GETPOST('date'), GETPOST('nb_hour_capacity'), GETPOST('nb_ressource')),'json');
 			break;
 
+		case 'ws-remove-time':
+			__out(_remove_ws_time(GETPOST('wsid'), GETPOST('date')),'json');
+			break;
+
 	}
 
 	switch ($get) {
@@ -62,6 +66,21 @@
 	function _get_better_pattern($tasksid, $t_start, $t_end) {
 
 		return GanttPatern::get_better(explode(',', $tasksid), $t_start, $t_end);
+	}
+	function _remove_ws_time($wsid, $date) {
+		global $conf;
+
+		if(empty($conf->workstation->enabled)) return 0;
+
+		dol_include_once('/workstation/class/workstation.class.php');
+
+		$PDOdb=new TPDOdb;
+
+		$wssc = new TWorkstationSchedule();
+		$wssc->loadByWSDate($PDOdb, $wsid, $date);
+
+		return $wssc->delete($PDOdb);
+
 	}
 
 	function _set_ws_time($wsid, $date, $nb_hour_capacity, $nb_ressource) {

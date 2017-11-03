@@ -33,7 +33,6 @@ function setWSTime(wsid, dateOf) {
 
 	$ws = $('div#workstations_'+wsid+' div[date='+dateOf+']');
 	if($ws.length>0) {
-		console.log($ws);
 			nb_hour_capacity=$ws.data('nb_hour_capacity');
 			nb_ressource=$ws.data('nb_ressource');
 	}
@@ -44,14 +43,8 @@ function setWSTime(wsid, dateOf) {
 	$div.append('<div><?php echo $langs->trans('AvailaibleRessources'); ?> <input type="number" name="nb_ressource" value="'+nb_ressource+'" /></div>');
     $('body').append($div);
 
-    $('#wsTimePlanner').dialog({
-		title:"<?php echo $langs->trans('setWSTime'); ?>"
-		,modal:true
-		,draggable: false
-		,resizable: false
-		,buttons:[
-            {
-              text: '<?php echo $langs->trans('Set'); ?>',
+	var buttons = [{
+              text: '<?php echo $langs->transnoentities('Set'); ?>',
               click: function() {
 
                 $.ajax({
@@ -75,8 +68,41 @@ function setWSTime(wsid, dateOf) {
 
                 $( this ).dialog( "close" );
               }
-            }
-          ]
+     }];
+
+	 if($ws.hasClass('starred')) {
+    	 buttons.push({
+              text: '<?php echo $langs->transnoentities('Remove'); ?>',
+              click: function() {
+
+                $.ajax({
+                   url : "script/interface.php"
+                   ,data:{
+                       'put':'ws-remove-time'
+                       ,'wsid':wsid
+                       ,'date':dateOf
+
+                   }
+                }).done(function(data) {
+
+                	var t_start = new Date(dateOf);
+					var t_end = new Date(dateOf);
+
+                	updateWSCapacity(wsid, +t_start/1000, +t_end/1000);
+
+                });
+
+                $( this ).dialog( "close" );
+              }
+            });
+	}
+
+    $('#wsTimePlanner').dialog({
+		title:"<?php echo $langs->trans('setWSTime'); ?>"
+		,modal:true
+		,draggable: false
+		,resizable: false
+		,buttons:buttons
 	});
 
 }
@@ -600,11 +626,11 @@ function pop_event(callback) {
 					});
 
 					if(row.capacityLeft!='NA' && (nb_hour_capacity!=row.nb_hour_capacity || nb_ressource!=row.nb_ressource)) {
-						$ws.css({
-							'background-image': 'url(img/star.png)'
-							,'background-repeat':'no-repeat'
-						}).attr('title','<?php echo $langs->transnoentities('DayCapacityModify'); ?>');
-				}
+						$ws.addClass('starred').attr('title','<?php echo $langs->transnoentities('DayCapacityModify'); ?>');
+					}
+					else {
+						$ws.removeClass('starred').removeAttr('title');
+					}
 
 			}
 

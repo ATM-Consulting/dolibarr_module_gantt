@@ -121,7 +121,14 @@ body.loading .modalwaiter {
 
 }
 
-   div.edit_task_button_set, div.automove_set, div.split_set {
+div.edit_task_button_set, div.automove_set, div.split_set {
 	border-radius: 4px;
 	border:1px solid #ccc;
-   }
+}
+
+div.gantt_task_cell.starred {
+	background-image: url(../img/star.png);
+	background-repeat:no-repeat;
+}
+
+
