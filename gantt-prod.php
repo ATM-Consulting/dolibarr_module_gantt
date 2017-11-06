@@ -524,10 +524,10 @@ else {
 	});
 
 	gantt.attachEvent("onTaskOpened", function(id){
-		/*updateAllCapacity();*/
+
 	});
 	gantt.attachEvent("onTaskClosed", function(id){
-		/*updateAllCapacity();*/
+
 	});
 	gantt.attachEvent("onGanttScroll", function (left, top) {
 
@@ -566,7 +566,6 @@ else {
 			task.objId = newid.substring(1);
 			task.objElement = 'project_task';
 
-			/*updateAllCapacity();*/
 
 			// TODO set workstation and update capacity
 		});
@@ -854,7 +853,10 @@ else {
 	}
 	else {
 
-		?>$( document ).ready(function(){
+		?>
+		function updateAllCapacity() {}
+
+		$( document ).ready(function(){
 		if($("div.ws_container_label").length == 0) {
            $("body").append('<div class="ws_container"><div>&nbsp;</div></div>');
 
