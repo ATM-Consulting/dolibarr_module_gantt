@@ -73,15 +73,22 @@ class GanttPatern {
 				$parent->fetch($task->fk_task_parent);
 				$TCacheTask[$task->fk_task_parent] = $parent;
 			}
+
+			if($parent->progress < 100) {
+
 			$parent_duration = floor(($parent->date_end - $parent->date_start) / 86400 ) + 1;
 
 			if($parent_duration>$duration) $t_start_bound = $parent->date_end - ($duration * 86400); // alors le début est soit la durée de la tâche en partant de la fin de la tâche parente
 			else $t_start_bound= $parent->date_start; // où le début de la tâche parente
 
 			$t_start_bound=strtotime('midnight',$t_start_bound);
-			if($t_start_bound>$t_start) $t_start = $t_start_bound;
-
-		//	var_dump(array($task->fk_task_parent,$task->ref, $parent->ref, $parent->id,date('YmdHis',$t_start)));
+			if($t_start_bound>$t_start) {
+				$t_start = $t_start_bound;
+				if(GETPOST('_givemesolution')=='yes') {
+					echo 'start bound fk_task_parent ('.$parent->id.' / '.$parent->ref.') '.date('Y-m-d', $parent->date_start).' - '.date('Y-m-d', $parent->date_end).' --> '.date('Y-m-d', $t_start).'<br />';
+				}
+			}
+			}
 
 		}
 
@@ -218,10 +225,15 @@ class GanttPatern {
 
 		$task->hour_needed = $task->planned_workload * $needed_ressource* ((100 - $task->progress) / 100) / 3600 / $duration;
 		$task->duration = $duration;
-
+if(GETPOST('_givemesolution')=='yes') {
+	echo ' task : '.$task->id.'('.$task->ref.') '.$task->duration.' '.$task->hour_needed.'<br />';
+}
 		if($duration<50 && $task->hour_needed>0) {
 
 			self::gb_search_set_bound($task, $t_start, $t_end);
+if(GETPOST('_givemesolution')=='yes') {
+echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end).'<br />';
+}
 			$row = self::gb_search_days($TDates, $task, $t_start, $t_end);
 
 			if($row['start'] == -1) $row = self::gb_search($TDates, $task, $t_start, $t_end, $duration + 1);
@@ -252,6 +264,10 @@ class GanttPatern {
 
 	static function get_better($TTaskId, $t_start, $t_end) {
 		global $db,$TCacheTask;
+
+		if(GETPOST('_givemesolution')=='yes') {
+			echo date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end).'<br />';
+		}
 
 		if(empty($TCacheTask))$TCacheTask=array();
 
