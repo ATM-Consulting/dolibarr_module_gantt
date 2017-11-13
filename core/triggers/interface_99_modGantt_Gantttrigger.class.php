@@ -116,7 +116,7 @@ class InterfaceGantttrigger
 
     	if($action === 'TASK_CREATE') {
 			dol_include_once('/gantt/class/gantt.class.php');
-
+			dol_include_once('/projet/class/project.class.php');
 			$db = &$object->db;
 			$project = new Project($db);
 			$project->fetch($object->fk_project);
