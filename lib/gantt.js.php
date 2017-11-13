@@ -632,9 +632,9 @@ function updateWSRangeCapacity(sl) {
 		<?php
 
 			foreach($TWS as &$ws) {
-
+				if($ws->id>0) {
 				?> updateWSCapacity(<?php echo $ws->id ?>,  date_start, date_end); <?php
-
+				}
 			}
 
 		?>

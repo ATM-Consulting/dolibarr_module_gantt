@@ -138,7 +138,11 @@ class InterfaceGantttrigger
 					$object->date_start = $Tab['start'];
 					$object->date_end = $object->date_start + ( $Tab['duration'] * 86400 ) - 1;
 
-					$object->update($user);
+					$res = $object->update($user);
+					if($res<=0) {
+
+						var_dump($object);exit;
+					}
 				}
 
 
