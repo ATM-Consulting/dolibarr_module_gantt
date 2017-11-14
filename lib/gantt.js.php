@@ -39,8 +39,8 @@ function setWSTime(wsid, dateOf) {
 
 	$('#wsTimePlanner').remove();
 	$div = $('<div id="wsTimePlanner"></div>');
-	$div.append('<div><?php echo $langs->trans('NbHourCapacity'); ?> <input type="number" name="nb_hour_capacity" value="'+nb_hour_capacity+'" /></div>');
-	$div.append('<div><?php echo $langs->trans('AvailaibleRessources'); ?> <input type="number" name="nb_ressource" value="'+nb_ressource+'" /></div>');
+	$div.append('<div><?php echo addslashes($langs->trans('NbHourCapacity')); ?> <input type="number" name="nb_hour_capacity" value="'+nb_hour_capacity+'" /></div>');
+	$div.append('<div><?php echo addslashes($langs->trans('AvailaibleRessources')); ?> <input type="number" name="nb_ressource" value="'+nb_ressource+'" /></div>');
     $('body').append($div);
 
 	var buttons = [{
