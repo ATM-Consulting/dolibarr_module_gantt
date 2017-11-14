@@ -251,7 +251,7 @@ else {
 				}
 				$range->date_end+=864000;
 			}
-
+			
 			?>
 			<table border="0" width="100%"><tr><td>
 			<?php
@@ -284,7 +284,7 @@ else {
 			echo $formCore->btsubmit($langs->trans('ok'), 'bt_select_date');
 
 			$formCore->end();
-
+			
 			//onclick="$(this).remove()"
 			?>
 			</td><td align="right">
@@ -340,14 +340,15 @@ else {
 	    ],
 	    links:[
 	       <?php
+	       
 	       $Tmp=array();
 	       foreach($TLink as $k=>&$link) {
-	       		if(isset($TData[$link['source']])) {
-	       			$Tmp[$linkId] =' {id:'.$link['id'].', source:"'.$link['source'].'", target:"'.$link['target'].'", type:"'.$link['type'].'"}';
+	       		if(isset($TData[$link['source']]) && isset($TData[$link['target']])) {
+	       			$Tmp[] =' {id:'.$link['id'].', source:"'.$link['source'].'", target:"'.$link['target'].'", type:"'.$link['type'].'"}';
 	       		}
 	       }
 
-	       echo implode(',',$Tmp); ?>
+	       echo implode(",\n",$Tmp); ?>
 	    ]
 	};
 
@@ -450,7 +451,7 @@ else {
             {key:"1", label: "<?php echo $langs->transnoentities('Complete') ?>", width:"60%"}
         ]},
 
-        {name: "time", type: "time", map_to: "auto", time_format:["%d", "%m", "%Y"]},
+        {name: "time", type: "time", map_to: "auto", time_format:["%d", "T105%m", "%Y"]},
         {name: "planned_workload", height: "duration", map_to: "planned_workload", type:"select", options:[
 			<?php
 				dol_include_once('/core/lib/date.lib.php');
@@ -684,7 +685,7 @@ else {
 		var task = gantt.getTask(id);
 
 		return saveTask(task, old_event);
-
+		pre($TData);
 	});
 
     gantt.attachEvent("onLightboxSave", function(id, task, is_new){
