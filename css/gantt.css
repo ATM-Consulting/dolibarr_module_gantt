@@ -47,9 +47,11 @@ div.ws_container div.gantt_task_cell {
 }
 div.ws_container div.gantt_task_cell,div.ws_container_label div.div.gantt_row,div.ws_container div.gantt_row {
 	line-height:12px;
-	overflow:visible;
+	overflow:hidden;
+	height:13px;
+	text-overflow: ellipsis;
 }
-       div.ws_container div.gantt_task_cell.normal {
+div.ws_container div.gantt_task_cell.normal {
 	background-color:#7caa43;
 }
        div.ws_container div.gantt_task_cell.pasassez {
@@ -93,7 +95,7 @@ div.ws_container div.gantt_task_cell.closed {
     height:     100%;
     width:      100%;
     background: rgba( 255, 255, 255, .8 )
-                url('img/ajax-loader.gif')
+                url('../img/ajax-loader.gif')
                 50% 50%
                 no-repeat;
 }

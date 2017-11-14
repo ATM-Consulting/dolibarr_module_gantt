@@ -116,7 +116,7 @@ class InterfaceGantttrigger
 
     	if($action === 'TASK_CREATE') {
 			dol_include_once('/gantt/class/gantt.class.php');
-
+			dol_include_once('/projet/class/project.class.php');
 			$db = &$object->db;
 			$project = new Project($db);
 			$project->fetch($object->fk_project);
@@ -138,7 +138,11 @@ class InterfaceGantttrigger
 					$object->date_start = $Tab['start'];
 					$object->date_end = $object->date_start + ( $Tab['duration'] * 86400 ) - 1;
 
-					$object->update($user);
+					$res = $object->update($user);
+					if($res<=0) {
+
+						var_dump($object);exit;
+					}
 				}
 
 
