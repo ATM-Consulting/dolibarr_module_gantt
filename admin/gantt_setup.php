@@ -263,6 +263,18 @@ echo ajax_constantonoff('GANTT_SET_TASK_DATES_ON_CREATE');
 print '</form>';
 print '</td></tr>';
 
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("GANTT_ALLOW_PREVI_TASK").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="right" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="set_GANTT_ALLOW_PREVI_TASK">';
+echo ajax_constantonoff('GANTT_ALLOW_PREVI_TASK');
+print '</form>';
+print '</td></tr>';
+
 
 $var=!$var;
 print '<tr '.$bc[$var].'>';

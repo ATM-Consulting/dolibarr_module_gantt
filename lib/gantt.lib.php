@@ -407,14 +407,18 @@ function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
  *
  */
 function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $maxDeep = 3) {
-	global $db,$range;
+	global $db,$range, $conf, $user;
 
-	if($level>$maxDeep) return;
+	if($level>$maxDeep || empty($conf->global->GANTT_ALLOW_PREVI_TASK)) return;
 
 	$projet_previ=new Project($db);
 	$projet_previ->fetch(0,'PREVI');
 	$fk_projet_previ = (int)$projet_previ->id;
 
+	if($projet_previ->statut!=1) {
+		$projet_previ->setValid($user);
+	}
+	
 	$sql = "SELECT t.rowid
 				FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
 						LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)

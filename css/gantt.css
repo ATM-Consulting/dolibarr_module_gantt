@@ -133,4 +133,11 @@ div.gantt_task_cell.starred {
 	background-repeat:no-repeat;
 }
 
+div.gantt_row .misted {
+	opacity:.3;
+}
+div.gantt_row:hover .misted {
+	opacity:1;
+	
+}
 

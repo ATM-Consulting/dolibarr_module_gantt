@@ -421,7 +421,20 @@ else {
 	    }, align: "center", width:60 },*/
 	    {name:"duration",   label:"<?php echo $langs->transnoentities('Duration') ?>", align:"center", width:60},
 
-	    {name:"add",        label:"",           width:44 },
+	   <?php
+	   		if(!empty($conf->global->GANTT_ALLOW_PREVI_TASK)) echo '{name:"add",        label:"",           width:44 },';
+	   	
+	   	?>
+
+	   	{name:"automove",   label:' ',  template:function(obj){
+		   	if(obj.id[0] == 'T') {
+				return '<a class="misted" href="javascript:moveTasks(\''+obj.objId+'\');"><?php echo img_picto($langs->transnoentities('AutoMove'), 'move.png@gantt'); ?></a>'
+				+ '&nbsp; <a class="misted" href="javascript:splitTask(gantt.getTask(\''+obj.id+'\'));"><?php echo img_picto($langs->transnoentities('Split'), 'split.png@gantt'); ?></a>';
+		   	}
+
+		   	return '';
+    	}, align: "center", width:54 },
+	   	
 	];
 
 	// Define local lang
