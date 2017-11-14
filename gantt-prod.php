@@ -451,7 +451,7 @@ else {
             {key:"1", label: "<?php echo $langs->transnoentities('Complete') ?>", width:"60%"}
         ]},
 
-        {name: "time", type: "time", map_to: "auto", time_format:["%d", "T105%m", "%Y"]},
+        {name: "time", type: "time", map_to: "auto", time_format:["%d", "%m", "%Y"]},
         {name: "planned_workload", height: "duration", map_to: "planned_workload", type:"select", options:[
 			<?php
 				dol_include_once('/core/lib/date.lib.php');
@@ -589,17 +589,20 @@ else {
 
 				if(m>0) task.planned_workload = task.planned_workload - m + 900;
 			}
-			/*console.log(task);*/
+			console.log(task);
 			return true;
 		}
 		else if(id[0] === 'P') {
 			window.open('<?php echo dol_buildpath('/projet/card.php', 1) ?>?id='+id.substr(1));
+			return false;
 		}
 		else if(id[0] === 'O') {
 			window.open('<?php echo dol_buildpath('/commande/card.php', 1) ?>?id='+id.substr(1));
+			return false;
 		}
 		else if(id[0] === 'M') {
 			window.open('<?php echo dol_buildpath('/of/fiche_of.php', 1) ?>?id='+id.substr(1));
+			return false;
 		}
 		else {
 			return false;
@@ -734,6 +737,7 @@ else {
 	    }
 	    else if(button_id == "split"){
 	        var id = gantt.getState().lightbox;
+	        console.log(id);
 	        task = gantt.getTask(id);
 
 	        gantt.hideLightbox();
