@@ -412,7 +412,13 @@ else {
 	}
 
 	gantt.config.columns = [
-	    {name:"text",       label:"<?php echo $langs->transnoentities('Label') ?>",  width:"*", tree:true },
+	    {name:"text",       label:"<?php echo $langs->transnoentities('Label') ?>",  width:"*", tree:true, template:function(obj) {
+		if(obj.id[0] == 'T' || obj.type == 'release') {
+			return obj.text;
+		}
+
+		return '<strong>'+obj.text+'</strong>';
+	    } },
 	    {name:"start_time",   label:"<?php echo $langs->transnoentities('DateStart') ?>",  template:function(obj){
 			return gantt.templates.date_grid(obj.start_date);
 	    }, align: "center", width:70 },
@@ -517,6 +523,17 @@ else {
 
 			if(task.start_date) r+= "<br /><?php echo $langs->trans('FromDate') ?> "+task.start_date.toLocaleDateString()
 			if(task.end_date && task.duration>1) r+= " <?php echo $langs->trans('ToDate') ?> "+task.end_date.toLocaleDateString();
+		}
+
+		if(task.time_task_limit_no_after) {
+			d=new Date(task.time_task_limit_no_after);
+			r+=" <?php echo $langs->trans('HighBound') ?> "+task.d.toLocaleDateString();
+			
+		}
+		if(task.time_task_limit_before_after) {
+			d=new Date(task.time_task_limit_no_before);
+			r+=" <?php echo $langs->trans('LowBound') ?> "+task.d.toLocaleDateString();
+			
 		}
 
 		if(task.workstation == 0) {
