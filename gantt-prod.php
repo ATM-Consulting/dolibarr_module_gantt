@@ -412,13 +412,16 @@ else {
 	}
 
 	gantt.config.columns = [
-	    {name:"text",       label:"<?php echo $langs->transnoentities('Label') ?>",  width:"*", tree:true, template:function(obj) {
-		if(obj.id[0] == 'T' || obj.type == 'release') {
-			return obj.text;
-		}
+	    {name:"text",       label:"<?php echo $langs->transnoentities('Label') ?>",  width:"*", tree:true
+		    , template:function(obj) {
+			    
+				if(obj.id[0] == 'T' || obj.objElement == 'milestone') {
+					return obj.text;
+				}
 
-		return '<strong>'+obj.text+'</strong>';
-	    } },
+				return '<strong>'+obj.text+'</strong>';
+	    	} 
+	    },
 	    {name:"start_time",   label:"<?php echo $langs->transnoentities('DateStart') ?>",  template:function(obj){
 			return gantt.templates.date_grid(obj.start_date);
 	    }, align: "center", width:70 },
