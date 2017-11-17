@@ -526,13 +526,13 @@ else {
 		}
 
 		if(task.time_task_limit_no_after) {
-			d=new Date(task.time_task_limit_no_after);
-			r+=" <?php echo $langs->trans('HighBound') ?> "+task.d.toLocaleDateString();
+			d=new Date(task.time_task_limit_no_after*1000);
+			r+="<br /><?php echo $langs->trans('HighBound') ?> "+d.toLocaleDateString();
 			
 		}
 		if(task.time_task_limit_before_after) {
-			d=new Date(task.time_task_limit_no_before);
-			r+=" <?php echo $langs->trans('LowBound') ?> "+task.d.toLocaleDateString();
+			d=new Date(task.time_task_limit_no_before*1000);
+			r+="<br /><?php echo $langs->trans('LowBound') ?> "+d.toLocaleDateString();
 			
 		}
 

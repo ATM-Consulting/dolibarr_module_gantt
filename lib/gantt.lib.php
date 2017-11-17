@@ -146,16 +146,31 @@ function _get_task_for_of($fk_project = 0) {
 		$task->label = strip_tags(strtr($task->label, array("\n"=>' ',"\r"=>'')));
 		$task->title = $task->label;
 		$task->ref= $task->ref;
-		$task->text = $task->ref.' '.$task->label;
-		if($task->planned_workload>0) {
-			$task->text.=' '.round($task->planned_workload / 3600,1).'h';
+		
+		if(!empty($conf->global->GANTT_HIDE_TASK_REF)) {
+			$task->text = $task->label;
 		}
-
+		else {
+			$task->text = $task->ref.' '.$task->label;
+			if($task->planned_workload>0) {
+				$task->text.=' '.round($task->planned_workload / 3600,1).'h';
+			}
+		}
+		
 		if($task->array_options['options_fk_of']>0) {
 
 			$of=new TAssetOF();
 			$of->load($PDOdb, $task->array_options['options_fk_of']);
-			$of->title = $of->numero.' '.$of->getLibStatus(true);
+			
+			$line = $of->getLineProductToMake();
+			
+			if(!empty($conf->global->GANTT_HIDE_TASK_REF)) {
+				$of->title = $of->numero.' '.$line->product->label;
+			}
+			else {
+				$of->title = $of->numero.' '.$of->getLibStatus(true).' '.$line->product->label;
+			}
+			
 		}
 		else{
 

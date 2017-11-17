@@ -289,6 +289,17 @@ print '<input type="submit" value="'.$langs->trans('Ok').'" />';
 print '</form>';
 print '</td></tr>';
 
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("GANTT_HIDE_TASK_REF").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="right" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="set_GANTT_HIDE_TASK_REF">';
+echo ajax_constantonoff('GANTT_HIDE_TASK_REF');
+print '</form>';
+print '</td></tr>';
 
 // Example with a yes / no select
 $var=!$var;

@@ -58,3 +58,6 @@ TaskCannobBeMovedTo=Impossible de déplacer cette tâche à cause des restrictio
 Set=Définir
 GANTT_ALLOW_PREVI_TASK=Permettre l'usage de tâches prévisionnelles
 GANTT_OVERLOAD_TOLERANCE=Surcharge allouée aux postes de charges
+HighBound=Borne haute
+LowBound=Borne basse
+GANTT_HIDE_TASK_REF=Cacher les détails (ref de tâche, état de l'of,...)
