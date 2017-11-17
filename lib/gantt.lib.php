@@ -93,12 +93,13 @@ function _get_task_for_of($fk_project = 0) {
 
 	$idNoAffectation = 1;
 
-	$sql = "SELECT t.rowid
+	$sql = "SELECT t.rowid,wof.nb_days_before_beginning
 		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
 			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet) ";
 
 	if($fk_project == 0) {
-		$sql.=" LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of)";
+		$sql.=" LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of)
+					LEFT JOIN ".MAIN_DB_PREFIX."asset_workstation_of wof ON (t.rowid=wof.fk_project_task)";
 
 	}
 
@@ -140,6 +141,9 @@ function _get_task_for_of($fk_project = 0) {
 
 		$task = new Task($db);
 		$task->fetch($obj->rowid);
+		
+		if($task->id <=0) continue;
+		
 		$task->fetch_optionals($gantt_milestonetask->id);
 
 		$task->ganttid = 'T'.$task->id;
@@ -321,6 +325,10 @@ function _get_task_for_of($fk_project = 0) {
 			);
 		}
 
+		if($obj->nb_days_before_beginning>0) {
+			_add_delay_included_into_of_ws($obj->nb_days_before_beginning, $task, $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs']);
+		}
+		
 		$TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'][$task->id] = $task;
 
 		_load_child_tasks( $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'],$task);
@@ -328,6 +336,32 @@ function _get_task_for_of($fk_project = 0) {
 	_load_child_tasks( $TTask);
 	return $TTask;
 
+}
+
+function _add_delay_included_into_of_ws($nb_days_before_beginning, &$task, &$TData) {
+	
+	global $db, $langs, $conf, $TLink;
+	if(!empty($conf->global->GANTT_DISABLE_DELAY_PARENT)) {
+		return false;
+	}
+	
+	if($nb_days_before_beginning>0) {
+		$object=new stdClass();
+		$object->element = 'project_task_delay';
+		$object->title = $object->text = $langs->trans('DelayForTask', $nb_days_before_beginning);
+		$object->date= strtotime('+1 day midnight');
+		$object->duration = $nb_days_before_beginning;
+		
+		$object->ganttid = 'JD'.$task->id;
+		$object->bound='after';
+		$object->visible = 1;
+		
+		$TData[$object->ganttid] = $object;
+		
+		$linkId = count($TLink)+1;
+		$TLink[$linkId] = array('id'=>$linkId, 'source'=>$object->ganttid, 'target'=>$task->ganttid, 'type'=>'0');
+	}
+	
 }
 
 function _adding_task_order(&$order,&$TData) {
@@ -420,7 +454,7 @@ function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
 
 		}
 	}
-
+	
 }
 
 /*
@@ -576,7 +610,13 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 		return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.$date.'", "duration":1 '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.release, visible:'.( empty($object->visible) ? 0 : 1 ).'}';
 
 	}
-
+	else if($object->element == 'project_task_delay') {
+		
+		$date = date('d-m-Y',$object->date);
+		return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.$date.'", "duration":'.$object->duration.' '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.release, visible:'.( empty($object->visible) ? 0 : 1 ).'}';
+		
+	}
+	
 	var_dump('nonObjectManaged', $object);exit;
 
 	return '{ nonObjectManaged:"'.$object->element.'" }';

@@ -105,12 +105,12 @@ else {
 		$range->autotime = false;
 	}
 
+	$TData = $TWS = $TLink = $TTask = array();
+	
 	$TElement = _get_task_for_of($fk_project);
 //pre($TElement,1);exit;
 
 	_get_workstation(); // init tableau de WS
-
-	$TData = $TWS = $TLink = $TTask = array();
 
 	$open = false;
 	if(GETPOST('open')) $open = true;
@@ -415,7 +415,7 @@ else {
 	    {name:"text",       label:"<?php echo $langs->transnoentities('Label') ?>",  width:"*", tree:true
 		    , template:function(obj) {
 			    
-				if(obj.id[0] == 'T' || obj.objElement == 'milestone') {
+				if(obj.id[0] == 'T' || obj.objElement == 'milestone' || obj.objElement == 'project_task_delay') {
 					return obj.text;
 				}
 

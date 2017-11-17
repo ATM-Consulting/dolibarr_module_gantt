@@ -61,3 +61,4 @@ GANTT_OVERLOAD_TOLERANCE=Surcharge allouée aux postes de charges
 HighBound=Borne haute
 LowBound=Borne basse
 GANTT_HIDE_TASK_REF=Cacher les détails (ref de tâche, état de l'of,...)
+DelayForTask=Délai avant démarrage de la tâche
