@@ -131,7 +131,7 @@ function _get_task_for_of($fk_project = 0) {
 	if($res===false) {
 		var_dump($db);exit;
 	}
-
+	
 	$TTask=array();
 	if($fk_project == 0 && !empty($conf->global->GANTT_INCLUDE_PROJECT_WIHOUT_TASK)) {
 		_add_project_included_into_date($TTask);
@@ -537,7 +537,7 @@ function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $ma
 function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $time_task_limit_no_before=0,$time_task_limit_no_after=0, $taskColor = '') {
 
 	if($object->element == 'commande') {
-		return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
+		return ' {"id":"'.$object->ganttid.'", date_max:'.(int)$object->date_livraison.',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
 	}
 	else if($object->element == 'workstation') {
 
@@ -562,11 +562,11 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 			$projectColor= ',color:"'.$object->array_options['options_color'].'"';
 		}
 
-		return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project, open: '.$close_init_status.$projectColor.'}';
+		return ' {"id":"'.$object->ganttid.'", date_max:'.(int)$object->date_end.',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project, open: '.$close_init_status.$projectColor.'}';
 
 	}
 	else if($object->element == 'of') {
-		return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.of'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
+		return ' {"id":"'.$object->ganttid.'", date_max:'.(int)$object->date_besoin.',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.of'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
 	}
 	elseif($object->element == 'project_task') {
 		global $range,$TWS,$workstationList;
@@ -613,7 +613,7 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 	else if($object->element == 'project_task_delay') {
 		
 		$date = date('d-m-Y',$object->date);
-		return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.$date.'", "duration":'.$object->duration.' '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.release, visible:'.( empty($object->visible) ? 0 : 1 ).'}';
+		return ' {"id":"'.$object->ganttid.'",objElement:"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.$date.'", "duration":'.$object->duration.' '.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', type:gantt.config.types.delay, visible:'.( empty($object->visible) ? 0 : 1 ).'}';
 		
 	}
 	

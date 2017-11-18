@@ -1,8 +1,9 @@
 
 function initTaskDrag(task) {
+	alertLimit = true;
+
 	if(task.time_task_limit_no_before && task.time_task_limit_no_before>0) {
 		leftLimit = task.time_task_limit_no_before * 1000;
-		alertLimit = true;
 		leftLimitON = true;
 	}
 	else {
@@ -11,7 +12,6 @@ function initTaskDrag(task) {
 
 	if(task.time_task_limit_no_after && task.time_task_limit_no_after>0) {
 		rightLimit = task.time_task_limit_no_after * 1000;
-		alertLimit = true;
 		rightLimitON = true;
 	}
 	else {
@@ -197,6 +197,7 @@ function moveTasks(tasksid) {
 	}).done(function(data) {
 
 		$.each(data, function(i, item) {
+		console.log(i,item);
 			var t = gantt.getTask('T'+i);
 
 			if(item.duration>0) {
@@ -244,6 +245,32 @@ function regularizeHour(task) {
 }
 
 function dragTaskLimit(task, diff ,mode) {
+	var modes = gantt.config.drag_mode;
+
+	if(task.$target) {
+		$.each(task.$target,function(i, linkid) {
+			var link = gantt.getLink(linkid);
+			var parent = gantt.getTask(link.source);
+
+			if(parent.id && parent.objElement == 'project_task_delay') {
+
+				delayTaskLimit = new Date(+parent.start_date + (parent.duration * 86400000) );
+
+				if(+task.start_date < +delayTaskLimit){
+			            task.start_date = new Date(+delayTaskLimit);
+			            if(mode == modes.move) {
+			                task.end_date = new Date(+task.start_date + diff);
+			                if(alertLimit) {
+			                	gantt.message('<?php echo addslashes($langs->trans('TaskCantBeMovedBeforeApproDelay')) ?> : '+delayTaskLimit.toLocaleDateString());
+			                	alertLimit = false;
+			                }
+			            }
+			            return -1;
+		        }
+
+			}
+		});
+	}
 
 	<?php
 
@@ -253,8 +280,6 @@ function dragTaskLimit(task, diff ,mode) {
 	else {
 
 	?>
-
-		var modes = gantt.config.drag_mode;
 
 		if(leftLimitON && +task.start_date < +leftLimit){
             task.start_date = new Date(leftLimit);
@@ -646,10 +671,10 @@ var end_refresh_ws = 0;
 function updateWSRangeCapacity(sl) {
 	var sr = sl + $('#gantt_here div.gantt_task').width();
 
-	var date_start = gantt.dateFromPos(sl).setHours(0,0,0,0) / 1000 - (86400 * 2);
-	var date_end = gantt.dateFromPos(sr).setHours(23,59,59,0) / 1000 + (86400 * 2);
+	var date_start = gantt.dateFromPos(sl).setHours(0,0,0,0) / 1000 - (86400 * 10);
+	var date_end = gantt.dateFromPos(sr).setHours(23,59,59,0) / 1000 + (86400 * 10);
 
-	if(date_start < start_refresh_ws - (86400*2) || date_start > start_refresh_ws + (86400*2)) {
+	if(date_start < start_refresh_ws - (86400*10) || date_start > start_refresh_ws + (86400*10)) {
 
 		start_refresh_ws = date_start;
 		end_refresh_ws = date_end;

@@ -14,7 +14,29 @@
 	font-size: 1px;
     content:'';*/
 }
+.gantt_task_line.gantt_delay {
 
+	background:none;
+    background-color: auto;
+    border: 0 none;
+    border-bottom:1px dashed #333;
+    border-right:1px dashed #333;
+    
+}
+.gantt_task_line.gantt_delay div {
+	background-color:none;
+	color:#ccc;
+}
+.gantt_task_line.gantt_delay div.gantt_task_progress,.gantt_task_line.gantt_order div.gantt_task_progress,.gantt_task_line.gantt_milestone div.gantt_task_progress,.gantt_task_line.gantt_release div.gantt_task_progress,.gantt_task_line.gantt_of div.gantt_task_progress {
+	display:none;
+}
+.gantt_task_line.gantt_delay div.gantt_task_progress_drag
+,.gantt_task_line.gantt_order div.gantt_task_progress_drag
+,.gantt_task_line.gantt_milestone div.gantt_task_progress_drag
+,.gantt_task_line.gantt_release div.gantt_task_progress_drag
+,.gantt_task_line.gantt_of div.gantt_task_progress_drag {
+	display:none;
+}
 .gantt_task_line.gantt_of {
     background-color: #d3af3d;
     border: 0 solid #d3af3d;
@@ -140,4 +162,6 @@ div.gantt_row:hover .misted {
 	opacity:1;
 	
 }
-
+.gantt_late {
+	background-color:red !important;
+}

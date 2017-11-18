@@ -316,6 +316,8 @@ else {
 			gantt.config.types.actioncomm = "actioncomm";
 			gantt.locale.labels.type_milestone = "<?php echo $langs->trans('Agenda'); ?>";
 
+			gantt.config.types.delay = "delay";
+			gantt.locale.labels.type_delay = "<?php echo $langs->trans('Delay'); ?>";
 
 			function modSampleHeight(){
 
@@ -355,24 +357,50 @@ else {
 	gantt.templates.task = function(obj1){
 		console.log(obj1);
 	}
+	gantt.templates.grid_row_class = function(start, end, obj){
+		var r = '';
+		if(obj.date_max && obj.date_max>0) {
 
+			var d = new Date(obj.date_max * 1000);
+			if(+d < +obj.end_date) {
+				
+				r="gantt_late";
+			}
+			
+		}
+		return r;
+	};
 	gantt.templates.task_class = function(start, end, obj){
 
-
+		var r = '';
+		
 		if(obj.type == gantt.config.types.of){
-			return "gantt_of";
+			r = "gantt_of";
 		}
 		if(obj.type == gantt.config.types.order){
-			return "gantt_order";
+			r = "gantt_order";
 		}
 		else if(obj.type == gantt.config.types.release){
-			return "gantt_release";
+			r = "gantt_release";
+		}
+		else if(obj.type == gantt.config.types.delay){
+			r = "gantt_delay";
 		}
 		else if(obj.owner) {
-			return "workstation_"+obj.workstation;
+			r = "workstation_"+obj.workstation;
 		}
 
-		return '';
+		if(obj.date_max && obj.date_max>0) {
+
+			var d = new Date(obj.date_max * 1000);
+			if(+d < +obj.end_date) {
+				
+				r+=" gantt_late";
+			}
+			
+		}
+		
+		return r;
 	}
 
 	gantt.templates.scale_cell_class = function(date){
@@ -397,15 +425,23 @@ else {
 
 		var r = "";
 
-		if(task.workstation == 0) {
-			r+="<?php echo  addslashes(img_info($langs->trans('NoWorkstationOnThisTask'))); ?>";
-		}
+		if(task.objElement == 'project_task') {
+		
+			if(task.workstation == 0) {
+				r+="<?php echo  addslashes(img_info($langs->trans('NoWorkstationOnThisTask'))); ?>";
+			}
+	
+			if(task.time_task_limit_no_before && task.time_task_limit_no_before> (+task.start_date / 1000)){
+				r+="<?php echo  addslashes(img_warning().$langs->trans('TooEarly')); ?>";
+			}
+			else if(task.time_task_limit_no_after && task.time_task_limit_no_after>0 && (+task.end_date/1000)>task.time_task_limit_no_after + 86399 ){
+				r+="<?php echo  addslashes(img_warning().$langs->trans('TooLate')); ?>";
+			}
 
-		if(task.time_task_limit_no_before && task.time_task_limit_no_before> (+task.start_date / 1000)){
-			r+="<?php echo  addslashes(img_warning().$langs->trans('TooEarly')); ?>";
 		}
-		else if(task.time_task_limit_no_after && task.time_task_limit_no_after>0 && (+task.end_date/1000)>task.time_task_limit_no_after + 86399 ){
-			r+="<?php echo  addslashes(img_warning().$langs->trans('TooLate')); ?>";
+		else {
+			null;			
+			
 		}
 
 		return r;
@@ -414,12 +450,18 @@ else {
 	gantt.config.columns = [
 	    {name:"text",       label:"<?php echo $langs->transnoentities('Label') ?>",  width:"*", tree:true
 		    , template:function(obj) {
+
+				var r = '';
 			    
 				if(obj.id[0] == 'T' || obj.objElement == 'milestone' || obj.objElement == 'project_task_delay') {
-					return obj.text;
+					r = obj.text;
+				}
+				else {
+					r = '<strong>'+obj.text+'</strong>';
 				}
 
-				return '<strong>'+obj.text+'</strong>';
+				return r;
+				
 	    	} 
 	    },
 	    {name:"start_time",   label:"<?php echo $langs->transnoentities('DateStart') ?>",  template:function(obj){
