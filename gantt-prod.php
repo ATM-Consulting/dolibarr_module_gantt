@@ -589,6 +589,14 @@ else {
 			r+="<?php echo  addslashes('<div class="info">'.img_info()) ?> "+workstations[task.workstation].name+ "</div>";
 		}
 
+		if(task.date_max && task.date_max>0) {
+
+			var d = new Date(task.date_max * 1000);
+
+			r+="<br /><?php echo $langs->trans('TodoFor') ?> "+d.toLocaleDateString();
+			
+		}
+
 		return r;
 
 	};
