@@ -165,3 +165,8 @@ div.gantt_row:hover .misted {
 .gantt_late {
 	background-color:red !important;
 }
+.gantt_maybelate {
+	color:orange !important;
+	background-color:orange !important;
+}
+

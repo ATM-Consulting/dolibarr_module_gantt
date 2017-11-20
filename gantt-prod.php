@@ -323,8 +323,12 @@ else {
 
 				var sch = document.getElementById("gantt_here");
 
-				var h = parseInt(document.body.offsetHeight);
-				if(h<2000)h=2000;
+				var h1 = $('#gantt_here div.gantt_task').first().outerHeight() + 500;
+				var h2 = parseInt(document.body.offsetHeight);
+
+				var h = Math.max(h1,h2);
+				
+				if(h<1000)h=1000;
 
 				sch.style.height = h+"px";
 
@@ -354,18 +358,16 @@ else {
 	    ]
 	};
 
-	gantt.templates.task = function(obj1){
-		console.log(obj1);
-	}
 	gantt.templates.grid_row_class = function(start, end, obj){
 		var r = '';
-		if(obj.date_max && obj.date_max>0) {
+		if((obj.objElement == 'of' || obj.objElement == 'project' || obj.objElement == 'order')&& obj.date_max && obj.date_max>0) {
 
 			var d = new Date(obj.date_max * 1000);
-			console.log(obj.id, d, obj.end_date);
 			if(+d < +obj.end_date - 1000) {
-				
 				r="gantt_late";
+			}
+			else if(+d - 86400000 < +obj.end_date && obj.objElement == 'of') {
+				r="gantt_maybelate";
 			}
 			
 		}
