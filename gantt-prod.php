@@ -362,7 +362,8 @@ else {
 		if(obj.date_max && obj.date_max>0) {
 
 			var d = new Date(obj.date_max * 1000);
-			if(+d < +obj.end_date) {
+			console.log(obj.id, d, obj.end_date);
+			if(+d < +obj.end_date - 1000) {
 				
 				r="gantt_late";
 			}
