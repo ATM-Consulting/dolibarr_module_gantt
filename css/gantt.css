@@ -26,6 +26,9 @@
 .gantt_task_line.gantt_delay div {
 	background-color:none;
 	color:#ccc;
+	text-align:right;
+	overflow:visible;
+	direction: rtl;
 }
 .gantt_task_line.gantt_delay div.gantt_task_progress,.gantt_task_line.gantt_order div.gantt_task_progress,.gantt_task_line.gantt_milestone div.gantt_task_progress,.gantt_task_line.gantt_release div.gantt_task_progress,.gantt_task_line.gantt_of div.gantt_task_progress {
 	display:none;

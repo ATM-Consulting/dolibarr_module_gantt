@@ -197,7 +197,7 @@ else {
                 							if(empty($ws->element)) $ws->element = 'workstation';
                 							//var_dump($ws->element);
 
-                							$ws->ganttid = 's'.$fk_parent_of.$ws->ganttid;
+                							if($ws->element == 'workstation') $ws->ganttid = 's'.$fk_parent_of.$ws->ganttid;
 
                 							if($ws->element =='milestone' && $ws->date>$time_task_limit_no_before) {
                 								$time_task_limit_no_before = strtotime(date('Y-m-d 00:00:00',$ws->date));

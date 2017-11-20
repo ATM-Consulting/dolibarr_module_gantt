@@ -326,7 +326,7 @@ function _get_task_for_of($fk_project = 0) {
 		}
 
 		if($obj->nb_days_before_beginning>0) {
-			_add_delay_included_into_of_ws($obj->nb_days_before_beginning, $task, $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs']);
+			_add_delay_included_into_of_ws($obj->nb_days_before_beginning, $task, $of, $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs']);
 		}
 		
 		$TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'][$task->id] = $task;
@@ -338,10 +338,10 @@ function _get_task_for_of($fk_project = 0) {
 
 }
 
-function _add_delay_included_into_of_ws($nb_days_before_beginning, &$task, &$TData) {
+function _add_delay_included_into_of_ws($nb_days_before_beginning, &$task,&$assetOf, &$TData) {
 	
 	global $db, $langs, $conf, $TLink;
-	if(!empty($conf->global->GANTT_DISABLE_DELAY_PARENT)) {
+	if(!empty($conf->global->GANTT_DISABLE_DELAY_PARENT) || !empty($assetOf->cancel_adding_delay)) {
 		return false;
 	}
 	
@@ -423,6 +423,55 @@ function _adding_task_project_end(&$project,&$TData) {
 
 }
 
+function _atso_find_task_for_line(&$TData, &$cmd,&$assetOf) {
+	
+	global $TLink, $langs;
+	
+	$find = false;
+	foreach($cmd->lines as &$line) {
+		
+		foreach($assetOf->TAssetOFLine as &$lineOf) {
+			
+			if($lineOf->type == 'NEEDED' && $lineOf->fk_product>0 && $lineOf->fk_product == $line->fk_product && !empty($lineOf->TWorkstation)) {
+				
+				foreach($lineOf->TWorkstation as &$ws) {
+					
+					foreach($assetOf->TAssetWorkstationOF as &$wsof) {
+						
+						if($ws->id == $wsof->fk_asset_workstation && $wsof->fk_project_task>0) {
+							
+							$object=new stdClass();
+							$object->element = 'project_task_delay';
+							$object->title = $object->text = $langs->trans('AwaitingDelivery', $cmd->ref, dol_print_date($cmd->date_livraison));
+							$object->date= strtotime('midnight',$cmd->date_livraison);
+							$object->duration = 1;
+							
+							$object->ganttid = 'JSO'.$cmd->id.'-'.$lineOf->id;
+							$object->bound='after';
+							$object->visible = 1;
+							
+							$TData[$object->ganttid]['object']= $object;
+							
+							$linkId = count($TLink)+1;
+							$TLink[$linkId] = array('id'=>$linkId, 'source'=>$object->ganttid, 'target'=>'T'.$wsof->fk_project_task, 'type'=>'0');
+							
+							$find = true;
+							
+						}
+						
+					}
+					
+				}
+				
+			}
+			
+		}
+		
+	}
+	
+	return $find;
+}
+
 function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
 	global $db, $langs, $conf;
 
@@ -433,21 +482,40 @@ function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
 	dol_include_once('/fourn/class/fournisseur.commande.class.php');
 	$TIdCommandeFourn = $assetOf->getElementElement($PDOdb);
 
+	$today=strtotime('midnight');
+	
 	if(count($TIdCommandeFourn)){
 		foreach($TIdCommandeFourn as $idcommandeFourn){
 			$cmd = new CommandeFournisseur($db);
 			$cmd->fetch($idcommandeFourn);
 
-			if($cmd->statut>0 && $cmd->statut<5 && $cmd->date_livraison>0) {
-				$object=new stdClass();
-				$object->element = 'milestone';
-				$object->title = $object->text = $langs->trans('AwaitingDelivery', $cmd->ref, dol_print_date($cmd->date_livraison));
-				$object->date= $cmd->date_livraison;
-				$object->ganttid = 'JSO'.$cmd->id;
-				$object->bound='before';
-				$object->visible = 1;
-
-				$TData[$object->ganttid]['object'] = $object;
+			if($cmd->statut>0 && $cmd->statut<5 && $cmd->date_livraison>$today) {
+				
+				$find_detail = false;
+				if(!empty($conf->global->ASSET_DEFINED_WORKSTATION_BY_NEEDED)) {
+					
+					$find_detail = _atso_find_task_for_line($TData, $cmd,$assetOf);
+				}
+				
+				
+				if(!$find_detail){
+					
+					$object=new stdClass();
+					$object->element = 'milestone';
+					$object->title = $object->text = $langs->trans('AwaitingDelivery', $cmd->ref, dol_print_date($cmd->date_livraison));
+					$object->date= $cmd->date_livraison;
+					$object->ganttid = 'JSO'.$cmd->id;
+					$object->bound='before';
+					$object->visible = 1;
+					
+					$TData[$object->ganttid]['object'] = $object;
+					
+					
+				}
+				else {
+					$assetOf->cancel_adding_delay = true;
+					
+				}
 
 			}
 
