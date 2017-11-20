@@ -319,21 +319,6 @@ else {
 			gantt.config.types.delay = "delay";
 			gantt.locale.labels.type_delay = "<?php echo $langs->trans('Delay'); ?>";
 
-			function modSampleHeight(){
-
-				var sch = document.getElementById("gantt_here");
-
-				var h1 = $('#gantt_here div.gantt_task').first().outerHeight() + 500;
-				var h2 = parseInt(document.body.offsetHeight);
-
-				var h = Math.max(h1,h2);
-				
-				if(h<1000)h=1000;
-
-				sch.style.height = h+"px";
-
-				gantt.setSizes();
-			}
 			var tasks = {
 				data:[
 
@@ -835,11 +820,11 @@ else {
 
 	gantt.config.drag_links = false;
 	gantt.config.autoscroll = false;
-	//gantt.config.autosize = "x";
+	gantt.config.autosize = "y";
 	gantt.config.fit_tasks = true;
 
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $range->date_start) ?>"), new Date("<?php echo date('Y-m-d', $range->date_end) ?>"));
-	modSampleHeight();
+	//modSampleHeight();
 	gantt.parse(tasks);
 
 	<?php
@@ -972,14 +957,20 @@ else {
 
 	?>
 
+	var checkScrollStop;
+	
 	$("div.ws_container").scroll(function(e) {
 		var sl = $(this).scrollLeft();
 
 		gantt.scrollTo(sl,null);
-		updateWSRangeCapacity(sl);
-
+		
 	    replicateDates();
 
+	    clearTimeout(checkScrollStop);
+	    checkScrollStop = setTimeout(function() {
+	        updateWSRangeCapacity(sl);   
+	    }, 250);
+	    
 	});
 
 	/*

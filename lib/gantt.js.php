@@ -1,4 +1,3 @@
-
 function initTaskDrag(task) {
 	alertLimit = true;
 
@@ -159,6 +158,7 @@ function splitTask(task) {
 		}
 	});
 
+			
 }
 
 function _getChild(tasksid, task) {
@@ -671,11 +671,10 @@ var end_refresh_ws = 0;
 function updateWSRangeCapacity(sl) {
 	var sr = sl + $('#gantt_here div.gantt_task').width();
 
-	var date_start = gantt.dateFromPos(sl).setHours(0,0,0,0) / 1000 - (86400 * 10);
-	var date_end = gantt.dateFromPos(sr).setHours(23,59,59,0) / 1000 + (86400 * 10);
+	var date_start = gantt.dateFromPos(sl).setHours(0,0,0,0) / 1000 - (86400 * 5);
+	var date_end = gantt.dateFromPos(sr).setHours(23,59,59,0) / 1000 + (86400 * 5);
 
-	if(date_start < start_refresh_ws - (86400*10) || date_start > start_refresh_ws + (86400*10)) {
-
+	if(date_start < start_refresh_ws - (86400*5) || date_start > start_refresh_ws + (86400*5)) {
 		start_refresh_ws = date_start;
 		end_refresh_ws = date_end;
 
