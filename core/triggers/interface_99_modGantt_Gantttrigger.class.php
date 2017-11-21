@@ -122,17 +122,18 @@ class InterfaceGantttrigger
 			$project->fetch($object->fk_project);
 
 			$t_current = time();
+
 			$t_start =  max( $project->date_start, $t_current);
 			
 			$day_range = empty($conf->global->GANTT_DAY_RANGE_FROM_NOW) ? 90 : $conf->global->GANTT_DAY_RANGE_FROM_NOW;
 			
-			$t_end =  $project->date_end > 0 ? $project->date_end : strtotime('+'.$day_range.' day', $t_start);
+			$t_end =  $project->date_end > $t_current ? $project->date_end : strtotime('+'.$day_range.' day', $t_start);
 
 			if($t_end>=$t_current) {
 				$TWS=array();
 
 				$Tab = GanttPatern::get_better_task($TWS, $object,$t_start, $t_end);
-
+				
 				if($Tab['start']>0 && $Tab['duration']>=1) {
 
 					$object->date_start = $Tab['start'];
