@@ -97,11 +97,11 @@ function _get_task_for_of($fk_project = 0) {
 		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
 			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet) ";
 
-	if($fk_project == 0) {
+//	if($fk_project == 0) {
 		$sql.=" LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of)
 					LEFT JOIN ".MAIN_DB_PREFIX."asset_workstation_of wof ON (t.rowid=wof.fk_project_task)";
 
-	}
+//	}
 
 	$sql.="	WHERE t.dateo IS NOT NULL ";
 
