@@ -61,6 +61,10 @@
 		case 'better-pattern':
 			__out(_get_better_pattern(  GETPOST('tasksid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
 			break;
+			
+		case 'keep-alive':
+			echo 1;
+			break;
 	}
 
 	function _get_better_pattern($tasksid, $t_start, $t_end) {

@@ -982,6 +982,11 @@ else {
 		/*window.alert(colWidth);*/
 		$( ".ws_container .gantt_task_cell" ).width(colWidth);
 
+		setInterval(function(){ 
+			$.ajax({
+				url:"<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>?get=keep-alive"
+			});
+		}, 60000);
 	});
 
 	</script>
