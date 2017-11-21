@@ -108,7 +108,7 @@ function _get_task_for_of($fk_project = 0) {
 	if($fk_project>0) $sql.= " AND fk_projet=".$fk_project;
 	else {
 		$sql.= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
-			AND p.fk_statut = 1 AND of.status IN ('VALID','OPEN')
+			AND p.fk_statut = 1 AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
 			";
 
 		$sql.=" AND t.dateo <= '".$range->sql_date_end."' AND t.datee >=  '".$range->sql_date_start."' ";
