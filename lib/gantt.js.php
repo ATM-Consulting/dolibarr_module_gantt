@@ -304,18 +304,24 @@ function dragTaskLimit(task, diff ,mode) {
             }
             return -1;
         }
+        
+        
+        return 1;
+        
 		<?php
 
 	}
 
 		?>
+		
+		
 	}
 
 function moveParentIfNeccessary(task) {
 
 		<?php
 	if(empty($conf->global->GANTT_MODIFY_PARENT_DATES_AS_CHILD)) {
-		echo 'return 0;';
+		echo 'return true;';
 	}
 	else {
 	?>
@@ -326,36 +332,46 @@ function moveParentIfNeccessary(task) {
 
 			var parent = gantt.getTask(link.source);
 
+			var modes = gantt.config.drag_mode;
+
 			if(parent.id) {
 
 				var diff = +parent.end_date - parent.start_date ;
 
-				if(parent.duration>=task.duration &&  parent.end_date > task.end_date ) {
+				var flagOk = true;
+				if(parent.workstation_type && parent.workstation_type == "STT" && +parent.end_date > +task.start_date) {
+
+					parent.end_date = new Date(+task.start_date - 1000);
+					parent.start_date = new Date(+parent.end_date - diff + 1000);
+				}
+				else if(parent.duration>=task.duration && +parent.end_date > +task.end_date ) {
 
 					parent.end_date = task.end_date;
 					parent.start_date = new Date(+parent.end_date - diff + 1000);
 
-					TAnotherTaskToSave[parent.id] = true;
-
-					var modes = gantt.config.drag_mode;
-				    dragTaskLimit(parent, +parent.duration * 86400000,modes.move);
-
-				    gantt.refreshTask(parent.id, true);
 				}
-				else if(parent.duration<task.duration &&  parent.start_date > task.start_date ) {
+				else if(parent.duration<task.duration &&  +parent.start_date > +task.start_date ) {
 
 					parent.start_date = task.start_date ;
 					parent.end_date = new Date(+parent.start_date + diff - 1000 );
+				}
+				else {
+					flagOk = false;
+				}
 
+				if(flagOk) {
 					TAnotherTaskToSave[parent.id] = true;
-
-					var modes = gantt.config.drag_mode;
-				    dragTaskLimit(parent, +parent.duration * 86400000,modes.move);
-
+	
+				    if(dragTaskLimit(parent, +parent.duration * 86400000,modes.move) < 0) {
+				    	return false;
+				    }
+				    
 				    gantt.refreshTask(parent.id, true);
 				}
 
-				moveParentIfNeccessary(parent);
+				if(!moveParentIfNeccessary(parent)) {
+					return false;
+				}
 			}
 		});
 	}
@@ -363,6 +379,8 @@ function moveParentIfNeccessary(task) {
 	<?php
 	}
 	?>
+	
+	return true;
 }
 
 function moveChild(task,diff) {

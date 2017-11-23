@@ -245,6 +245,8 @@ else {
 
 			_get_events($TData,$TLink);
 
+			checkDataGantt($TData, $TLink);
+			
 			if($range->autotime){
 				if(empty($range->date_start)) {
 					$range->date_start = $range->date_end = time()-86400;
@@ -334,12 +336,10 @@ else {
 	       
 	       $Tmp=array();
 	       foreach($TLink as $k=>&$link) {
-	       		if(isset($TData[$link['source']]) && isset($TData[$link['target']])) {
-	       			$Tmp[] =' {id:'.$link['id'].', source:"'.$link['source'].'", target:"'.$link['target'].'", type:"'.$link['type'].'"}';
-	       		}
+	       		echo ' {id:'.$link['id'].', source:"'.$link['source'].'", target:"'.$link['target'].'", type:"'.$link['type'].'"},'."\n";
 	       }
 
-	       echo implode(",\n",$Tmp); ?>
+	       ?>
 	    ]
 	};
 
@@ -748,7 +748,10 @@ else {
 
 	        dragTaskLimit(task, diff, mode);
 	        moveChild(task, task.start_date - original.start_date );
-	        moveParentIfNeccessary(task);
+
+	        if(!moveParentIfNeccessary(task)) {
+				return false;
+	        }
 
 	    }
 	    return true;
@@ -759,7 +762,7 @@ else {
 		var task = gantt.getTask(id);
 
 		return saveTask(task, old_event);
-		pre($TData);
+		
 	});
 
     gantt.attachEvent("onLightboxSave", function(id, task, is_new){
@@ -882,17 +885,17 @@ else {
 		';
 
 		foreach($TWS as &$ws) {
-
-			?>
-			if($("div#workstations_<?php echo $ws->id; ?>.gantt_row").length == 0 ) {
-
-				$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:13px;padding-right:5px;font-size:10px;"><a href="#" onclick="$(\'#formDate select[name=restrictWS]\').val(<?php echo $ws->id ?>);$(\'#formDate\').submit();"><?php echo addslashes($ws->name) . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></a></div>');
-				$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px; "><?php echo $cells; ?></div>');
-
+			if($ws->type!='STT') {
+				?>
+				if($("div#workstations_<?php echo $ws->id; ?>.gantt_row").length == 0 ) {
+	
+					$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:13px;padding-right:5px;font-size:10px;"><a href="#" onclick="$(\'#formDate select[name=restrictWS]\').val(<?php echo $ws->id ?>);$(\'#formDate\').submit();"><?php echo addslashes($ws->name) . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></a></div>');
+					$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px; "><?php echo $cells; ?></div>');
+	
+				}
+				<?php
 			}
-
-			<?php
-
+			
 		}
 
 		if($flag_task_not_ordonnanced) {
