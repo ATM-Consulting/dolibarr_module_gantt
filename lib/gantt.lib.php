@@ -432,6 +432,8 @@ function _atso_find_task_for_line(&$TData, &$cmd,&$assetOf) {
 			if($lineOf->type == 'NEEDED' && $lineOf->fk_product>0 && $lineOf->fk_product == $line->fk_product && !empty($lineOf->TWorkstation)) {
 				
 				foreach($lineOf->TWorkstation as &$ws) {
+					$gantt_id = 'JSO'.$cmd->id.'-'.$lineOf->id;
+					if(isset($TData[$gantt_id]))continue;
 					
 					foreach($assetOf->TAssetWorkstationOF as &$wsof) {
 						
@@ -439,13 +441,13 @@ function _atso_find_task_for_line(&$TData, &$cmd,&$assetOf) {
 							
 							$object=new stdClass();
 							$object->element = 'project_task_delay';
-							$object->objElement = 'supplier_order_delivery';
+							$object->subelement = 'supplier_order_delivery';
 							$object->objId = $cmd->id;
 							$object->title = $object->text = $langs->trans('AwaitingDelivery', $cmd->ref, dol_print_date($cmd->date_livraison));
 							$object->date= strtotime('midnight',$cmd->date_livraison);
 							$object->duration = 1;
 							
-							$object->ganttid = 'JSO'.$cmd->id.'-'.$lineOf->id;
+							$object->ganttid = $gantt_id;
 							$object->bound='after';
 							$object->visible = 1;
 							
@@ -458,6 +460,7 @@ function _atso_find_task_for_line(&$TData, &$cmd,&$assetOf) {
 							
 							$find = true;
 							
+							break;
 						}
 						
 					}
@@ -690,8 +693,9 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 	}
 	else if($object->element == 'project_task_delay') {
 		
+		$subElement = empty($object->subelement) ? '' :$object->subelement;
 		$date = date('d-m-Y',$object->date);
-		return '{"id":"'.$object->ganttid.'","objElement":"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.$date.'", "duration":'.$object->duration.' '.(!is_null($fk_parent_object) ? ' ,"parent":"'.$fk_parent_object.'" ' : '' ).', "type":gantt.config.types.delay, "visible":'.( empty($object->visible) ? 0 : 1 ).'}';
+		return '{"id":"'.$object->ganttid.'","subElement":"'.$subElement.'","objElement":"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.$date.'", "duration":'.$object->duration.' '.(!is_null($fk_parent_object) ? ' ,"parent":"'.$fk_parent_object.'" ' : '' ).', "type":gantt.config.types.delay, "visible":'.( empty($object->visible) ? 0 : 1 ).'}';
 		
 	}
 	
@@ -870,24 +874,25 @@ function checkDataGantt(&$TData, &$TLink ) {
 		}
 		
 		if(!empty($source->workstation_type) && $source->workstation_type == 'STT') {
-			var_dump($source);
+			
 			$find = false;
 			foreach($TLink as $k2=>&$link2) {
 				
-				if($link['target'] == $link2['target']) {
+				if($link['target'] == $link2['target'] && $link['source']!=$link2['source']) {
 					
 					$json2 = strtr($TData[$link2['source']],array('gantt.config.types.delay'=>1,'gantt.config.types.task'=>2));
-					$source2 =(Object)json_decode($json, true);
+					$source2 =(Object)json_decode($json2, true);
 					
 					if(is_null($source2)) {
 						var_dump($json2);
 						exit('Error bad json');
 					}
-					var_dump($source2);
-					//&& !empty($TTaskObject[$link['source']]->objElement) && $TTaskObject[$link['source']]->objElement == 'supplier_order_delivery') {
-				
-					$find = true;
-					//break;
+					
+					if($source2->subElement == 'supplier_order_delivery') {
+						$find = true;
+						break;
+					}
+					
 				}
 				
 			}
@@ -898,7 +903,7 @@ function checkDataGantt(&$TData, &$TLink ) {
 				
 			}
 			
-			exit;
+			
 			
 		}
 		
