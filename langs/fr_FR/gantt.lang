@@ -64,3 +64,4 @@ GANTT_HIDE_TASK_REF=Cacher les détails (ref de tâche, état de l'of,...)
 DelayForTask=Délai avant démarrage de la tâche
 TaskCantBeMovedBeforeApproDelay=Délai d'approvisionnement
 TodoFor=A faire pour le 
+LookinForABetterPosition=Recherche d'un meilleur emplacement...

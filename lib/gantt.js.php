@@ -181,6 +181,8 @@ function _getChild(tasksid, task) {
 
 function moveTasks(tasksid) {
 
+	 gantt.message('<?php echo addslashes($langs->trans('LookinForABetterPosition')) ?>');
+
 	var t_start = <?php echo (int)$range->date_start ?>;
 	var t_end = <?php echo (int)$range->date_end ?>;
 

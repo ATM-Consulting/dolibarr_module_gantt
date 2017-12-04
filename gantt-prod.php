@@ -291,7 +291,7 @@ else {
 			?>
 			</td><td align="right">
 
-			<a href="javascript:moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
+			<a style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
 
 			</td></tr></table>
 
