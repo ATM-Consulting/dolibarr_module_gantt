@@ -128,7 +128,7 @@ function _get_task_for_of($fk_project = 0) {
 	if($res===false) {
 		var_dump($db);exit;
 	}
-	
+
 	$TTask=array();
 	if($fk_project == 0 && !empty($conf->global->GANTT_INCLUDE_PROJECT_WIHOUT_TASK)) {
 		_add_project_included_into_date($TTask);
@@ -141,7 +141,7 @@ function _get_task_for_of($fk_project = 0) {
 		
 		if($task->id <=0) continue;
 		
-		$task->fetch_optionals($gantt_milestonetask->id);
+		if(empty($task->array_options)) $task->fetch_optionals($task->id);
 
 		$task->ganttid = 'T'.$task->id;
 		$task->label = strip_tags(strtr($task->label, array("\n"=>' ',"\r"=>'')));
