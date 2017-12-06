@@ -3,6 +3,7 @@
 require 'config.php';
 
 set_time_limit(0);
+ini_set('memory_limit','1024M');
 
 dol_include_once('/projet/class/project.class.php');
 dol_include_once('/projet/class/task.class.php');
