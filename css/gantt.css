@@ -169,7 +169,15 @@ div.gantt_row:hover .misted {
 	background-color:red !important;
 }
 .gantt_maybelate {
-	color:orange !important;
+/*	color:orange !important;*/
 	background-color:orange !important;
+}
+.task_too_early {
+/*        background-color:orange !important;*/
+	background: linear-gradient(to right, rgba(255,197,50,1) 0%,rgba(125,185,232,0) 100%); 
+}
+.task_too_late {
+/*        background-color:orange !important;*/
+        background: linear-gradient(to left, rgba(255,197,50,1) 0%,rgba(125,185,232,0) 100%); 
 }
 

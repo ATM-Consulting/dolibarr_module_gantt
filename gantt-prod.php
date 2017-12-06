@@ -357,6 +357,16 @@ else {
 			}
 			
 		}
+		else if(obj.objElement == 'project_task') {
+
+                        if(obj.time_task_limit_no_before && obj.time_task_limit_no_before> (+obj.start_date / 1000)){
+                                r+=" task_too_early";
+                        }
+                        else if(obj.time_task_limit_no_after && obj.time_task_limit_no_after>0 && (+obj.end_date/1000)>obj.time_task_limit_no_after + 86399 ) {
+				r+=" task_too_late";
+                        }
+
+                }
 		return r;
 	};
 	gantt.templates.task_class = function(start, end, obj){
