@@ -611,6 +611,8 @@ function pop_event(callback) {
 		var total_hour_capacity = nb_hour_capacity * nb_ressource;
 
 //console.log('updateWSCapacity', wsid, t_start, t_end, nb_hour_capacity);
+		var deferred = $.Deferred();
+
 		$.ajax({
 			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>"
 			,data:{
@@ -679,9 +681,12 @@ function pop_event(callback) {
 
 			}
 
+			deferred.resolve();
 		}
 
 	});
+
+	return deferred.promise();
 }
 
 
@@ -743,16 +748,16 @@ function updateWSRangeCapacity(sl) {
 			});
 		});
 
-		updateWSCapacity(0, date_start, date_end);
-		<?php
-
+		updateWSCapacity(0, date_start, date_end)<?php
 			foreach($TWS as &$ws) {
 				if($ws->id>0) {
-				?> updateWSCapacity(<?php echo $ws->id ?>,  date_start, date_end); <?php
+					echo '.pipe(updateWSCapacity('.$ws->id.',  date_start, date_end))';
+
+					$first = false;
 				}
 			}
 
-		?>
+		?>;
 
 	}
 }
