@@ -875,6 +875,7 @@ else {
 		while($t_cur<=$range->date_end) {
 			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">N/A</div>';
 			$t_cur = strtotime('+1day',$t_cur);
+			
 		}
 
 		echo 'function replicateDates() {

@@ -698,6 +698,51 @@ function updateWSRangeCapacity(sl) {
 		start_refresh_ws = date_start;
 		end_refresh_ws = date_end;
 
+		$('div.workstation').each(function(ii, row) {
+			$row = $(row);
+		
+			$row.css('position','relative');
+		
+			var TPosition=[];
+		
+			$row.find('div.gantt_task_cell[date]:not([opti])').each(function(i, item) {
+				$item = $(item);
+		
+				var position = $item.position();
+				
+				$item.attr('opti',1);
+				
+				
+				TPosition.push([$item, position.left]);
+				
+			});
+		
+			for(x in TPosition) {
+				var $item =TPosition[x][0];
+				$item.css({
+					'position':'absolute'
+					,'top':0
+					,'left':TPosition[x][1]+'px'
+				}); 
+			}
+		
+			$row.find('div.gantt_task_cell[date]').each(function(i, item) {
+				$item = $(item);
+				
+				var d = new Date($item.attr('date'));
+				
+				if(+d <= date_end * 1000 && +d >= date_start * 1000) {
+				//	$item.css('visibility','visible');
+					$item.show();
+				} 
+				else {
+					//$item.css('visibility','hidden');
+					$item.hide();
+				}
+			
+			});
+		});
+
 		updateWSCapacity(0, date_start, date_end);
 		<?php
 
