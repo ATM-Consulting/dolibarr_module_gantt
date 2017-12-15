@@ -336,7 +336,7 @@ function moveParentIfNeccessary(task) {
 
 			var modes = gantt.config.drag_mode;
 
-			if(parent.id) {
+			if(parent.id && parent.objElement=="project_task") {
 
 				var diff = +parent.end_date - parent.start_date ;
 
