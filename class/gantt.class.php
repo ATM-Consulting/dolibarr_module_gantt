@@ -130,7 +130,7 @@ class GanttPatern {
 					$cmd->fetch($idcommandeFourn);
 
 					if($cmd->statut>0 && $cmd->statut<5 && $cmd->date_livraison>0 &&  $cmd->date_livraison > $t_start) {
-						$t_start =  $cmd->date_livraison ;
+						$t_start =  strtotime('+1day', $cmd->date_livraison );
 					}
 				}
 			}
