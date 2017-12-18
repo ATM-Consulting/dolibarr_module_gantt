@@ -87,7 +87,7 @@ function _get_task_for_of($fk_project = 0) {
 
 	global $db,$langs,$range,$conf;
 
-	$TCacheProject = $TCacheOrder  = $TCacheWS = array();
+	$TCacheProject = $TCacheOrder  = $TCacheWS = $TCacheOF = array();
 
 	$PDOdb=new TPDOdb;
 
@@ -160,6 +160,15 @@ function _get_task_for_of($fk_project = 0) {
 		
 		if($task->array_options['options_fk_of']>0) {
 
+                        if(!empty($TCacheOF[$task->array_options['options_fk_of']])) {
+
+                                $of = $TCacheOF[$task->array_options['options_fk_of']];
+
+                        }
+                        else{
+
+			
+
 			$of=new TAssetOF();
 			$of->load($PDOdb, $task->array_options['options_fk_of']);
 			
@@ -172,6 +181,8 @@ function _get_task_for_of($fk_project = 0) {
 				$of->title = $of->numero.' '.$of->getLibStatus(true).' '.$line->product->label;
 			}
 			
+			$TCacheOF[$task->array_options['options_fk_of']] = $of;
+			}
 		}
 		else{
 
