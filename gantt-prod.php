@@ -287,6 +287,14 @@ else {
 			echo $formCore->btsubmit($langs->trans('ok'), 'bt_select_date');
 
 			$formCore->end();
+
+			if($range->autotime && $range->date_end - $range->date_start > (86400 * 60)) {
+
+				echo '</td></tr></table><div class="error">La plage détectée faisant plus de 60 jours, merci de confirmer ces dates</div>';
+				llxFooter();
+
+				exit;
+			}
 			
 			//onclick="$(this).remove()"
 			?>
