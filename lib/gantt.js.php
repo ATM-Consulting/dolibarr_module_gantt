@@ -659,6 +659,19 @@ function pop_event(callback) {
 
 				$ws = $('div#workstations_'+wsid+' div[date='+d+']');
 
+
+                                if(wsid>0) {
+
+				$('div#workstations_'+wsid).unbind().click(function(e) {
+
+				    var $target = $(e.target);
+				   if($target.is('.gantt_task_cell[date]')) { 
+					setWSTime($target.data('wsid'), $target.attr('date'));
+				   }
+				});
+
+				}
+
 				$ws .html(p)
 					.data('dispo',dispo)
 					.data('wsid',wsid)
@@ -668,9 +681,9 @@ function pop_event(callback) {
 
 				if(wsid>0) {
 					$ws.addClass(bg)
-					.click(function() {
+				/*	.click(function() {
 						setWSTime($(this).data('wsid'), $(this).attr('date'))
-					});
+					})*/;
 
 					if(row.capacityLeft!='NA' && (nb_hour_capacity!=row.nb_hour_capacity || nb_ressource!=row.nb_ressource)) {
 						$ws.addClass('starred').attr('title','<?php echo $langs->transnoentities('DayCapacityModify'); ?>');
