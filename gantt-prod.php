@@ -905,7 +905,7 @@ else {
 		';
 
 		foreach($TWS as &$ws) {
-			if($ws->type!='STT') {
+			if($ws->type!='STT' && !is_null($ws->id)) {
 				?>
 				if($("div#workstations_<?php echo $ws->id; ?>.gantt_row").length == 0 ) {
 	
