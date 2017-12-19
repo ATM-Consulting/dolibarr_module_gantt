@@ -247,7 +247,14 @@ function _get_task_for_of($fk_project = 0) {
 			$project = new Project($db);
 			$project->fetch($task->fk_project);
 
-			if($project->id>0)$project->title = $project->ref.' '.$project->title;
+			if($project->id>0) {
+				$project->title = $project->ref.' '.$project->title;
+				
+				if($project->socid>0) {
+					$project->fetch_thirdparty();
+					$project->title .= ' - '.$project->thirdparty->name;
+				}
+			}
 			else {
 				$project->title = $langs->trans('UndefinedProject');
 			}
@@ -644,6 +651,9 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 			$taskColor= ColorTools::adjustBrightness($object->array_options['options_color'], -50); //TODO récupérer la taskColor du projet...
 			$projectColor= ',color:"'.$object->array_options['options_color'].'"';
 		}
+		
+		if(empty($object->date_start)) $object->date_start = time();
+		if(empty($object->date_end)) $object->date_end =strtotime('+1year', $object->date_start);
 
 		return '{"id":"'.$object->ganttid.'", date_max:'.(int)strtotime('+1day midnight',$object->date_end).',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project, open: '.$close_init_status.$projectColor.'}';
 
