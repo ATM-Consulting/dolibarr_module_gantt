@@ -180,4 +180,11 @@ div.gantt_row:hover .misted {
 /*        background-color:orange !important;*/
         background: linear-gradient(to left, rgba(255,197,50,1) 0%,rgba(125,185,232,0) 100%); 
 }
-
+.gantt_tree_indent {
+	background-image: url("../img/dot.png");
+	background-repeat: no-repeat;
+}
+.gantt_tree_icon.gantt_blank {
+	background-image: url("../img/arrow.png");
+	background-repeat: no-repeat;
+}
