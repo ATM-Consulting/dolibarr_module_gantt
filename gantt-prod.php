@@ -743,9 +743,20 @@ else {
 		return true;
 	});
 
+	var drag_start_date = 0;
+	
 	gantt.attachEvent("onAfterTaskDrag", function(id, mode, e){
-		for(idTask in TAnotherTaskToSave) {
+		var modes = gantt.config.drag_mode;
+	    if(mode == modes.move || mode == modes.resize){
+		    /* on regul de décalage du au snap grid */
+			task = gantt.getTask(id);
+			var diff = +task.start_date - drag_start_date;
 
+			moveChild(task, diff );
+	    }
+		
+		for(idTask in TAnotherTaskToSave) {
+			    
 			task = gantt.getTask(idTask);
 			regularizeHour(task);
 			gantt.refreshTask(task.id);
@@ -760,6 +771,7 @@ else {
 //gantt.callEvent("onTaskDrag",[s.id,e.mode,o,r,t]);
 
 	gantt.attachEvent("onTaskDrag", function(id, mode, task, original){
+		drag_start_date = +task.start_date;
 	    var modes = gantt.config.drag_mode;
 	    if(mode == modes.move || mode == modes.resize){
 

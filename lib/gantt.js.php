@@ -401,7 +401,7 @@ function moveChild(task,diff) {
 			var link = gantt.getLink(linkid);
 
 			child = gantt.getTask(link.target);
-			if(child.id) {
+			if(child.id && child.objElement=="project_task") {
 				TAnotherTaskToSave[child.id] = true;
 
 				var diff_child = +child.duration * 86400000 - 1000;
