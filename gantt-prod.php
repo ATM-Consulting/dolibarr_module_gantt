@@ -256,7 +256,7 @@ else {
 			}
 			
 			?>
-			<table border="0" width="100%"><tr><td>
+			<table border="0" width="100%"><tr><td width="50%">
 			<?php
 
 			$formCore=new TFormCore('auto','formDate');
@@ -296,7 +296,9 @@ else {
 				exit;
 			}
 			
-			//onclick="$(this).remove()"
+			echo '</td><td align="right" width="20%"><a href="javascript:downloadThisGanttAsCSV()" >'.img_picto($langs->trans('DownloadAsCSV'), 'csv@gantt').'<a>';
+			
+			
 			?>
 			</td><td align="right">
 			<span id="ajax-waiter" class="waiter"><?php echo $langs->trans('AjaxRequestRunning') ?></span>

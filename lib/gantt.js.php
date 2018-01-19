@@ -458,7 +458,6 @@ function saveTask(task, old_event=false,is_new = false)
 	var start = task.start_date.getTime();
 	var end = task.end_date.getTime();
 
-
 	//console.log('beforsave',task);
 
 	$.ajax({
@@ -788,4 +787,34 @@ $(document).ajaxStart(function() {
 $(document).ajaxStop(function() {
 	$("#ajax-waiter").hide();
 });
+
+function downloadThisGanttAsCSV() {
+//console.log(tasks);
+	let csvContent = "data:text/csv;charset=utf-8,";
+
+	for(x in tasks.data) {
+		task = tasks.data[x];
+		console.log(task);
+		
+		csvContent += task.id + ","
+					+task.parent+","
+					+task.objElement+","
+					+task.ref+","
+					+task.text+","
+					+task.needed_ressource+","
+					+task.workstation+","
+					+task.start_date.toLocaleDateString()+","
+					+task.end_date.toLocaleDateString()+","
+					+(new Date(task.time_task_limit_no_before*100)).toLocaleDateString()+","
+					+(new Date(task.date_max*100)).toLocaleDateString()+","
+					+(new Date(task.time_task_limit_no_after*100)).toLocaleDateString()+","
+					
+					+"\r\n"; 
+	
+	}
+	
+	var encodedUri = encodeURI(csvContent);
+	window.open(encodedUri);
+
+}
 
