@@ -124,7 +124,10 @@ div.ws_container div.gantt_task_cell.closed {
                 50% 50%
                 no-repeat;
 }
-
+.waiter {
+	display:none;
+	overflow: visible;
+}
 /* When the body has the loading class, we turn
    the scrollbar off with overflow:hidden */
 body.loading {

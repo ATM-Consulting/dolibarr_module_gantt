@@ -181,7 +181,7 @@ function _getChild(tasksid, task) {
 
 function moveTasks(tasksid) {
 
-	 gantt.message('<?php echo addslashes($langs->trans('LookinForABetterPosition')) ?>');
+	gantt.message('<?php echo addslashes($langs->trans('LookinForABetterPosition')) ?>');
 
 	var t_start = <?php echo (int)$range->date_start ?>;
 	var t_end = <?php echo (int)$range->date_end ?>;
@@ -210,7 +210,7 @@ function moveTasks(tasksid) {
 
 				gantt.refreshTask(t.id);
 				gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+t.start_date.toLocaleDateString());
-					saveTask(t);
+				saveTask(t);
 
 			}
 			else {
@@ -234,7 +234,13 @@ function taskAutoMove(task) {
 
 	var tasksid = [];
 	tasksid.push(task.objId);
-	_getChild(tasksid, task);
+	
+	<?php 
+	if(!empty($conf->global->GANTT_MOVE_CHILD_AS_PARENT)) {
+		echo '_getChild(tasksid, task);';
+
+	}
+	?>
 
 	moveTasks(tasksid.join(','));
 
@@ -300,7 +306,8 @@ function dragTaskLimit(task, diff ,mode) {
             if(mode == modes.move) {
             	task.start_date = new Date(+task.end_date - diff);
                 if(alertLimit) {
-                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+task.end_date.toLocaleDateString());
+                	gantt.message('<console.log('ajaxStop');
+                	?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+task.end_date.toLocaleDateString());
                 	alertLimit = false;
                 }
             }
@@ -473,10 +480,7 @@ function saveTask(task, old_event=false,is_new = false)
 	    success: function(data){
 
 		    // TODO : gérer un vrai message avec des retour en json
-			gantt.message(task.title + ' <?php echo $langs->trans('Saved') ?>');
-
-				//gantt.refreshTask(task.id);
-				/*updateAllCapacity();*/
+			/*gantt.message(task.title + ' <?php echo $langs->trans('Saved') ?>');*/
 
 				if(old_event)
 				{
@@ -722,7 +726,7 @@ function updateWSRangeCapacity(sl) {
 			$row.css('position','relative');
 		
 			var TPosition=[];
-		
+
 			$row.find('div.gantt_task_cell[date]:not([opti])').each(function(i, item) {
 				$item = $(item);
 		
@@ -776,4 +780,12 @@ function updateWSRangeCapacity(sl) {
 }
 
 updateAllCapacity();
+
+$(document).ajaxStart(function() {
+	$("#ajax-waiter").show();
+});
+
+$(document).ajaxStop(function() {
+	$("#ajax-waiter").hide();
+});
 

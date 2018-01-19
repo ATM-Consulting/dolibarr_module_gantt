@@ -299,8 +299,8 @@ else {
 			//onclick="$(this).remove()"
 			?>
 			</td><td align="right">
-
-			<a style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
+			<span id="ajax-waiter" class="waiter"><?php echo $langs->trans('AjaxRequestRunning') ?></span>
+			<a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
 
 			</td></tr></table>
 
@@ -486,7 +486,7 @@ else {
 
 	   	{name:"automove",   label:' ',  template:function(obj){
 		   	if(obj.id[0] == 'T') {
-				return '<a class="misted" href="javascript:moveTasks(\''+obj.objId+'\');"><?php echo img_picto($langs->transnoentities('AutoMove'), 'move.png@gantt'); ?></a>'
+				return '<a class="misted" href="javascript:taskAutoMove(gantt.getTask(\''+obj.id+'\'));"><?php echo img_picto($langs->transnoentities('AutoMove'), 'move.png@gantt'); ?></a>'
 				+ '&nbsp; <a class="misted" href="javascript:splitTask(gantt.getTask(\''+obj.id+'\'));"><?php echo img_picto($langs->transnoentities('Split'), 'split.png@gantt'); ?></a>';
 		   	}
 
