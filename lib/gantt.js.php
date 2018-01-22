@@ -792,22 +792,35 @@ function downloadThisGanttAsCSV() {
 //console.log(tasks);
 	let csvContent = "data:text/csv;charset=utf-8,";
 
+	csvContent+="Gantt Id,Parent Id,Element,Ref,Texte,Nb ressource,Poste,Début,Fin,Limite basse, Limite haute,\r\n"
+
 	for(x in tasks.data) {
 		task = tasks.data[x];
-		console.log(task);
+		//console.log(task);
+		
+		if(task.objElement == 'project_task') {
+			date_debut =task.start_date > 0 ? task.start_date.toLocaleDateString() : "";
+			date_fin =task.end_date > 0 ? task.end_date.toLocaleDateString() : "";
+		}
+		else {
+			date_fin = task.date_max > 0 ? (new Date(task.date_max*1000)).toLocaleDateString() : "";
+			date_debut="";
+		}
+		
+		date_limit_basse = task.time_task_limit_no_before>0 ? (new Date(task.time_task_limit_no_before*1000)).toLocaleDateString() : "";
+		date_limit_haute = task.time_task_limit_no_after>0 ? (new Date(task.time_task_limit_no_after*1000)).toLocaleDateString() : "";
 		
 		csvContent += task.id + ","
 					+task.parent+","
 					+task.objElement+","
-					+task.ref+","
-					+task.text+","
-					+task.needed_ressource+","
-					+task.workstation+","
-					+task.start_date.toLocaleDateString()+","
-					+task.end_date.toLocaleDateString()+","
-					+(new Date(task.time_task_limit_no_before*100)).toLocaleDateString()+","
-					+(new Date(task.date_max*100)).toLocaleDateString()+","
-					+(new Date(task.time_task_limit_no_after*100)).toLocaleDateString()+","
+					+(task.ref ? task.ref : "")+","
+					+he.decode(task.text)+","
+					+(task.needed_ressource ? task.needed_ressource : "") +","
+					+(task.workstation ? workstations[task.workstation].name : "")+","
+					+date_debut+","
+					+date_fin+","
+					+date_limit_basse+","
+					+date_limit_haute+","
 					
 					+"\r\n"; 
 	

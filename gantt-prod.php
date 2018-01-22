@@ -25,7 +25,9 @@ llxHeader('', $langs->trans('GanttProd') , '', '', 0, 0, array(
 		'/gantt/lib/dhx/codebase/ext/dhtmlxgantt_smart_rendering.js',
 		/*'/gantt/lib/dhx/codebase/ext/dhtmlxgantt_quick_info.js', // display info popin on click event*/
 		'/gantt/lib/dhx/codebase/ext/dhtmlxgantt_tooltip.js',
-		'/gantt/lib/dhx/codebase/locale/locale_fr.js'),
+		'/gantt/lib/dhx/codebase/locale/locale_fr.js',
+		'/gantt/lib/he.js'
+		),
 		array('/gantt/lib/dhx/codebase/dhtmlxgantt.css','/gantt/css/gantt.css') );
 
 dol_include_once('/core/lib/project.lib.php');
