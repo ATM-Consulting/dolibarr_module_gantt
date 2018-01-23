@@ -239,12 +239,6 @@ class modGantt extends DolibarrModules
 		dol_include_once('/gantt/config.php');
 		dol_include_once('/gantt/script/create-maj-base.php');
 
-		/*
-		 $e=new ExtraFields($this->db);
-		 $param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
-		 $e->addExtraField('fk_parent_task', 'Tâche parente', 'int', 1, '', 'projet_task',0,0,'',$param);
-		 */
-
 		// Create link to parent gantt task
 		$e=new ExtraFields($this->db);
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
@@ -276,8 +270,27 @@ class modGantt extends DolibarrModules
 			$p->create($user);
 		}
 
+		$nextid = 0;
+		$req = 'SELECT * FROM '.MAIN_DB_PREFIX.'c_actioncomm WHERE code = \'AC_WS_SETTER\'';
+		$res = $this->db->query($req);
+		if($res && !($obj = $this->db->fetch_object($res)) )
+		{
+			$req = 'SELECT MAX(id) as max FROM '.MAIN_DB_PREFIX.'c_actioncomm';
+			$res2 = $this->db->query($req);
+			$obj2 = $this->db->fetch_object($res2);
+			$nextid = $obj2->max + 1;
+			$req = 'INSERT INTO '.MAIN_DB_PREFIX.'c_actioncomm (id, code, type, libelle, module, active, todo, position)';
+			$req.= " VALUES (".$nextid.", 'AC_WS_SETTER', 'gantt', 'Restriction de poste de charge', 'gantt', 1, NULL, 200)";
+			$this->db->query($req);
+			
+		}
+		
 
-
+		$extrafields=new ExtraFields($this->db);
+		$res = $extrafields->addExtraField('fk_workstation', 'Poste de charge immobilisé', 'sellist', 0, '', 'actioncomm',0,0,'',serialize(array('options'=>array('workstation:name:rowid'=>null))));
+		$extrafields=new ExtraFields($this->db);
+		$res = $extrafields->addExtraField('needed_ressource', 'nb ressources immobilisées', 'int', 0, '', 'actioncomm');
+		
 		$result=$this->_load_tables('/gantt/sql/');
 
 		return $this->_init($sql, $options);

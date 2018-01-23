@@ -82,8 +82,9 @@
 
 		$wssc = new TWorkstationSchedule();
 		$wssc->loadByWSDate($PDOdb, $wsid, $date);
-
-		return $wssc->delete($PDOdb);
+		$wssc->delete($PDOdb);
+		
+		return 1;
 
 	}
 

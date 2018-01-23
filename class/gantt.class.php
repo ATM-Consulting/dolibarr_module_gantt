@@ -17,44 +17,8 @@ class GanttPatern {
 
 		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end, true, $fk_task);
 
-		// TODO Faire une PR sur le module workstation pour inclure cette fonction
-		self::getCapacityLeftRangeAgenda($PDOdb,$ws,$Tab,$t_start, $t_end);
-
 		return $Tab;
 
-	}
-
-	//TODO move to workstation module
-	static function getCapacityLeftRangeAgenda(&$PDOdb,&$ws,&$TDate,$t_start, $t_end){
-
-		$t_cur = $t_start;
-
-		while($t_cur<=$t_end) {
-			$date=date('Y-m-d', $t_cur);
-			$capacity = $TDate[$date];
-			if($capacity===false || $capacity==='NA') $TDate[$date] = 'NA';
-			else {
-
-				$sql = "SELECT a.id, aex.needed_ressource, a.datep AS dateo , a.datep2 AS datee
-							FROM ".MAIN_DB_PREFIX."actioncomm a
-								LEFT JOIN ".MAIN_DB_PREFIX."actioncomm_extrafields aex ON (aex.fk_object=a.id)
-							WHERE ";
-				$sql.="'".$date."' BETWEEN a.datep AND a.datep2 ";
-				$sql.=' AND aex.fk_workstation = '.$ws->id.' ';
-
-				$Tab = $PDOdb->ExecuteASArray($sql);
-
-				foreach($Tab as &$row) {
-					$capacity-= $row->needed_ressource;
-				}
-
-				$TDate[$date] = $capacity;
-
-			}
-			$t_cur=strtotime('+1day', $t_cur);
-		}
-
-		return $TDate;
 	}
 
 	static function gb_search_set_bound(&$task, &$t_start, &$t_end,&$TInfo) {
