@@ -198,7 +198,7 @@ class GanttPatern {
 	}
 
 	static function gb_search(&$TDates, &$task, $t_start, $t_end, $duration = 1) {
-		global $conf,$db;
+		global $conf,$db, $langs;
 		
 		$TInfo=array();
 		$row = array('start'=>-1, 'duration'=>-1);
@@ -207,6 +207,9 @@ class GanttPatern {
 
 		$task->hour_needed = $task->planned_workload * $needed_ressource* ((100 - $task->progress) / 100) / 3600 / $duration;
 		$task->duration = $duration;
+
+		if($task->hour_needed<=0) $row['note']=$langs->trans('NoHourPlanned');
+
 if(GETPOST('_givemesolution')=='yes') {
 	echo ' task : '.$task->id.'('.$task->ref.') '.$task->duration.' '.$task->hour_needed.'<br />';
 }

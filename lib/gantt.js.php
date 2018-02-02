@@ -214,7 +214,10 @@ function moveTasks(tasksid) {
 
 			}
 			else {
-				gantt.message(t.ref + ' : <?php echo $langs->trans('TaskCannobBeMovedTo') ?> ','error');
+				gantt.message(t.ref 
+					+ ' : <?php echo $langs->trans('TaskCannobBeMovedTo') ?> '
+					+ (item.note ? " -> "+ item.note : '')
+				,'error');
 
 			}
 
