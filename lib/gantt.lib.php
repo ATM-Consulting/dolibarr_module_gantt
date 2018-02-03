@@ -451,6 +451,9 @@ function _adding_task_project_end(&$project,&$TData) {
 
 }
 
+/*
+ * _adding_task_supplier_order sous fonction de recherche de lien produit ligne commandé et of
+ */
 function _atso_find_task_for_line(&$TData, &$cmd,&$assetOf) {
 	
 	global $TLink, $langs,$workstationList;
@@ -508,12 +511,16 @@ function _atso_find_task_for_line(&$TData, &$cmd,&$assetOf) {
 }
 
 function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
-	global $db, $langs, $conf;
-
+	global $db, $langs, $conf, $TAlreadyDoneOfATSO;
+	
 	if(!empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE) || $assetOf->id<=0) {
 		return false;
 	}
 
+	if(empty($TAlreadyDoneOfATSO))$TAlreadyDoneOfATSO=array();
+	if(!empty($TAlreadyDoneOfATSO[$assetOf->id])) return;
+	else $TAlreadyDoneOfATSO[$assetOf->id] = true;
+	
 	dol_include_once('/fourn/class/fournisseur.commande.class.php');
 	$TIdCommandeFourn = $assetOf->getElementElement($PDOdb);
 
