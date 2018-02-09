@@ -328,8 +328,7 @@ function dragTaskLimit(task, diff ,mode) {
             if(mode == modes.move) {
             	task.start_date = new Date(+task.end_date - diff);
                 if(alertLimit) {
-                	gantt.message('<console.log('ajaxStop');
-                	?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+task.end_date.toLocaleDateString());
+                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+task.end_date.toLocaleDateString());
                 	alertLimit = false;
                 }
             }
