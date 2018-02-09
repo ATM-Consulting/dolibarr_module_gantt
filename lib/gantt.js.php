@@ -847,8 +847,33 @@ function downloadThisGanttAsCSV() {
 	
 	}
 	
-	var encodedUri = encodeURI(csvContent);
-	window.open(encodedUri);
+//	var encodedUri = encodeURI(csvContent);
+//	window.open(encodedUri);
+
+	csvdata = csvContent;
+
+        var byteNumbers = new Uint8Array(csvdata.length);
+
+		for (var i = 0; i < csvdata.length; i++)
+		{
+			byteNumbers[i] = csvdata.charCodeAt(i);
+		}
+		var blob = new Blob([byteNumbers], {type: "text/csv"});
+   
+        // Construct the uri
+		var uri = URL.createObjectURL(blob);
+
+		// Construct the <a> element
+		var link = document.createElement("a");
+		link.download = 'planning.csv';
+		link.href = uri;
+
+		document.body.appendChild(link);
+		link.click();
+
+		// Cleanup the DOM
+		document.body.removeChild(link);
+		delete link;
 
 }
 
