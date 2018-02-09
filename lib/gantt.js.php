@@ -179,6 +179,25 @@ function _getChild(tasksid, task) {
 
 }
 
+function recurssiveRefreshTask(taskid) {
+
+	if(taskid !="" && taskid!=0) {
+
+		gantt.refreshTask(taskid);
+    	var t = gantt.getTask(taskid);
+    	
+    	if(t.parent!=0) {
+    	
+    		parent = gantt.getTask(t.parent);
+    		
+    		if(parent.$no_end && +parent.end_date<+t.end_date)parent.end_date = t.end_date; 
+    	
+    		recurssiveRefreshTask(t.parent);
+    	
+    	}
+	}
+}
+
 function moveTasks(tasksid) {
 
 	gantt.message('<?php echo addslashes($langs->trans('LookinForABetterPosition')) ?>');
@@ -208,7 +227,7 @@ function moveTasks(tasksid) {
 				t.start_date = new Date(item.start * 1000);
 				t.end_date = new Date((item.start + (86400 * t.duration ) - 1) * 1000 );
 
-				gantt.refreshTask(t.id);
+				recurssiveRefreshTask(t.id);
 				gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+t.start_date.toLocaleDateString());
 				saveTask(t);
 
