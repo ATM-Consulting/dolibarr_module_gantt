@@ -179,7 +179,7 @@ function _getChild(tasksid, task) {
 
 }
 
-function recurssiveRefreshTask(taskid) {
+function recursiveRefreshTask(taskid) {
 
 	if(taskid !="" && taskid!=0) {
 
@@ -191,8 +191,9 @@ function recurssiveRefreshTask(taskid) {
     		parent = gantt.getTask(t.parent);
     		
     		if(parent.$no_end && +parent.end_date<+t.end_date)parent.end_date = t.end_date; 
+    		if(parent.$no_start && +parent.start_date>+t.start_date)parent.start_date = t.start_date; 
     	
-    		recurssiveRefreshTask(t.parent);
+    		recursiveRefreshTask(t.parent);
     	
     	}
 	}
@@ -227,7 +228,7 @@ function moveTasks(tasksid) {
 				t.start_date = new Date(item.start * 1000);
 				t.end_date = new Date((item.start + (86400 * t.duration ) - 1) * 1000 );
 
-				recurssiveRefreshTask(t.id);
+				recursiveRefreshTask(t.id);
 				gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+t.start_date.toLocaleDateString());
 				saveTask(t);
 
@@ -439,7 +440,8 @@ function moveChild(task,diff) {
 			    var modes = gantt.config.drag_mode;
 			    dragTaskLimit(child, diff_child,modes.move);
 
-		        gantt.refreshTask(child.id, true);
+		       // gantt.refreshTask(child.id, true);
+			recursiveRefreshTask(child.id);
 
         		moveChild(child, diff);
 			}
