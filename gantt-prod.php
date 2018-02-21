@@ -35,8 +35,8 @@ dol_include_once('/gantt/class/color_tools.class.php');
 
 $langs->load("users");
 $langs->load("projects");
+$langs->load("workstation@workstation");
 $langs->load("gantt@gantt");
-
 $fk_project = (int)GETPOST('fk_project');
 
 
@@ -481,10 +481,10 @@ else {
 	    /*{name:"progress",   label:"<?php echo $langs->transnoentities('Progression') ?>",  template:function(obj){
 			return obj.progress ? Math.round(obj.progress*100)+"%" : "";
 	    }, align: "center", width:60 },*/
-	    {name:"duration",   label:"<?php echo $langs->transnoentities('Duration') ?>", align:"center", width:60},
+	    {name:"duration",   label:"<?php echo $langs->transnoentities('Duration').' ('.$langs->transnoentities('shortDays').')' ?>", align:"center", width:60},
 
 	   <?php
-	   		if(!empty($conf->global->GANTT_ALLOW_PREVI_TASK)) echo '{name:"add",        label:"",           width:44 },';
+	   		if(!empty($conf->global->GANTT_ALLOW_PREVI_TASK)) echo '{name:"add",        label:"",  width:44 },';
 	   	
 	   	?>
 
@@ -507,7 +507,7 @@ else {
 
 	gantt.config.lightbox.sections = [
         {name: "description", height: 26, map_to: "text", type: "textarea", focus: true},
-        {name: "workstation", label:"Workstation", height: 22, type: "select", width:"60%", map_to: "workstation",options: [
+        {name: "workstation", label:"<?php echo $langs->transnoentities('Workstation'); ?>", height: 22, type: "select", width:"60%", map_to: "workstation",options: [
             <?php echo _get_workstation_list(); ?>
         ]},
 
@@ -527,7 +527,7 @@ else {
         ]},
 
         {name: "time", type: "time", map_to: "auto", time_format:["%d", "%m", "%Y"]},
-        {name: "planned_workload", height: "duration", map_to: "planned_workload", type:"select", options:[
+        {name: "planned_workload", height: "22", map_to: "planned_workload", type:"select", options:[
 			<?php
 				dol_include_once('/core/lib/date.lib.php');
 
@@ -556,7 +556,7 @@ else {
 	}
 	else {
 		echo 'gantt.config.subscales = [
-				{ unit:"week", step:1, date:"'.$langs->transnoentities('Week').' %W"}
+				{ unit:"week", step:1, date:"'.$langs->transnoentities('Week').' %W'.( date('Y',$range->date_end)!=date('Y',$range->date_start) ? ' %Y' : '').'"}
 			];
 		';
 	}
@@ -751,7 +751,13 @@ else {
 	
 	gantt.attachEvent("onAfterTaskDrag", function(id, mode, e){
 		var modes = gantt.config.drag_mode;
-	    if(mode == modes.move || mode == modes.resize){
+
+	   if(mode == modes.progress) {
+			task = gantt.getTask(id);
+			task.progress = Math.round(task.progress * 10) / 10;
+			
+		}
+	   else if(mode == modes.move || mode == modes.resize){
 		    /* on regul de décalage du au snap grid */
 			task = gantt.getTask(id);
 			var diff = +task.start_date - drag_start_date;

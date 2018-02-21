@@ -616,7 +616,7 @@ function pop_event(callback) {
 	});
 
 	$(this).dialog({
-		title: "<?php echo $langs->trans('EditTask') ?>"
+		title: "<?php echo $langs->transnoentities('EditTask') ?>"
 			,width:"80%"
 			,modal:true
 		});

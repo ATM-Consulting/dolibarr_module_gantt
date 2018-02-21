@@ -261,7 +261,7 @@ function _get_task_for_of($fk_project = 0) {
 			$project->fetch($task->fk_project);
 
 			if($project->id>0) {
-				$project->title = $project->ref.' '.$project->title;
+				$project->title = (empty($conf->global->GANTT_HIDE_TASK_REF) ? $project->ref.' ' : '').$project->title;
 				
 				if($project->socid>0) {
 					$project->fetch_thirdparty();
