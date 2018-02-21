@@ -67,7 +67,7 @@ function _add_project_included_into_date(&$TTask) {
 		$project = new Project($db);
 		$project->fetch($obj->fk_project);
 
-		if($project->id>0)$project->title = $project->ref.' '.$project->title;
+		if($project->id>0)$project->title = (empty($conf->global->GANTT_HIDE_TASK_REF) ? $project->ref.' ' : '').$project->title;
 
 		$project->ganttid = 'P'.$project->id;
 
@@ -170,7 +170,7 @@ function _get_task_for_of($fk_project = 0) {
 				$task->text.=' '.round($task->planned_workload / 3600,1).'h';
 			}
 		}
-		
+
 		if($task->array_options['options_fk_of']>0 && !empty($conf->of->enabled)) {
 
                         if(!empty($TCacheOF[$task->array_options['options_fk_of']])) {
@@ -691,7 +691,7 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 			if(empty($range->date_end) || $range->date_end<$object->date_end)$range->date_end=$object->date_end;
 		}
 
-		if($object->date_start>$object->date_end)$object->date_start=$object->date_end;
+		if($object->date_start>$object->date_end && !empty($object->date_end))$object->date_start=$object->date_end;
 
 		$duration = $object->date_end>0 ? ceil( ($object->date_end - $object->date_start) / 86400 ) : ceil($object->planned_workload / (3600 * 7));
 		if($duration<1)$duration = 1;
