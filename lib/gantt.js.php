@@ -151,7 +151,7 @@ function splitTask(task) {
 		,step:0.25
 		,slide:function(event,ui) {
 			var val = Math.round( ui.value * 100 ) / 100;
-			$("#splitSlider label").html("Reste sur tâche actuelle : "+ val +"h<br />Sur la tâche créée : "+(max - val)+"h"  );
+			$("#splitSlider label").html("Reste sur tâche actuelle : "+ val +"h<br />Sur la tâche créée : "+(Math.round((max - val)*100)/100)+"h"  );
 
 			$("#splitSlider label").attr("tache1", val);
 			$("#splitSlider label").attr("tache2", max - val);
