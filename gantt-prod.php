@@ -251,8 +251,16 @@ else {
 			checkDataGantt($TData, $TLink);
 			
 			if($range->autotime){
+
+				if(empty($range->date_start) && empty($range->date_end)) {
+					$range->date_end=$range->date_start=time();
+				}
+
 				if(empty($range->date_start)) {
 					$range->date_start = $range->date_end = time()-86400;
+				}
+				if(empty($range->date_end)) {
+					$range->date_end = $range->date_start;
 				}
 				$range->date_end+=864000;
 			}
