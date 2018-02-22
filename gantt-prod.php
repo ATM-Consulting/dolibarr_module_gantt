@@ -261,7 +261,7 @@ else {
 			<table border="0" width="100%"><tr><td width="50%">
 			<?php
 
-			$formCore=new TFormCore('auto','formDate');
+			$formCore=new TFormCore('auto','formDate','get');
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
 			echo $formCore->hidden('scrollLeft', 0);

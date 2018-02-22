@@ -115,10 +115,14 @@ function _get_task_for_of($fk_project = 0) {
 
 	if($fk_project>0) $sql.= " AND fk_projet=".$fk_project;
 	else {
-		$sql.= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
-			AND p.fk_statut = 1 AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
-			";
 
+		$sql.=" AND p.fk_statut = 1 ";
+
+		if(!empty($conf->of->enabled)) {
+			$sql.= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
+			AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
+			";
+		}
 		$sql.=" AND t.dateo <= '".$range->sql_date_end."' AND t.datee >=  '".$range->sql_date_start."' ";
 
 		if(!empty($conf->global->GANTT_MANAGE_SHARED_PROJECT)) $sql.=" AND p.entity IN (".getEntity('project',1).")";
@@ -717,7 +721,7 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 				.',"time_task_limit_no_before":'.(int)$time_task_limit_no_before.',"time_task_limit_no_after":'.(int)$time_task_limit_no_after
 				.',"planned_workload":'.(int)$object->planned_workload.' ,"objElement":"'.$object->element.'","objId":"'.$object->id.'"'
 				.',"workstation_type":"'.$ws_type.'"'
-				.',"workstation":'.$fk_workstation.' , "text":"'.$object->text.'" , "title":"'.$object->title.'", "start_date":"'.date('d-m-Y',$object->date_start).'"'
+				.',"workstation":'.$fk_workstation.' , "text":"'.strtr($object->text,array('"'=>'\"')).'" , "title":"'.strtr($object->title,array('"'=>'\"')).'", "start_date":"'.date('d-m-Y',$object->date_start).'"'
 				.',"duration":"'.$duration.'"'.(!is_null($fk_parent_object) ? ' ,"parent":"'.$fk_parent_object.'" ' : '' ).', "progress": '.($object->progress / 100)
 				.',"owner":"'.$fk_workstation.'", "type":gantt.config.types.task , "open": '.$close_init_status.', "visible":'.$visible.'}';
 
