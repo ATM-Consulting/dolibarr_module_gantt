@@ -161,6 +161,8 @@ function _get_task_for_of($fk_project = 0) {
 		$task->title = $task->label;
 		$task->ref= $task->ref;
 		
+		if(empty($task->planned_workload)) $task->planned_workload = 1;
+		
 		if(!empty($conf->global->GANTT_HIDE_TASK_REF)) {
 			$task->text = $task->label;
 		}
