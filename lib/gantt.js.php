@@ -151,7 +151,7 @@ function splitTask(task) {
 		,step:0.25
 		,slide:function(event,ui) {
 			var val = Math.round( ui.value * 100 ) / 100;
-			$("#splitSlider label").html("Reste sur tâche actuelle : "+ val +"h<br />Sur la tâche créée : "+(max - val)+"h"  );
+			$("#splitSlider label").html("Reste sur tâche actuelle : "+ val +"h<br />Sur la tâche créée : "+(Math.round((max - val)*100)/100)+"h"  );
 
 			$("#splitSlider label").attr("tache1", val);
 			$("#splitSlider label").attr("tache2", max - val);
@@ -177,6 +177,26 @@ function _getChild(tasksid, task) {
 		});
 	}
 
+}
+
+function recursiveRefreshTask(taskid) {
+
+	if(taskid !="" && taskid!=0) {
+
+		gantt.refreshTask(taskid);
+    	var t = gantt.getTask(taskid);
+    	
+    	if(t.parent!=0) {
+    	
+    		parent = gantt.getTask(t.parent);
+    		
+    		if(parent.$no_end && +parent.end_date<+t.end_date)parent.end_date = t.end_date; 
+    		if(parent.$no_start && +parent.start_date>+t.start_date)parent.start_date = t.start_date; 
+    	
+    		recursiveRefreshTask(t.parent);
+    	
+    	}
+	}
 }
 
 function moveTasks(tasksid) {
@@ -208,7 +228,7 @@ function moveTasks(tasksid) {
 				t.start_date = new Date(item.start * 1000);
 				t.end_date = new Date((item.start + (86400 * t.duration ) - 1) * 1000 );
 
-				gantt.refreshTask(t.id);
+				recursiveRefreshTask(t.id);
 				gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+t.start_date.toLocaleDateString());
 				saveTask(t);
 
@@ -309,8 +329,7 @@ function dragTaskLimit(task, diff ,mode) {
             if(mode == modes.move) {
             	task.start_date = new Date(+task.end_date - diff);
                 if(alertLimit) {
-                	gantt.message('<console.log('ajaxStop');
-                	?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+task.end_date.toLocaleDateString());
+                	gantt.message('<?php echo $langs->trans('TaskCantBeMovedOutOfThisDate') ?> : '+task.end_date.toLocaleDateString());
                 	alertLimit = false;
                 }
             }
@@ -421,7 +440,8 @@ function moveChild(task,diff) {
 			    var modes = gantt.config.drag_mode;
 			    dragTaskLimit(child, diff_child,modes.move);
 
-		        gantt.refreshTask(child.id, true);
+		       // gantt.refreshTask(child.id, true);
+			recursiveRefreshTask(child.id);
 
         		moveChild(child, diff);
 			}
@@ -596,7 +616,7 @@ function pop_event(callback) {
 	});
 
 	$(this).dialog({
-		title: "<?php echo $langs->trans('EditTask') ?>"
+		title: "<?php echo $langs->transnoentities('EditTask') ?>"
 			,width:"80%"
 			,modal:true
 		});
@@ -829,8 +849,33 @@ function downloadThisGanttAsCSV() {
 	
 	}
 	
-	var encodedUri = encodeURI(csvContent);
-	window.open(encodedUri);
+//	var encodedUri = encodeURI(csvContent);
+//	window.open(encodedUri);
+
+	csvdata = csvContent;
+
+        var byteNumbers = new Uint8Array(csvdata.length);
+
+		for (var i = 0; i < csvdata.length; i++)
+		{
+			byteNumbers[i] = csvdata.charCodeAt(i);
+		}
+		var blob = new Blob([byteNumbers], {type: "text/csv"});
+   
+        // Construct the uri
+		var uri = URL.createObjectURL(blob);
+
+		// Construct the <a> element
+		var link = document.createElement("a");
+		link.download = 'planning.csv';
+		link.href = uri;
+
+		document.body.appendChild(link);
+		link.click();
+
+		// Cleanup the DOM
+		document.body.removeChild(link);
+		delete link;
 
 }
 

@@ -29,6 +29,7 @@ class GanttPatern {
 		if(empty($TCacheOFOrder))$TCacheOFOrder=array();
 		if(empty($TCacheProject))$TCacheProject=array();
 
+		if(!empty($conf->of->enabled)) {
 		$res = $db->query("SELECT nb_days_before_beginning FROM ".MAIN_DB_PREFIX."asset_workstation_of WHERE fk_project_task=".$task->id);
 		if($res === false) {
 			var_dump($db);exit;
@@ -44,7 +45,8 @@ class GanttPatern {
 			
 			if($t_start_bound>$t_start)$t_start = $t_start_bound;
 		}
-		
+		}
+
 		if($task->fk_task_parent>0) { // s'il y a une tâche parente
 			if(isset($TCacheTask[$task->fk_task_parent])) $parent = $TCacheTask[$task->fk_task_parent];
 			else {
@@ -73,7 +75,7 @@ class GanttPatern {
 
 		}
 
-		if(empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE) && $task->array_options['options_fk_of']>0) {
+		if(empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE) && $task->array_options['options_fk_of']>0 &&  !empty($conf->of->enabled) ) {
 
 			dol_include_once('/fourn/class/fournisseur.commande.class.php');
 			dol_include_once('/of/class/ordre_fabrication_asset.class.php');
@@ -117,7 +119,7 @@ class GanttPatern {
 
 			}
 
-			if(empty($conf->global->GANTT_DISABLE_ORDER_MILESTONE) && $task->array_options['options_fk_of']>0) {
+			if(empty($conf->global->GANTT_DISABLE_ORDER_MILESTONE) && $task->array_options['options_fk_of']>0 &&  !empty($conf->of->enabled)) {
 				dol_include_once('/of/class/ordre_fabrication_asset.class.php');
 				dol_include_once('/commande/class/commande.class.php');
 
