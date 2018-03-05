@@ -263,6 +263,8 @@ else {
 					$range->date_end = $range->date_start;
 				}
 				$range->date_end+=864000;
+				
+				if($range->date_end > $range->date_start + 86400 * 366) $range->date_end = $range->date_start + 86400 * 366;
 			}
 			
 			?>

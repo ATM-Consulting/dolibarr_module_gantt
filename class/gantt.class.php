@@ -36,9 +36,9 @@ class GanttPatern {
 		}
 		if($obj = $db->fetch_object($res)) {
 			if($obj->nb_days_before_beginning>0) {
-			$t_start_bound=strtotime('+'.($obj->nb_days_before_beginning+1).' days midnight');
+			$t_start_bound=strtotime('+'.((int)$obj->nb_days_before_beginning+1).' days midnight');
 			if(GETPOST('_givemesolution')=='yes') {
-				echo 'start bound delai '.date('Y-m-d', $t_start_bound).'<br>';
+				echo 'start bound delai '.date('Y-m-d', $t_start_bound).' '.$obj->nb_days_before_beginning.'<br>';
 			}
 			$TInfo[] = 'start bound delai '.date('Y-m-d', $t_start_bound);
 			}
