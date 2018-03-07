@@ -21,6 +21,46 @@ class GanttPatern {
 
 	}
 
+	static function gb_search_set_bound_into_cmd_details(&$task, &$t_start, &$t_end,&$TInfo, &$cmd,&$of) {
+
+		$find = false;
+	foreach($cmd->lines as &$line) {
+		
+		foreach($of->TAssetOFLine as &$lineOf) {
+			
+			if($lineOf->type == 'NEEDED' && $lineOf->fk_product>0 && $lineOf->fk_product == $line->fk_product && !empty($lineOf->TWorkstation)) {
+				
+				foreach($lineOf->TWorkstation as &$ws) {
+					
+					foreach($of->TAssetWorkstationOF as &$wsof) {
+						
+						if($ws->id == $wsof->fk_asset_workstation && $wsof->fk_project_task == $task->id && $cmd->date_livraison > $t_start) {
+
+							$t_start =  strtotime('+1day', $cmd->date_livraison );
+                                                        if(GETPOST('_givemesolution')=='yes') {
+                                                                echo '(gb_search_set_bound_cmd_details) start bound CommandeFournisseur ('.$cmd->id.' / '.$ws->id.') '
+                                                                        .date('Y-m-d', $cmd->date_livraison).'+1day<br/>';
+                                                        }
+
+							$find = true;
+							
+							break;
+						}
+						
+					}
+					
+				}
+				
+			}
+			
+		}
+		
+	}
+	
+	return $find;
+
+	}
+
 	static function gb_search_set_bound(&$task, &$t_start, &$t_end,&$TInfo) {
 		global $conf,$db, $TCacheProject,$TCacheTask, $TCacheOFSupplierOrder,$TCacheOFOrder;
 
@@ -40,7 +80,7 @@ class GanttPatern {
 			if(GETPOST('_givemesolution')=='yes') {
 				echo 'start bound delai '.date('Y-m-d', $t_start_bound).' '.$obj->nb_days_before_beginning.'<br>';
 			}
-			$TInfo[] = 'start bound delai '.date('Y-m-d', $t_start_bound);
+			$TInfo[] = '(gb_search_set_bound) start bound delai '.date('Y-m-d', $t_start_bound);
 			}
 			
 			if($t_start_bound>$t_start)$t_start = $t_start_bound;
@@ -66,7 +106,7 @@ class GanttPatern {
 				if($t_start_bound>$t_start) {
 					$t_start = $t_start_bound;
 					if(GETPOST('_givemesolution')=='yes') {
-						echo 'start bound fk_task_parent ('.$parent->id.' / '.$parent->ref.') '.date('Y-m-d', $parent->date_start).' - '.date('Y-m-d', $parent->date_end).' --> '.date('Y-m-d', $t_start).'<br />';
+						echo '(gb_search_set_bound) start bound fk_task_parent ('.$parent->id.' / '.$parent->ref.') '.date('Y-m-d', $parent->date_start).' - '.date('Y-m-d', $parent->date_end).' --> '.date('Y-m-d', $t_start).'<br />';
 					}
 					
 					$TInfo[] = 'start bound fk_task_parent ('.$parent->id.' / '.$parent->ref.') '.date('Y-m-d', $parent->date_start).' - '.date('Y-m-d', $parent->date_end).' --> '.date('Y-m-d', $t_start);
@@ -91,14 +131,34 @@ class GanttPatern {
 			}
 
 			if(count($TIdCommandeFourn)){
+				$find_detail = false;
+
 				foreach($TIdCommandeFourn as $idcommandeFourn){
 					$cmd = new CommandeFournisseur($db);
 					$cmd->fetch($idcommandeFourn);
 
 					if($cmd->statut>0 && $cmd->statut<5 && $cmd->date_livraison>0 &&  $cmd->date_livraison > $t_start) {
-						$t_start =  strtotime('+1day', $cmd->date_livraison );
+						
+						if(!empty($conf->global->ASSET_DEFINED_WORKSTATION_BY_NEEDED)) {
+					
+							$find_detail = self::gb_search_set_bound_into_cmd_details($task, $t_start, $t_end,$TInfo, $cmd,$of);
+						}
+				
+				
 					}
 				}
+
+
+						if(!$find_detail){
+
+							$t_start =  strtotime('+1day', $cmd->date_livraison );
+							if(GETPOST('_givemesolution')=='yes') {
+        	                                        	echo '(gb_search_set_bound) start bound CommandeFournisseur ('.$cmd->id.') '
+									.date('Y-m-d', $cmd->date_livraison).'+1day<br/>';
+                        	                	}
+
+						}
+
 			}
 
 		}
@@ -213,12 +273,12 @@ class GanttPatern {
 		if($task->hour_needed<=0) $row['note']=$langs->trans('NoHourPlanned');
 
 if(GETPOST('_givemesolution')=='yes') {
-	echo ' task : '.$task->id.'('.$task->ref.') '.$task->duration.' '.$task->hour_needed.'<br />';
+	echo '(gb_search) task : '.$task->id.'('.$task->ref.') '.$task->duration.' '.$task->hour_needed.'<br />';
 }
 		if($duration<50 && $task->hour_needed>0) {
 			self::gb_search_set_bound($task, $t_start, $t_end, $TInfo);
 if(GETPOST('_givemesolution')=='yes') {
-echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end).'<br />';
+echo '(gb_search) Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end).'<br />';
 }
 			$row = self::gb_search_days($TDates, $task, $t_start, $t_end);
 
