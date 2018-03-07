@@ -568,7 +568,15 @@ else {
 
 	<?php
 
-	if(GETPOST('scale')=='week') { //TODO make it work ?
+	if(GETPOST('scale')=='hour') { //TODO make it work ?
+                echo 'gantt.config.scale_unit = "hour";';
+		echo 'gantt.config.date_scale = "%H : 00";';
+		echo 'gantt.config.subscales = [
+                                { unit:"day", step:1, date:"'.$langs->transnoentities('Day').' %d/%m/%Y" }
+                        ];
+                '; 
+        }
+	else if(GETPOST('scale')=='week') { //TODO make it work ?
 		echo 'gantt.config.scale_unit = "week"; gantt.config.date_scale = "'.$langs->trans('WeekShort').' %W";';
 	}
 	else {
@@ -577,9 +585,9 @@ else {
 			];
 		';
 	}
-
 	?>
 
+//gantt.config.step = 2; 
 	// add text progress information
 	/*gantt.templates.progress_text = function(start, end, task){
 		return "<span style='text-align:left;'>"+Math.round(task.progress*100)+ "% </span>";
