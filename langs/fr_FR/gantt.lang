@@ -53,6 +53,7 @@ GANTT_DO_NOT_SHOW_PROJECTS=Ne pas afficher l'entête projet
 GANTT_SET_TASK_DATES_ON_CREATE=Recalculer les dates de la tâche à sa création 
 DateStartProd=Date de début de production
 MoveAllTasks=Repositionner toutes les tâches
+MoveAllOlderTasks=ou juste celles dépassées
 hours=heures
 TaskCannobBeMovedTo=Impossible de déplacer cette tâche à cause des restrictions
 Set=Définir

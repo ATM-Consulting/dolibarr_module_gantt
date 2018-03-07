@@ -109,7 +109,7 @@ else {
 	}
 
 	$TData = $TWS = $TLink = $TTask = array();
-	
+
 	$TElement = _get_task_for_of($fk_project);
 //pre($TElement,1);exit;
 
@@ -226,6 +226,8 @@ else {
 
 	                								$TTask[] = $task->id;
 
+	                								if($task->date_start<time())$TTaskOlder[] = $task->id;
+
 	                								$TData[$task->ganttid] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after,$taskColor);
 
 													if($task->fk_task_parent>0) {
@@ -249,7 +251,7 @@ else {
 			_get_events($TData,$TLink);
 
 			checkDataGantt($TData, $TLink);
-			
+
 			if($range->autotime){
 
 				if(empty($range->date_start) && empty($range->date_end)) {
@@ -263,10 +265,10 @@ else {
 					$range->date_end = $range->date_start;
 				}
 				$range->date_end+=864000;
-				
+
 				if($range->date_end > $range->date_start + 86400 * 366) $range->date_end = $range->date_start + 86400 * 366;
 			}
-			
+
 			?>
 			<table border="0" width="100%"><tr><td width="50%">
 			<?php
@@ -307,15 +309,20 @@ else {
 
 				exit;
 			}
-			
+
 			echo '</td><td align="right" width="20%"><a href="javascript:downloadThisGanttAsCSV()" >'.img_picto($langs->trans('DownloadAsCSV'), 'csv@gantt').'<a>';
-			
-			
+
+
 			?>
 			</td><td align="right">
 			<span id="ajax-waiter" class="waiter"><?php echo $langs->trans('AjaxRequestRunning') ?></span>
 			<a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
+			<?php
+			if (!empty($TTaskOlder)) {
+			     ?><a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTaskOlder) ?>');" class="button"><?php echo $langs->trans('MoveAllOlderTasks') ?></a><?php
+			}
 
+			?>
 			</td></tr></table>
 
 			<div id="gantt_here" style='width:100%; height:100%;'></div>
@@ -356,7 +363,7 @@ else {
 	    ],
 	    links:[
 	       <?php
-	       
+
 	       $Tmp=array();
 	       foreach($TLink as $k=>&$link) {
 	       		echo ' {id:'.$link['id'].', source:"'.$link['source'].'", target:"'.$link['target'].'", type:"'.$link['type'].'"},'."\n";
@@ -377,7 +384,7 @@ else {
 			else if(+d - 86400000 < +obj.end_date && obj.objElement == 'of') {
 				r="gantt_maybelate";
 			}
-			
+
 		}
 		else if(obj.objElement == 'project_task') {
 
@@ -394,7 +401,7 @@ else {
 	gantt.templates.task_class = function(start, end, obj){
 
 		var r = '';
-		
+
 		if(obj.type == gantt.config.types.of){
 			r = "gantt_of";
 		}
@@ -415,12 +422,12 @@ else {
 
 			var d = new Date(obj.date_max * 1000);
 			if(+d < +obj.end_date) {
-				
+
 				r+=" gantt_late";
 			}
-			
+
 		}
-		
+
 		return r;
 	}
 
@@ -447,11 +454,11 @@ else {
 		var r = "";
 
 		if(task.objElement == 'project_task') {
-		
+
 			if(task.workstation == 0) {
 				r+="<?php echo  addslashes(img_info($langs->trans('NoWorkstationOnThisTask'))); ?>";
 			}
-	
+
 			if(task.time_task_limit_no_before && task.time_task_limit_no_before> (+task.start_date / 1000)){
 				r+="<?php echo  addslashes(img_warning().$langs->trans('TooEarly')); ?>";
 			}
@@ -461,8 +468,8 @@ else {
 
 		}
 		else {
-			null;			
-			
+			null;
+
 		}
 
 		return r;
@@ -473,7 +480,7 @@ else {
 		    , template:function(obj) {
 
 				var r = '';
-			    
+
 				if(obj.id[0] == 'T' || obj.objElement == 'milestone' || obj.objElement == 'project_task_delay') {
 					r = obj.text;
 				}
@@ -482,8 +489,8 @@ else {
 				}
 
 				return r;
-				
-	    	} 
+
+	    	}
 	    },
 	    {name:"start_time",   label:"<?php echo $langs->transnoentities('DateStart') ?>",  template:function(obj){
 			return gantt.templates.date_grid(obj.start_date);
@@ -495,7 +502,7 @@ else {
 
 	   <?php
 	   		if(!empty($conf->global->GANTT_ALLOW_PREVI_TASK)) echo '{name:"add",        label:"",  width:44 },';
-	   	
+
 	   	?>
 
 	   	{name:"automove",   label:' ',  template:function(obj){
@@ -506,7 +513,7 @@ else {
 
 		   	return '';
     	}, align: "center", width:54 },
-	   	
+
 	];
 
 	// Define local lang
@@ -594,12 +601,12 @@ else {
 		if(task.time_task_limit_no_after) {
 			d=new Date(task.time_task_limit_no_after*1000);
 			r+="<br /><?php echo $langs->trans('HighBound') ?> "+d.toLocaleDateString();
-			
+
 		}
 		if(task.time_task_limit_before_after) {
 			d=new Date(task.time_task_limit_no_before*1000);
 			r+="<br /><?php echo $langs->trans('LowBound') ?> "+d.toLocaleDateString();
-			
+
 		}
 
 		if(task.workstation == 0) {
@@ -615,7 +622,7 @@ else {
 			var d = new Date(task.date_max * 1000);
 
 			r+="<br /><?php echo $langs->trans('TodoFor') ?> "+d.toLocaleDateString();
-			
+
 		}
 
 		return r;
@@ -758,14 +765,14 @@ else {
 	});
 
 	var drag_start_date = 0;
-	
+
 	gantt.attachEvent("onAfterTaskDrag", function(id, mode, e){
 		var modes = gantt.config.drag_mode;
 
 	   if(mode == modes.progress) {
 			task = gantt.getTask(id);
 			task.progress = Math.round(task.progress * 10) / 10;
-			
+
 		}
 	   else if(mode == modes.move || mode == modes.resize){
 		    /* on regul de décalage du au snap grid */
@@ -774,9 +781,9 @@ else {
 
 			moveChild(task, diff );
 	    }
-		
+
 		for(idTask in TAnotherTaskToSave) {
-			    
+
 			task = gantt.getTask(idTask);
 			regularizeHour(task);
 			gantt.refreshTask(task.id);
@@ -813,7 +820,7 @@ else {
 		var task = gantt.getTask(id);
 
 		return saveTask(task, old_event);
-		
+
 	});
 
     gantt.attachEvent("onLightboxSave", function(id, task, is_new){
@@ -915,7 +922,7 @@ else {
 		while($t_cur<=$range->date_end) {
 			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">N/A</div>';
 			$t_cur = strtotime('+1day',$t_cur);
-			
+
 		}
 
 		echo 'function replicateDates() {
@@ -940,14 +947,14 @@ else {
 			if($ws->type!='STT' && !is_null($ws->id)) {
 				?>
 				if($("div#workstations_<?php echo $ws->id; ?>.gantt_row").length == 0 ) {
-	
+
 					$('div.ws_container_label').append('<div class="gantt_row workstation_<?php echo $ws->id; ?>" style="text-align:right; width:'+w_workstation_title+'px;height:13px;padding-right:5px;font-size:10px;"><a href="#" onclick="$(\'#formDate select[name=restrictWS]\').val(<?php echo $ws->id ?>);$(\'#formDate\').submit();"><?php echo addslashes($ws->name) . ' ('.$ws->nb_hour_capacity.'h - '.$ws->nb_ressource.')'; ?></a></div>');
 					$('div.ws_container>div').append('<div class="workstation gantt_task_row gantt_row" id="workstations_<?php echo $ws->id ?>" style="width:'+w_workstation+'px; "><?php echo $cells; ?></div>');
-	
+
 				}
 				<?php
 			}
-			
+
 		}
 
 		if($flag_task_not_ordonnanced) {
@@ -1013,19 +1020,19 @@ else {
 	?>
 
 	var checkScrollStop;
-	
+
 	$("div.ws_container").scroll(function(e) {
 		var sl = $(this).scrollLeft();
 
 		gantt.scrollTo(sl,null);
-		
+
 	    replicateDates();
 
 	    clearTimeout(checkScrollStop);
 	    checkScrollStop = setTimeout(function() {
-	        updateWSRangeCapacity(sl);   
+	        updateWSRangeCapacity(sl);
 	    }, 250);
-	    
+
 	});
 
 	/*
@@ -1037,7 +1044,7 @@ else {
 		/*window.alert(colWidth);*/
 		$( ".ws_container .gantt_task_cell" ).width(colWidth);
 
-		setInterval(function(){ 
+		setInterval(function(){
 			$.ajax({
 				url:"<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>?get=keep-alive"
 			});
