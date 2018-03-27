@@ -59,6 +59,86 @@ class ActionsGantt
 	 * @param   HookManager     $hookmanager    Hook manager propagated to allow calling another hook
 	 * @return  int                             < 0 on error, 0 on success, 1 to replace standard code
 	 */
+
+	function getCalendarEvents($parameters, &$object, &$action, $hookmanager)
+	{
+	    $TContext = explode(':', $parameters['context']);
+
+	    if (in_array('agenda', $TContext) || in_array('projectcard', $TContext))
+	    {
+            global $conf,$db;
+
+            if(!empty($conf->global->GANTT_SHOW_TASK_INTO_CALENDAR_VIEW)) {
+
+                $month = GETPOST('month');
+                $year = GETPOST('year');
+
+                if(empty($month)) {
+                    $time = time();
+                }
+                else {
+                    $time = strtotime($year.'-'.$month.'-01');
+                }
+
+                $start = date('Y-m-01',$time);
+                $end = date('Y-m-t',$time);
+
+                $fk_project = (int)GETPOST('projectid');
+
+                dol_include_once('/gantt/class/gantttask.class.php');
+                dol_include_once('/gantt/class/gantt.class.php');
+                $TTaskObject = GanttPatern::getTasks($start, $end, $fk_project);
+
+                if(!empty($TTaskObject)) {
+
+                    foreach($TTaskObject as $task) {
+
+                        if($task->date_end<$task->date_start)$task->date_end = $task->date_start;
+
+                        $task->userassigned=array();
+                        $TContact = $task->getListContactId();
+                        if(!empty($TContact)) {
+                            foreach($TContact as $fk_contact) {
+                                $task->userassigned[$fk_contact] = array('id'=>$fk_contact);
+                            }
+
+
+                        }
+
+                        $gantttask = unserialize(strtr(serialize($task),array('O:4:"Task"'=>'O:9:"GanttTask"'))); //hop hop y a un lapin dans le chapeau
+
+                        $daycursor=$gantttask->date_start;
+
+
+                        while($daycursor<=$task->date_end) {
+
+                            $annee = date('Y',$daycursor);
+                            $mois = date('m',$daycursor);
+                            $jour = date('d',$daycursor);
+                            $daykey=dol_mktime(0,0,0,$mois,$jour,$annee);
+
+
+                            $this->results['eventarray'][$daykey][] = $gantttask;
+
+                            $daycursor=strtotime('+1day',$daycursor);
+                        }
+
+
+                    }
+
+                    return 1;
+
+                }
+
+
+            }
+
+
+
+	    }
+
+	}
+
 	function formObjectOptions($parameters, &$object, &$action, $hookmanager)
 	{
 
