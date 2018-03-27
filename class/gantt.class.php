@@ -2,7 +2,7 @@
 
 class GanttPatern {
 
-	static function get_ws_capacity($wsid, $t_start, $t_end, $fk_task = 0) {
+    static function get_ws_capacity($wsid, $t_start, $t_end, $fk_task = 0,$scale_unit='day') {
 
 		global $conf;
 
@@ -15,9 +15,41 @@ class GanttPatern {
 		$ws=new TWorkstation;
 		$ws->load($PDOdb, $wsid);
 
-		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end, true, $fk_task);
+		if($scale_unit=='week') {
+		    $day_of_week = date('N',$t_start);
+		    $t_start=strtotime('-'.$day_of_week.'days + 1 day', $t_start);
+		}
 
-		return $Tab;
+		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end, true, $fk_task,$scale_unit);
+
+		if($scale_unit == 'week') {
+            $i = 0;
+		    foreach($Tab as $k=>$data) {
+
+   		        if($i == 0) {
+                    $k_hold = $k;
+                }
+		        else {
+		            if($data['capacityLeft']!='NA') {
+    		            $Tab[$k_hold]['capacity']+=$data['capacity'];
+    		            $Tab[$k_hold]['nb_hour_capacity']+=$data['nb_hour_capacity'];
+    		            $Tab[$k_hold]['capacityLeft']+=$data['capacityLeft'];
+		            }
+
+		            unset($Tab[$k]);
+		        }
+
+                $i++;
+                if($i == 7)$i = 0;
+
+		    }
+
+            return $Tab;
+		}
+		else {
+		    return $Tab;
+		}
+
 
 	}
 
@@ -42,7 +74,7 @@ class GanttPatern {
 			}
 			$TInfo[] = 'start bound delai '.date('Y-m-d', $t_start_bound);
 			}
-			
+
 			if($t_start_bound>$t_start)$t_start = $t_start_bound;
 		}
 		}
@@ -58,17 +90,17 @@ class GanttPatern {
 			if($parent->progress < 100) {
 
 				$parent_duration = floor(($parent->date_end - $parent->date_start) / 86400 ) + 1;
-	
+
 				if($parent_duration>$duration) $t_start_bound = $parent->date_end - ($duration * 86400); // alors le début est soit la durée de la tâche en partant de la fin de la tâche parente
 				else $t_start_bound= $parent->date_start; // où le début de la tâche parente
-	
+
 				$t_start_bound=strtotime('midnight',$t_start_bound);
 				if($t_start_bound>$t_start) {
 					$t_start = $t_start_bound;
 					if(GETPOST('_givemesolution')=='yes') {
 						echo 'start bound fk_task_parent ('.$parent->id.' / '.$parent->ref.') '.date('Y-m-d', $parent->date_start).' - '.date('Y-m-d', $parent->date_end).' --> '.date('Y-m-d', $t_start).'<br />';
 					}
-					
+
 					$TInfo[] = 'start bound fk_task_parent ('.$parent->id.' / '.$parent->ref.') '.date('Y-m-d', $parent->date_start).' - '.date('Y-m-d', $parent->date_end).' --> '.date('Y-m-d', $t_start);
 				}
 			}
@@ -201,7 +233,7 @@ class GanttPatern {
 
 	static function gb_search(&$TDates, &$task, $t_start, $t_end, $duration = 1) {
 		global $conf,$db, $langs;
-		
+
 		$TInfo=array();
 		$row = array('start'=>-1, 'duration'=>-1);
 
@@ -274,12 +306,12 @@ echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end)
 					$fk_workstation = (int)$task->array_options['options_fk_workstation'];
 					if(empty($TWS[$fk_workstation])) $TWS[$fk_workstation] = self::get_ws_capacity($fk_workstation, $t_start, $t_end, $TTaskId);
 					$Tab[$task->id] = self::get_better_task($TWS, $task, $t_start, $t_end);
-	
+
 					if( $Tab[$task->id]['start']> 0) {
 						$task->date_start = $Tab[$task->id]['start'];
 						$task->date_end = $Tab[$task->id]['start'] + ($Tab[$task->id]['duration']*86400 ) - 1;
 					}
-	
+
 					$TCacheTask[$task->id] = $task;
 				}
 			}

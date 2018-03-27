@@ -38,7 +38,7 @@ $langs->load("projects");
 $langs->load("workstation@workstation");
 $langs->load("gantt@gantt");
 $fk_project = (int)GETPOST('fk_project');
-
+$scale_unit = GETPOST('scale');
 
 if($fk_project>0) {
 
@@ -288,12 +288,14 @@ else {
 
 			}
 
-
 			if(!empty($conf->workstation->enabled)) {
 			   $PDOdb=new TPDOdb;
 			   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , (GETPOST('restrictWS') == '' ? -1 : GETPOST('restrictWS')));
 
 			}
+
+			echo $formCore->combo('', 'scale', array('day'=>$langs->trans('Days'),'week'=>$langs->trans('Weeks')) , GETPOST('scale'));
+
 
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
@@ -569,112 +571,17 @@ else {
 
 	<?php
 
-	if(GETPOST('scale')=='allweek') {
-	    echo 'gantt.config.date_scale = "%d"; gantt.config.subscales = [
-				{ unit:"week", step:1, date:"'.$langs->transnoentities('WeekShort').' %W'.( date('Y',$range->date_end)!=date('Y',$range->date_start) ? ' %Y' : '').'"}
-			];
-		';
-
-	    echo '
-        gantt._task_default_render = function(task){
-	if(this._isAllowedUnscheduledTask(task))
-		return;
-
-	var pos = this._get_task_pos(task);
-
-	var cfg = this.config;
-	var height = this._get_task_height();
-
-	var padd = Math.floor((this.config.row_height - height)/2);
-	if(this._get_safe_type(task.type) == cfg.types.milestone && cfg.link_line_width > 1){
-		//little adjust milestone position, so horisontal corners would match link arrow when thickness of link line is more than 1px
-		padd += 1;
-	}
-
-	var div = document.createElement("div");
-	var width = gantt._get_task_width(task);
-
-	var type = this._get_safe_type(task.type);
-
-	div.setAttribute(this.config.task_attribute, task.id);
-
-	if(cfg.show_progress && type != this.config.types.milestone){
-		this._render_task_progress(task,div, width);
-	}
-
-	//use separate div to display content above progress bar
-	var content = gantt._render_task_content(task, width);
-	if(task.textColor){
-		content.style.color = task.textColor;
-	}
-	div.appendChild(content);
-
-	var css = this._combine_item_class("gantt_task_line",
-		this.templates.task_class(task.start_date, task.end_date, task),
-		task.id);
-	if(task.color || task.progressColor || task.textColor){
-		css += " gantt_task_inline_color";
-	}
-	div.className = css;
-
-	var styles = [
-		"left:" + pos.x + "px",
-		"top:" + (padd + pos.y) + "px",
-		"height:" + height + "px",
-		"line-height:" + height + "px",
-		"width:" + (width/5) + "px"
-	];
-console.log(styles);
-	if(task.color){
-		styles.push("background-color:" + task.color);
-	}
-	if(task.textColor){
-		styles.push("color:" + task.textColor);
-	}
-
-	div.style.cssText = styles.join(";");
-	var side = this._render_leftside_content(task);
-	if(side) div.appendChild(side);
-
-	side = this._render_rightside_content(task);
-	if(side) div.appendChild(side);
-
-	gantt._waiAria.setTaskBarAttr(task, div);
-
-	if(!this._is_readonly(task)){
-		if(cfg.drag_resize && !this._is_flex_task(task) && type != this.config.types.milestone){
-			gantt._render_pair(div, "gantt_task_drag", task, function(css){
-				var el = document.createElement("div");
-				el.className = css;
-				return el;
-			});
-		}
-		if(cfg.drag_links && this.config.show_links){
-			gantt._render_pair(div, "gantt_link_control", task, function(css){
-				var outer = document.createElement("div");
-				outer.className = css;
-				outer.style.cssText = [
-					"height:" + height + "px",
-					"line-height:" + height + "px"
-				].join(";");
-				var inner = document.createElement("div");
-				inner.className = "gantt_link_point";
-				inner.style.display = gantt._show_link_points ? "block": "";
-				outer.appendChild(inner);
-				return outer;
-			});
-		}
-	}
-	return div;
-};
-';
-
-	}
-	else if(GETPOST('scale')=='week') { //TODO make it work ?
-		echo 'gantt.config.scale_unit = "week"; gantt.config.date_scale = "'.$langs->trans('WeekShort').' %W";';
+	if($scale_unit=='week') {
+		echo 'gantt.config.scale_unit = "week";
+        gantt.config.date_scale = "%d/%m (%W)";
+        gantt.config.fit_tasks = false;gantt.config.step = 1;
+        gantt.config.round_dnd_dates = false;
+        gantt.config.subscales = [
+				{ unit:"year", step:1, date:"'.$langs->transnoentities('Year').' %Y"}
+		];';
 	}
 	else {
-		echo 'gantt.config.subscales = [
+		echo 'gantt.config.fit_tasks = true; gantt.config.subscales = [
 				{ unit:"week", step:1, date:"'.$langs->transnoentities('Week').' %W'.( date('Y',$range->date_end)!=date('Y',$range->date_start) ? ' %Y' : '').'"}
 			];
 		';
@@ -984,7 +891,6 @@ console.log(styles);
 	gantt.config.drag_links = false;
 	gantt.config.autoscroll = false;
 	gantt.config.autosize = "y";
-	gantt.config.fit_tasks = true;
 
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $range->date_start) ?>"), new Date("<?php echo date('Y-m-d', $range->date_end) ?>"));
 	//modSampleHeight();
@@ -1022,9 +928,20 @@ console.log(styles);
 
 		$cells = '';
 		$t_cur = $range->date_start;
+		if($scale_unit=='week') {
+		    $day_of_week = date('N',$t_cur);
+		    $t_cur=strtotime('-'.$day_of_week.'days + 1 day', $t_cur);
+		}
+
 		while($t_cur<=$range->date_end) {
 			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">N/A</div>';
-			$t_cur = strtotime('+1day',$t_cur);
+
+			if($scale_unit=='week') {
+			    $t_cur = strtotime('+1week',$t_cur);
+			}
+			else {
+			    $t_cur = strtotime('+1day',$t_cur);
+			}
 
 		}
 

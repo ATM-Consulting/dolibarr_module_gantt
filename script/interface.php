@@ -54,14 +54,14 @@
 	switch ($get) {
 
 		case 'workstation-capacity':
-			__out(_get_ws_capactiy(  GETPOST('wsid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
+			__out(_get_ws_capactiy(  GETPOST('wsid'),GETPOST('t_start'),GETPOST('t_end'),GETPOST('scale_unit') ),'json' );
 
 			break;
 
 		case 'better-pattern':
 			__out(_get_better_pattern(  GETPOST('tasksid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
 			break;
-			
+
 		case 'keep-alive':
 			echo 1;
 			break;
@@ -83,7 +83,7 @@
 		$wssc = new TWorkstationSchedule();
 		$wssc->loadByWSDate($PDOdb, $wsid, $date);
 		$wssc->delete($PDOdb);
-		
+
 		return 1;
 
 	}
@@ -270,9 +270,9 @@
 
 	}
 
-	function _get_ws_capactiy($wsid, $t_start, $t_end) {
+	function _get_ws_capactiy($wsid, $t_start, $t_end,$scale_unit) {
 
-		return GanttPatern::get_ws_capacity($wsid, $t_start, $t_end);
+	    return GanttPatern::get_ws_capacity($wsid, $t_start, $t_end,0,$scale_unit);
 	}
 
 	function _put_projects(&$TProject) {

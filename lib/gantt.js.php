@@ -158,7 +158,7 @@ function splitTask(task) {
 		}
 	});
 
-			
+
 }
 
 function _getChild(tasksid, task) {
@@ -185,16 +185,16 @@ function recursiveRefreshTask(taskid) {
 
 		gantt.refreshTask(taskid);
     	var t = gantt.getTask(taskid);
-    	
+
     	if(t.parent!=0) {
-    	
+
     		parent = gantt.getTask(t.parent);
-    		
-    		if(parent.$no_end && +parent.end_date<+t.end_date)parent.end_date = t.end_date; 
-    		if(parent.$no_start && +parent.start_date>+t.start_date)parent.start_date = t.start_date; 
-    	
+
+    		if(parent.$no_end && +parent.end_date<+t.end_date)parent.end_date = t.end_date;
+    		if(parent.$no_start && +parent.start_date>+t.start_date)parent.start_date = t.start_date;
+
     		recursiveRefreshTask(t.parent);
-    	
+
     	}
 	}
 }
@@ -234,7 +234,7 @@ function moveTasks(tasksid) {
 
 			}
 			else {
-				gantt.message(t.ref 
+				gantt.message(t.ref
 					+ ' : <?php echo $langs->trans('TaskCannobBeMovedTo') ?> '
 					+ (item.note ? " -> "+ item.note : '')
 				,'error');
@@ -257,8 +257,8 @@ function taskAutoMove(task) {
 
 	var tasksid = [];
 	tasksid.push(task.objId);
-	
-	<?php 
+
+	<?php
 	if(!empty($conf->global->GANTT_MOVE_CHILD_AS_PARENT)) {
 		echo '_getChild(tasksid, task);';
 
@@ -271,8 +271,16 @@ function taskAutoMove(task) {
 
 
 function regularizeHour(task) {
-	task.start_date.setHours(0,0,0,0);
-	task.end_date = new Date(+task.start_date + (task.duration * 86400000) - 1000);
+
+<?php
+
+    if($scale_unit!='week') {
+        echo 'task.start_date.setHours(0,0,0,0);
+    	task.end_date = new Date(+task.start_date + (task.duration * 86400000) - 1000);';
+    }
+
+?>
+
 }
 
 function dragTaskLimit(task, diff ,mode) {
@@ -335,17 +343,17 @@ function dragTaskLimit(task, diff ,mode) {
             }
             return -1;
         }
-        
-        
+
+
         return 1;
-        
+
 		<?php
 
 	}
 
 		?>
-		
-		
+
+
 	}
 
 function moveParentIfNeccessary(task) {
@@ -392,11 +400,11 @@ function moveParentIfNeccessary(task) {
 
 				if(flagOk) {
 					TAnotherTaskToSave[parent.id] = true;
-	
+
 				    if(dragTaskLimit(parent, +parent.duration * 86400000,modes.move) < 0) {
 				    	return false;
 				    }
-				    
+
 				    gantt.refreshTask(parent.id, true);
 				}
 
@@ -410,7 +418,7 @@ function moveParentIfNeccessary(task) {
 	<?php
 	}
 	?>
-	
+
 	return true;
 }
 
@@ -646,6 +654,7 @@ function pop_event(callback) {
 				,t_start:t_start
 				,t_end:t_end
 				,wsid:wsid
+				,scale_unit:"<?php echo $scale_unit ?>"
 			}
 		,dataType:"json"
 		}).done(function(data) {
@@ -688,14 +697,24 @@ function pop_event(callback) {
 
                                 if(wsid>0) {
 
-				$('div#workstations_'+wsid).unbind().click(function(e) {
+			<?php
+					if($scale_unit=='week') {
+					    null;
+					}
+					else {
 
-				    var $target = $(e.target);
-				   if($target.is('.gantt_task_cell[date]')) { 
-					setWSTime($target.data('wsid'), $target.attr('date'));
-				   }
-				});
+					    ?>
+        				$('div#workstations_'+wsid).unbind().click(function(e) {
 
+        				    var $target = $(e.target);
+        				   if($target.is('.gantt_task_cell[date]')) {
+        					setWSTime($target.data('wsid'), $target.attr('date'));
+        				   }
+        				});
+
+					    <?php
+					}
+                       ?>
 				}
 
 				$ws .html(p)
@@ -707,17 +726,23 @@ function pop_event(callback) {
 
 				if(wsid>0) {
 					$ws.addClass(bg)
-				/*	.click(function() {
-						setWSTime($(this).data('wsid'), $(this).attr('date'))
-					})*/;
 
-					if(row.capacityLeft!='NA' && (nb_hour_capacity!=row.nb_hour_capacity || nb_ressource!=row.nb_ressource)) {
-						$ws.addClass('starred').attr('title','<?php echo $langs->transnoentities('DayCapacityModify'); ?>');
+					<?php
+					if($scale_unit=='week') {
+					    null;
 					}
 					else {
-						$ws.removeClass('starred').removeAttr('title');
-					}
 
+    					?>
+    					if(row.capacityLeft!='NA' && (nb_hour_capacity!=row.nb_hour_capacity || nb_ressource!=row.nb_ressource)) {
+    						$ws.addClass('starred').attr('title','<?php echo $langs->transnoentities('DayCapacityModify'); ?>');
+    					}
+    					else {
+    						$ws.removeClass('starred').removeAttr('title');
+    					}
+					<?php
+					}
+					?>
 			}
 
 			deferred.resolve();
@@ -744,46 +769,46 @@ function updateWSRangeCapacity(sl) {
 
 		$('div.workstation').each(function(ii, row) {
 			$row = $(row);
-		
+
 			$row.css('position','relative');
-		
+
 			var TPosition=[];
 
 			$row.find('div.gantt_task_cell[date]:not([opti])').each(function(i, item) {
 				$item = $(item);
-		
+
 				var position = $item.position();
-				
+
 				$item.attr('opti',1);
-				
-				
+
+
 				TPosition.push([$item, position.left]);
-				
+
 			});
-		
+
 			for(x in TPosition) {
 				var $item =TPosition[x][0];
 				$item.css({
 					'position':'absolute'
 					,'top':0
 					,'left':TPosition[x][1]+'px'
-				}); 
+				});
 			}
-		
+
 			$row.find('div.gantt_task_cell[date]').each(function(i, item) {
 				$item = $(item);
-				
+
 				var d = new Date($item.attr('date'));
-				
+
 				if(+d <= date_end * 1000 && +d >= date_start * 1000) {
 				//	$item.css('visibility','visible');
 					$item.show();
-				} 
+				}
 				else {
 					//$item.css('visibility','hidden');
 					$item.hide();
 				}
-			
+
 			});
 		});
 
@@ -820,7 +845,7 @@ function downloadThisGanttAsCSV() {
 	for(x in tasks.data) {
 		task = tasks.data[x];
 		//console.log(task);
-		
+
 		if(task.objElement == 'project_task') {
 			date_debut =task.start_date > 0 ? task.start_date.toLocaleDateString() : "";
 			date_fin =task.end_date > 0 ? task.end_date.toLocaleDateString() : "";
@@ -829,10 +854,10 @@ function downloadThisGanttAsCSV() {
 			date_fin = task.date_max > 0 ? (new Date(task.date_max*1000)).toLocaleDateString() : "";
 			date_debut="";
 		}
-		
+
 		date_limit_basse = task.time_task_limit_no_before>0 ? (new Date(task.time_task_limit_no_before*1000)).toLocaleDateString() : "";
 		date_limit_haute = task.time_task_limit_no_after>0 ? (new Date(task.time_task_limit_no_after*1000)).toLocaleDateString() : "";
-		
+
 		csvContent += task.id + ","
 					+task.parent+","
 					+task.objElement+","
@@ -844,11 +869,11 @@ function downloadThisGanttAsCSV() {
 					+date_fin+","
 					+date_limit_basse+","
 					+date_limit_haute+","
-					
-					+"\r\n"; 
-	
+
+					+"\r\n";
+
 	}
-	
+
 //	var encodedUri = encodeURI(csvContent);
 //	window.open(encodedUri);
 
@@ -861,7 +886,7 @@ function downloadThisGanttAsCSV() {
 			byteNumbers[i] = csvdata.charCodeAt(i);
 		}
 		var blob = new Blob([byteNumbers], {type: "text/csv"});
-   
+
         // Construct the uri
 		var uri = URL.createObjectURL(blob);
 
