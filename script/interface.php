@@ -61,7 +61,7 @@
 		case 'better-pattern':
 			__out(_get_better_pattern(  GETPOST('tasksid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
 			break;
-			
+
 		case 'keep-alive':
 			echo 1;
 			break;
@@ -83,7 +83,7 @@
 		$wssc = new TWorkstationSchedule();
 		$wssc->loadByWSDate($PDOdb, $wsid, $date);
 		$wssc->delete($PDOdb);
-		
+
 		return 1;
 
 	}
@@ -265,6 +265,20 @@
 
 				break;
 
+			case 'P':
+
+                $o=new Project($db);
+                $o->fetch((int)$data['id']);
+
+                $old_start_date = $o->date_start;
+
+                $o->date_start = $data['start'] / 1000;
+                $o->date_end = ($data['end'] / 1000) - 1;
+                $o->update($user);
+
+                return $o->shiftTaskDate($old_start_date);
+
+			    break;
 
 		}
 
