@@ -80,9 +80,6 @@ function _add_project_included_into_date(&$TTask) {
 	}
 }
 
-
-
-
 function _get_task_for_of($fk_project = 0) {
 
 	global $db,$langs,$range,$conf;
@@ -91,74 +88,15 @@ function _get_task_for_of($fk_project = 0) {
 
 	$PDOdb=new TPDOdb;
 
-	$idNoAffectation = 1;
-
-	if(empty($conf->of->enabled)) {
-	$sql = "SELECT t.rowid
-		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
-			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
-						";
-
-	}
-	else {
-	$sql = "SELECT t.rowid,wof.nb_days_before_beginning
-		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
-			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
-				LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of)
-					LEFT JOIN ".MAIN_DB_PREFIX."asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
-						";
-
-	}
-
-
-	$sql.="	WHERE t.dateo IS NOT NULL ";
-
-	if($fk_project>0) $sql.= " AND fk_projet=".$fk_project;
-	else {
-
-		$sql.=" AND p.fk_statut = 1 ";
-
-		if(!empty($conf->of->enabled)) {
-			$sql.= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
-			AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
-			";
-		}
-		$sql.=" AND t.dateo <= '".$range->sql_date_end."' AND t.datee >=  '".$range->sql_date_start."' ";
-
-		if(!empty($conf->global->GANTT_MANAGE_SHARED_PROJECT)) $sql.=" AND p.entity IN (".getEntity('project',1).")";
-		else $sql.=" AND p.entity=".$conf->entity;
-
-	}
-
-	if(!empty($conf->workstation->enabled)) {
-	if(GETPOST('restrictWS')>0) {
-		$sql.=" AND tex.fk_workstation=".(int)GETPOST('restrictWS');
-	}
-	else if(GETPOST('restrictWS','int') === '0' ) {
-		$sql.=" AND (tex.fk_workstation IS NULL) ";
-	}
-	}
-
-	$sql.=" ORDER BY t.rowid ";
-
-	$res = $db->query($sql);
-	if($res===false) {
-		var_dump($db);exit;
-	}
+    dol_include_once('/gantt/class/gantt.class.php');
+	$TTaskObject = GanttPatern::getTasks($range->sql_date_start, $range->sql_date_end, $fk_project, GETPOST('restrictWS','int'));
 
 	$TTask=array();
 	if($fk_project == 0 && !empty($conf->global->GANTT_INCLUDE_PROJECT_WIHOUT_TASK)) {
 		_add_project_included_into_date($TTask);
 	}
 
-	while($obj = $db->fetch_object($res)) {
-
-		$task = new Task($db);
-		$task->fetch($obj->rowid);
-
-		if($task->id <=0) continue;
-
-		if(empty($task->array_options)) $task->fetch_optionals($task->id);
+	foreach($TTaskObject as &$task) {
 
 		$task->ganttid = 'T'.$task->id;
 		$task->label = strip_tags(strtr($task->label, array("\n"=>' ',"\r"=>'')));
@@ -367,7 +305,8 @@ function _get_task_for_of($fk_project = 0) {
 
 		_load_child_tasks( $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'],$task);
 	}
-	_load_child_tasks( $TTask);
+
+	_load_child_tasks( $TTask );
 
 	return $TTask;
 

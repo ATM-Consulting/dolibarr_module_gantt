@@ -2,6 +2,78 @@
 
 class GanttPatern {
 
+    static function getTasks($date_start, $date_end, $fk_project = 0, $restrictWS=0) {
+        global $conf,$db;
+
+        if(empty($conf->of->enabled)) {
+            $sql = "SELECT t.rowid
+		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
+			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
+						";
+
+        }
+        else {
+            $sql = "SELECT t.rowid,wof.nb_days_before_beginning
+		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
+			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
+				LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of)
+					LEFT JOIN ".MAIN_DB_PREFIX."asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
+						";
+
+        }
+
+        $sql.="	WHERE t.dateo IS NOT NULL ";
+
+        if($fk_project>0) $sql.= " AND fk_projet=".$fk_project;
+        else {
+
+            $sql.=" AND p.fk_statut = 1 ";
+
+            if(!empty($conf->of->enabled)) {
+                $sql.= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
+			AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
+			";
+            }
+            $sql.=" AND t.dateo <= '".$date_end."' AND t.datee >=  '".$date_start."' ";
+
+            if(!empty($conf->global->GANTT_MANAGE_SHARED_PROJECT)) $sql.=" AND p.entity IN (".getEntity('project',1).")";
+            else $sql.=" AND p.entity=".$conf->entity;
+
+        }
+
+        if(!empty($conf->workstation->enabled)) {
+            if($restrictWS>0) {
+                $sql.=" AND tex.fk_workstation=".(int)$restrictWS;
+            }
+            else if($restrictWS === '0' ) {
+                $sql.=" AND (tex.fk_workstation IS NULL) ";
+            }
+        }
+
+        $sql.=" ORDER BY t.rowid ";
+
+        $res = $db->query($sql);
+        if($res===false) {
+            var_dump($db);exit;
+        }
+
+        dol_include_once('/projet/class/task.class.php');
+        $Tab=array();
+        while($obj = $db->fetch_object($res)) {
+
+            $task = new Task($db);
+            $task->fetch($obj->rowid);
+
+            if($task->id <=0) continue;
+
+            if(empty($task->array_options)) $task->fetch_optionals($task->id);
+
+            $Tab[] = $task;
+        }
+
+        return $Tab;
+    }
+
 	static function get_ws_capacity($wsid, $t_start, $t_end, $fk_task = 0) {
 
 		global $conf;
@@ -42,7 +114,7 @@ class GanttPatern {
 			}
 			$TInfo[] = 'start bound delai '.date('Y-m-d', $t_start_bound);
 			}
-			
+
 			if($t_start_bound>$t_start)$t_start = $t_start_bound;
 		}
 		}
@@ -58,17 +130,17 @@ class GanttPatern {
 			if($parent->progress < 100) {
 
 				$parent_duration = floor(($parent->date_end - $parent->date_start) / 86400 ) + 1;
-	
+
 				if($parent_duration>$duration) $t_start_bound = $parent->date_end - ($duration * 86400); // alors le début est soit la durée de la tâche en partant de la fin de la tâche parente
 				else $t_start_bound= $parent->date_start; // où le début de la tâche parente
-	
+
 				$t_start_bound=strtotime('midnight',$t_start_bound);
 				if($t_start_bound>$t_start) {
 					$t_start = $t_start_bound;
 					if(GETPOST('_givemesolution')=='yes') {
 						echo 'start bound fk_task_parent ('.$parent->id.' / '.$parent->ref.') '.date('Y-m-d', $parent->date_start).' - '.date('Y-m-d', $parent->date_end).' --> '.date('Y-m-d', $t_start).'<br />';
 					}
-					
+
 					$TInfo[] = 'start bound fk_task_parent ('.$parent->id.' / '.$parent->ref.') '.date('Y-m-d', $parent->date_start).' - '.date('Y-m-d', $parent->date_end).' --> '.date('Y-m-d', $t_start);
 				}
 			}
@@ -201,7 +273,7 @@ class GanttPatern {
 
 	static function gb_search(&$TDates, &$task, $t_start, $t_end, $duration = 1) {
 		global $conf,$db, $langs;
-		
+
 		$TInfo=array();
 		$row = array('start'=>-1, 'duration'=>-1);
 
@@ -274,12 +346,12 @@ echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end)
 					$fk_workstation = (int)$task->array_options['options_fk_workstation'];
 					if(empty($TWS[$fk_workstation])) $TWS[$fk_workstation] = self::get_ws_capacity($fk_workstation, $t_start, $t_end, $TTaskId);
 					$Tab[$task->id] = self::get_better_task($TWS, $task, $t_start, $t_end);
-	
+
 					if( $Tab[$task->id]['start']> 0) {
 						$task->date_start = $Tab[$task->id]['start'];
 						$task->date_end = $Tab[$task->id]['start'] + ($Tab[$task->id]['duration']*86400 ) - 1;
 					}
-	
+
 					$TCacheTask[$task->id] = $task;
 				}
 			}
@@ -294,3 +366,5 @@ echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end)
 
 
 }
+
+

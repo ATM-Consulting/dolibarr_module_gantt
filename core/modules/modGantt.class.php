@@ -89,7 +89,7 @@ class modGantt extends DolibarrModules
 		//                        );
 		$this->module_parts = array(
 				'triggers'=>1
-				,'hooks'=>array('projecttaskcard','projectcard')
+				,'hooks'=>array('projecttaskcard','projectcard','agenda')
 		);
 
 		// Data directories to create when module is enabled.
