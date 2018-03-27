@@ -155,18 +155,18 @@ function _get_task_for_of($fk_project = 0) {
 
 		$task = new Task($db);
 		$task->fetch($obj->rowid);
-		
+
 		if($task->id <=0) continue;
-		
+
 		if(empty($task->array_options)) $task->fetch_optionals($task->id);
 
 		$task->ganttid = 'T'.$task->id;
 		$task->label = strip_tags(strtr($task->label, array("\n"=>' ',"\r"=>'')));
 		$task->title = $task->label;
 		$task->ref= $task->ref;
-		
+
 		if(empty($task->planned_workload)) $task->planned_workload = 1;
-		
+
 		if(!empty($conf->global->GANTT_HIDE_TASK_REF)) {
 			$task->text = $task->label;
 		}
@@ -186,20 +186,20 @@ function _get_task_for_of($fk_project = 0) {
                         }
                         else{
 
-			
+
 
 			$of=new TAssetOF();
 			$of->load($PDOdb, $task->array_options['options_fk_of']);
 			$of->ref = $of->numero;
 			$line = $of->getLineProductToMake();
-			
+
 			if(!empty($conf->global->GANTT_HIDE_TASK_REF)) {
 				$of->title = $of->numero.' '.$line->product->label.' x '.$line->qty_needed;
 			}
 			else {
 				$of->title = $of->numero.' '.$of->getLibStatus(true).' '.$line->product->label .' x '.$line->qty_needed;
 			}
-			
+
 			$TCacheOF[$task->array_options['options_fk_of']] = $of;
 			}
 		}
@@ -268,7 +268,7 @@ function _get_task_for_of($fk_project = 0) {
 
 			if($project->id>0) {
 				$project->title = (empty($conf->global->GANTT_HIDE_TASK_REF) ? $project->ref.' ' : '').$project->title;
-				
+
 				if($project->socid>0) {
 					$project->fetch_thirdparty();
 					$project->title .= ' - '.$project->thirdparty->name;
@@ -362,40 +362,40 @@ function _get_task_for_of($fk_project = 0) {
 		if($obj->nb_days_before_beginning>0) {
 			_add_delay_included_into_of_ws($obj->nb_days_before_beginning, $task, $of, $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs']);
 		}
-		
+
 		$TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'][$task->id] = $task;
 
 		_load_child_tasks( $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'],$task);
 	}
 	_load_child_tasks( $TTask);
-	
+
 	return $TTask;
 
 }
 
 function _add_delay_included_into_of_ws($nb_days_before_beginning, &$task,&$assetOf, &$TData) {
-	
+
 	global $db, $langs, $conf, $TLink;
-	
+
 	if($nb_days_before_beginning>0 && empty($assetOf->cancel_adding_delay) && empty($conf->global->GANTT_DISABLE_DELAY_PARENT)) {
 		$object=new stdClass();
 		$object->element = 'project_task_delay';
 		$object->title = $object->text = $langs->trans('DelayForTask', $nb_days_before_beginning);
 		$object->date= strtotime('+1 day midnight');
 		$object->duration = $nb_days_before_beginning;
-		
+
 		$object->ganttid = 'JD'.$task->id;
 		$object->bound='after';
 		$object->visible = 1;
-		
+
 		$TData[$object->ganttid] = $object;
-		
+
 		$linkId = count($TLink)+1;
 		$TLink[$linkId] = array('id'=>$linkId, 'source'=>$object->ganttid, 'target'=>$task->ganttid, 'type'=>'0');
 	}
-	
+
 	return false;
-	
+
 }
 
 function _adding_task_order(&$order,&$TData) {
@@ -422,6 +422,7 @@ function _adding_task_order(&$order,&$TData) {
 
 function _adding_task_project_end(&$project,&$TData) {
 	global $db, $langs, $conf;
+
 	if(!empty($conf->global->GANTT_DISABLE_PROJECT_MILESTONE)) {
 		return false;
 	}
@@ -461,24 +462,24 @@ function _adding_task_project_end(&$project,&$TData) {
  * _adding_task_supplier_order sous fonction de recherche de lien produit ligne commandé et of
  */
 function _atso_find_task_for_line(&$TData, &$cmd,&$assetOf) {
-	
+
 	global $TLink, $langs,$workstationList;
-	
+
 	$find = false;
 	foreach($cmd->lines as &$line) {
-		
+
 		foreach($assetOf->TAssetOFLine as &$lineOf) {
-			
+
 			if($lineOf->type == 'NEEDED' && $lineOf->fk_product>0 && $lineOf->fk_product == $line->fk_product && !empty($lineOf->TWorkstation)) {
-				
+
 				foreach($lineOf->TWorkstation as &$ws) {
 					$gantt_id = 'JSO'.$cmd->id.'-'.$lineOf->id;
 					if(isset($TData[$gantt_id]))continue;
-					
+
 					foreach($assetOf->TAssetWorkstationOF as &$wsof) {
-						
+
 						if($ws->id == $wsof->fk_asset_workstation && $wsof->fk_project_task>0) {
-							
+
 							$object=new stdClass();
 							$object->element = 'project_task_delay';
 							$object->subelement = 'supplier_order_delivery';
@@ -486,39 +487,39 @@ function _atso_find_task_for_line(&$TData, &$cmd,&$assetOf) {
 							$object->title = $object->text = $langs->trans('AwaitingDelivery', $cmd->ref, dol_print_date($cmd->date_livraison));
 							$object->date= strtotime('midnight',$cmd->date_livraison);
 							$object->duration = 1;
-							
+
 							$object->ganttid = $gantt_id;
 							$object->bound='after';
 							$object->visible = 1;
-							
+
 							$object->workstation_type = 'STT';
-							
+
 							$TData[$object->ganttid]['object']= $object;
-							
+
 							$linkId = count($TLink)+1;
 							$TLink[$linkId] = array('id'=>$linkId, 'source'=>$object->ganttid, 'target'=>'T'.$wsof->fk_project_task, 'type'=>'0');
-							
+
 							$find = true;
-							
+
 							break;
 						}
-						
+
 					}
-					
+
 				}
-				
+
 			}
-			
+
 		}
-		
+
 	}
-	
+
 	return $find;
 }
 
 function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
 	global $db, $langs, $conf, $TAlreadyDoneOfATSO;
-	
+
 	if(!empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE) || $assetOf->id<=0) {
 		return false;
 	}
@@ -526,28 +527,28 @@ function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
 	if(empty($TAlreadyDoneOfATSO))$TAlreadyDoneOfATSO=array();
 	if(!empty($TAlreadyDoneOfATSO[$assetOf->id])) return;
 	else $TAlreadyDoneOfATSO[$assetOf->id] = true;
-	
+
 	dol_include_once('/fourn/class/fournisseur.commande.class.php');
 	$TIdCommandeFourn = $assetOf->getElementElement($PDOdb);
 
 	$today=strtotime('midnight');
-	
+
 	if(count($TIdCommandeFourn)){
 		foreach($TIdCommandeFourn as $idcommandeFourn){
 			$cmd = new CommandeFournisseur($db);
 			$cmd->fetch($idcommandeFourn);
 
 			if($cmd->statut>0 && $cmd->statut<5 && $cmd->date_livraison>$today) {
-				
+
 				$find_detail = false;
 				if(!empty($conf->global->ASSET_DEFINED_WORKSTATION_BY_NEEDED)) {
-					
+
 					$find_detail = _atso_find_task_for_line($TData, $cmd,$assetOf);
 				}
-				
-				
+
+
 				if(!$find_detail){
-					
+
 					$object=new stdClass();
 					$object->element = 'milestone';
 					$object->title = $object->text = $langs->trans('AwaitingDelivery', $cmd->ref, dol_print_date($cmd->date_livraison));
@@ -555,14 +556,14 @@ function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
 					$object->ganttid = 'JSO'.$cmd->id;
 					$object->bound='before';
 					$object->visible = 1;
-					
+
 					$TData[$object->ganttid]['object'] = $object;
-					
-					
+
+
 				}
 				else {
 					$assetOf->cancel_adding_delay = true;
-					
+
 				}
 
 			}
@@ -570,7 +571,7 @@ function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
 
 		}
 	}
-	
+
 }
 
 /*
@@ -589,7 +590,7 @@ function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $ma
 	if($projet_previ->statut!=1) {
 		$projet_previ->setValid($user);
 	}
-	
+
 	$sql = "SELECT t.rowid
 				FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
 						LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
@@ -650,7 +651,7 @@ function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $ma
 
 }
 
-function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $time_task_limit_no_before=0,$time_task_limit_no_after=0, $taskColor = '') {
+function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $time_task_limit_no_before=0,$time_task_limit_no_after=0, $taskColor = '',$move_projects_mode = false) {
 
 	if($object->element == 'commande') {
 		return '{"id":"'.$object->ganttid.'",ref:"'.$object->ref.'", date_max:'.(int)strtotime('+1day midnight',$object->date_livraison).',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
@@ -677,11 +678,62 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 			$taskColor= ColorTools::adjustBrightness($object->array_options['options_color'], -50); //TODO récupérer la taskColor du projet...
 			$projectColor= ',color:"'.$object->array_options['options_color'].'"';
 		}
-		
-		if(empty($object->date_start)) $object->date_start = time();
-		if(empty($object->date_end)) $object->date_end =strtotime('+1year', $object->date_start);
 
-		return '{"id":"'.$object->ganttid.'",ref:"'.$object->ref.'", date_max:'.(int)strtotime('+1day midnight',$object->date_end).',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project, open: '.$close_init_status.$projectColor.'}';
+		if(empty($object->date_start)) $object->date_start = time();
+		if(empty($object->date_end)) {
+		    $object->date_end =strtotime('+1week', $object->date_start);
+		    $object->date_max = strtotime('+1year', $object->date_start);
+		}
+		else {
+		    $object->date_max = $object->date_end;
+		}
+
+		$res = '{"id":"'.$object->ganttid.'",ref:"'.$object->ref.'"
+                , objElement:"'.$object->element.'","objId":"'.$object->id.'"
+                , "text":"'.$object->title.'"';
+
+
+		if($move_projects_mode) {
+
+            $duration = ceil( ($object->date_end - $object->date_start) / 86400 );
+            if($duration<1)$duration = 1;
+
+            $res.=', "start_date":"'.date('d-m-Y',$object->date_start).'","duration":"'.$duration.'"';
+            $res.= ', "type":gantt.config.types.task';
+		}
+		else {
+
+		    $res.= ', "type":gantt.config.types.project, date_max:'.(int)strtotime('+1day midnight',$object->date_max);
+            $res.=', open: '.$close_init_status.$projectColor;
+		}
+
+        $res.='}';
+/*
+        if($move_projects_mode) {
+            global $langs;
+
+            $obj=new stdClass();
+            $obj->element = 'milestone';
+            $obj->title = $obj->text = $langs->trans('StartOfProject', $object->ref, dol_print_date($object->date_start));
+            $obj->date=$object->date_start;
+            $obj->ganttid = 'JPS'.$object->id;
+            $obj->bound='before';
+            $obj->visible = 1;
+            $res.="\n,"._get_json_data($obj, $close_init_status,$object->ganttid);
+
+            $obj=new stdClass();
+            $obj->element = 'milestone';
+            $obj->title = $obj->text = $langs->trans('EndOfProject', $object->ref, dol_print_date($object->date_end));
+            $obj->date=$object->date_end + 84399;
+            $obj->ganttid = 'JPE'.$object->id;
+            $obj->bound='after';
+            $obj->visible = 1;
+
+            $res.="\n,"._get_json_data($obj, $close_init_status,$object->ganttid);
+
+        }
+*/
+        return $res;
 
 	}
 	else if($object->element == 'of') {
@@ -713,12 +765,12 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 		{
 			$taskColor = $object->array_options['options_color'];
 		}
-		
+
 		if(!empty($taskColor))$taskColorCode= ',"color":"'.$taskColor.'"';
-		
+
 		$ws_type = (empty($workstationList[$fk_workstation])?'':$workstationList[$fk_workstation]->type);
 		$visible = isset($object->visible) && $object->visible == 0 ? 0 : 1;
-		
+
 		return '{"id":"'.$object->ganttid.'"'.$taskColorCode.',"ref":"'.$object->ref.'","needed_ressource":'.(int)$needed_ressource
 				.',"time_task_limit_no_before":'.(int)$time_task_limit_no_before.',"time_task_limit_no_after":'.(int)$time_task_limit_no_after
 				.',"planned_workload":'.(int)$object->planned_workload.' ,"objElement":"'.$object->element.'","objId":"'.$object->id.'"'
@@ -741,13 +793,13 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 
 	}
 	else if($object->element == 'project_task_delay') {
-		
+
 		$subElement = empty($object->subelement) ? '' :$object->subelement;
 		$date = date('d-m-Y',$object->date);
 		return '{"id":"'.$object->ganttid.'","subElement":"'.$subElement.'","objElement":"'.$object->element.'", "text":"'.$object->text.'", "start_date":"'.$date.'", "duration":'.$object->duration.' '.(!is_null($fk_parent_object) ? ' ,"parent":"'.$fk_parent_object.'" ' : '' ).', "type":gantt.config.types.delay, "visible":'.( empty($object->visible) ? 0 : 1 ).'}';
-		
+
 	}
-	
+
 	var_dump('nonObjectManaged', $object);exit;
 
 	return '{ nonObjectManaged:"'.$object->element.'" }';
@@ -906,55 +958,55 @@ function _check_task_wihout_workstation(&$task) {
 
 }
 function checkDataGantt(&$TData, &$TLink ) {
-	
+
 	foreach($TLink as $k=>&$link) {
 
 		if(!isset($TData[$link['source']]) || !isset($TData[$link['target']])) {
 			unset($TLink[$k]);
 			continue;
 		}
-		
+
 		$json = strtr($TData[$link['source']],array('gantt.config.types.delay'=>1,'gantt.config.types.task'=>2));
-		
+
 		$source =(Object)json_decode($json, true);
 		if(is_null($source)) {
 			var_dump($json);
 			exit('Error bad json');
 		}
-		
+
 		if(!empty($source->workstation_type) && $source->workstation_type == 'STT') {
-			
+
 			$find = false;
 			foreach($TLink as $k2=>&$link2) {
-				
+
 				if($link['target'] == $link2['target'] && $link['source']!=$link2['source']) {
-					
+
 					$json2 = strtr($TData[$link2['source']],array('gantt.config.types.delay'=>1,'gantt.config.types.task'=>2));
 					$source2 =(Object)json_decode($json2, true);
-					
+
 					if(is_null($source2)) {
 						var_dump($json2);
 						exit('Error bad json');
 					}
-					
+
 					if($source2->subElement == 'supplier_order_delivery') {
 						$find = true;
 						break;
 					}
-					
+
 				}
-				
+
 			}
-			
+
 			if($find) {
 				// la tâche est déjà liée à une réception commande fournisseur la tâche de sous-traitance n'a donc aucun intérêt
 				unset($TLink[$k], $TData[$link['source']]);
-				
+
 			}
-			
-			
-			
+
+
+
 		}
-		
+
 	}
 }
