@@ -89,7 +89,7 @@ class modGantt extends DolibarrModules
 		//                        );
 		$this->module_parts = array(
 				'triggers'=>1
-				,'hooks'=>array('projecttaskcard','projectcard')
+				,'hooks'=>array('projecttaskcard','projectcard','agenda')
 		);
 
 		// Data directories to create when module is enabled.
@@ -204,6 +204,18 @@ class modGantt extends DolibarrModules
 				'user'=>2);
 		$r++;
 
+		$this->menu[$r]=array(	'fk_menu'=>'fk_mainmenu=project',			// Put 0 if this is a top menu
+		    'type'=>'left',			// This is a Top menu entry
+		    'titre'=>'Gantt',
+		    'mainmenu'=>'project',
+		    'leftmenu'=>'gantt',		// Use 1 if you also want to add left menu entries using this descriptor. Use 0 if left menu entries are defined in a file pre.inc.php (old school).
+		    'url'=>'/gantt/gantt-prod.php',
+		    'position'=>712,
+		    'enabled'=>'$conf->gantt->enabled',			// Define condition to show or hide menu entry. Use '$conf->mymodule->enabled' if entry must be visible if module is enabled.
+		    //'perms'=>'',			// Use 'perms'=>'$user->rights->mymodule->level1->level2' if you want your menu with a permission rules
+		    'target'=>'',
+		    'user'=>2);
+		$r++;
 		// Exports
 		$r=1;
 
@@ -256,9 +268,9 @@ class modGantt extends DolibarrModules
 		$e->addExtraField('fk_gantt_parent_task', 'Tâche parente Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);
 
 		$e->addExtraField('needed_ressource', 'NeededRessource', 'int', 0, '', 'projet_task');
-		
+
 		$e->addExtraField('date_start_prod', 'DateStartProd', 'date', 1, 0, 'projet');
-		
+
 		dol_include_once('/projet/class/project.class.php');
 		global $user, $langs;
 		$p=new Project($this->db);
@@ -282,15 +294,15 @@ class modGantt extends DolibarrModules
 			$req = 'INSERT INTO '.MAIN_DB_PREFIX.'c_actioncomm (id, code, type, libelle, module, active, todo, position)';
 			$req.= " VALUES (".$nextid.", 'AC_WS_SETTER', 'gantt', 'Restriction de poste de charge', 'gantt', 1, NULL, 200)";
 			$this->db->query($req);
-			
+
 		}
-		
+
 
 		$extrafields=new ExtraFields($this->db);
 		$res = $extrafields->addExtraField('fk_workstation', 'Poste de charge immobilisé', 'sellist', 0, '', 'actioncomm',0,0,'',serialize(array('options'=>array('workstation:name:rowid'=>null))));
 		$extrafields=new ExtraFields($this->db);
 		$res = $extrafields->addExtraField('needed_ressource', 'nb ressources immobilisées', 'int', 0, '', 'actioncomm');
-		
+
 		$result=$this->_load_tables('/gantt/sql/');
 
 		return $this->_init($sql, $options);

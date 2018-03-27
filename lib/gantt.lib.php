@@ -80,9 +80,6 @@ function _add_project_included_into_date(&$TTask) {
 	}
 }
 
-
-
-
 function _get_task_for_of($fk_project = 0) {
 
 	global $db,$langs,$range,$conf;
@@ -91,74 +88,15 @@ function _get_task_for_of($fk_project = 0) {
 
 	$PDOdb=new TPDOdb;
 
-	$idNoAffectation = 1;
-
-	if(empty($conf->of->enabled)) {
-	$sql = "SELECT t.rowid
-		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
-			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
-						";
-
-	}
-	else {
-	$sql = "SELECT t.rowid,wof.nb_days_before_beginning
-		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
-			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
-				LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of)
-					LEFT JOIN ".MAIN_DB_PREFIX."asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
-						";
-
-	}
-
-
-	$sql.="	WHERE t.dateo IS NOT NULL ";
-
-	if($fk_project>0) $sql.= " AND fk_projet=".$fk_project;
-	else {
-
-		$sql.=" AND p.fk_statut = 1 ";
-
-		if(!empty($conf->of->enabled)) {
-			$sql.= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
-			AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
-			";
-		}
-		$sql.=" AND t.dateo <= '".$range->sql_date_end."' AND t.datee >=  '".$range->sql_date_start."' ";
-
-		if(!empty($conf->global->GANTT_MANAGE_SHARED_PROJECT)) $sql.=" AND p.entity IN (".getEntity('project',1).")";
-		else $sql.=" AND p.entity=".$conf->entity;
-
-	}
-
-	if(!empty($conf->workstation->enabled)) {
-	if(GETPOST('restrictWS')>0) {
-		$sql.=" AND tex.fk_workstation=".(int)GETPOST('restrictWS');
-	}
-	else if(GETPOST('restrictWS','int') === '0' ) {
-		$sql.=" AND (tex.fk_workstation IS NULL) ";
-	}
-	}
-
-	$sql.=" ORDER BY t.rowid ";
-
-	$res = $db->query($sql);
-	if($res===false) {
-		var_dump($db);exit;
-	}
+    dol_include_once('/gantt/class/gantt.class.php');
+	$TTaskObject = GanttPatern::getTasks($range->sql_date_start, $range->sql_date_end, $fk_project, GETPOST('restrictWS','int'));
 
 	$TTask=array();
 	if($fk_project == 0 && !empty($conf->global->GANTT_INCLUDE_PROJECT_WIHOUT_TASK)) {
 		_add_project_included_into_date($TTask);
 	}
 
-	while($obj = $db->fetch_object($res)) {
-
-		$task = new Task($db);
-		$task->fetch($obj->rowid);
-
-		if($task->id <=0) continue;
-
-		if(empty($task->array_options)) $task->fetch_optionals($task->id);
+	foreach($TTaskObject as &$task) {
 
 		$task->ganttid = 'T'.$task->id;
 		$task->label = strip_tags(strtr($task->label, array("\n"=>' ',"\r"=>'')));
@@ -367,7 +305,8 @@ function _get_task_for_of($fk_project = 0) {
 
 		_load_child_tasks( $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'],$task);
 	}
-	_load_child_tasks( $TTask);
+
+	_load_child_tasks( $TTask );
 
 	return $TTask;
 
@@ -422,6 +361,7 @@ function _adding_task_order(&$order,&$TData) {
 
 function _adding_task_project_end(&$project,&$TData) {
 	global $db, $langs, $conf;
+
 	if(!empty($conf->global->GANTT_DISABLE_PROJECT_MILESTONE)) {
 		return false;
 	}
@@ -650,7 +590,7 @@ function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $ma
 
 }
 
-function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $time_task_limit_no_before=0,$time_task_limit_no_after=0, $taskColor = '') {
+function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $time_task_limit_no_before=0,$time_task_limit_no_after=0, $taskColor = '',$move_projects_mode = false) {
 
 	if($object->element == 'commande') {
 		return '{"id":"'.$object->ganttid.'",ref:"'.$object->ref.'", date_max:'.(int)strtotime('+1day midnight',$object->date_livraison).',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
@@ -679,9 +619,60 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 		}
 
 		if(empty($object->date_start)) $object->date_start = time();
-		if(empty($object->date_end)) $object->date_end =strtotime('+1year', $object->date_start);
+		if(empty($object->date_end)) {
+		    $object->date_end =strtotime('+1week', $object->date_start);
+		    $object->date_max = strtotime('+1year', $object->date_start);
+		}
+		else {
+		    $object->date_max = $object->date_end;
+		}
 
-		return '{"id":"'.$object->ganttid.'",ref:"'.$object->ref.'", date_max:'.(int)strtotime('+1day midnight',$object->date_end).',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project, open: '.$close_init_status.$projectColor.'}';
+		$res = '{"id":"'.$object->ganttid.'",ref:"'.$object->ref.'"
+                , objElement:"'.$object->element.'","objId":"'.$object->id.'"
+                , "text":"'.$object->title.'"';
+
+
+		if($move_projects_mode) {
+
+            $duration = ceil( ($object->date_end - $object->date_start) / 86400 );
+            if($duration<1)$duration = 1;
+
+            $res.=', "start_date":"'.date('d-m-Y',$object->date_start).'","duration":"'.$duration.'"';
+            $res.= ', "type":gantt.config.types.task';
+		}
+		else {
+
+		    $res.= ', "type":gantt.config.types.project, date_max:'.(int)strtotime('+1day midnight',$object->date_max);
+            $res.=', open: '.$close_init_status.$projectColor;
+		}
+
+        $res.='}';
+/*
+        if($move_projects_mode) {
+            global $langs;
+
+            $obj=new stdClass();
+            $obj->element = 'milestone';
+            $obj->title = $obj->text = $langs->trans('StartOfProject', $object->ref, dol_print_date($object->date_start));
+            $obj->date=$object->date_start;
+            $obj->ganttid = 'JPS'.$object->id;
+            $obj->bound='before';
+            $obj->visible = 1;
+            $res.="\n,"._get_json_data($obj, $close_init_status,$object->ganttid);
+
+            $obj=new stdClass();
+            $obj->element = 'milestone';
+            $obj->title = $obj->text = $langs->trans('EndOfProject', $object->ref, dol_print_date($object->date_end));
+            $obj->date=$object->date_end + 84399;
+            $obj->ganttid = 'JPE'.$object->id;
+            $obj->bound='after';
+            $obj->visible = 1;
+
+            $res.="\n,"._get_json_data($obj, $close_init_status,$object->ganttid);
+
+        }
+*/
+        return $res;
 
 	}
 	else if($object->element == 'of') {

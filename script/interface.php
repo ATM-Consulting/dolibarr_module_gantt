@@ -265,6 +265,20 @@
 
 				break;
 
+			case 'P':
+
+                $o=new Project($db);
+                $o->fetch((int)$data['id']);
+
+                $old_start_date = $o->date_start;
+
+                $o->date_start = $data['start'] / 1000;
+                $o->date_end = ($data['end'] / 1000) - 1;
+                $o->update($user);
+
+                return $o->shiftTaskDate($old_start_date);
+
+			    break;
 
 		}
 

@@ -2,7 +2,79 @@
 
 class GanttPatern {
 
-    static function get_ws_capacity($wsid, $t_start, $t_end, $fk_task = 0,$scale_unit='day') {
+    static function getTasks($date_start, $date_end, $fk_project = 0, $restrictWS=0) {
+        global $conf,$db;
+
+        if(empty($conf->of->enabled)) {
+            $sql = "SELECT t.rowid
+		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
+			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
+						";
+
+        }
+        else {
+            $sql = "SELECT t.rowid,wof.nb_days_before_beginning
+		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
+			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
+				LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of)
+					LEFT JOIN ".MAIN_DB_PREFIX."asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
+						";
+
+        }
+
+        $sql.="	WHERE t.dateo IS NOT NULL ";
+
+        if($fk_project>0) $sql.= " AND fk_projet=".$fk_project;
+        else {
+
+            $sql.=" AND p.fk_statut = 1 ";
+
+            if(!empty($conf->of->enabled)) {
+                $sql.= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
+			AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
+			";
+            }
+            $sql.=" AND t.dateo <= '".$date_end."' AND t.datee >=  '".$date_start."' ";
+
+            if(!empty($conf->global->GANTT_MANAGE_SHARED_PROJECT)) $sql.=" AND p.entity IN (".getEntity('project',1).")";
+            else $sql.=" AND p.entity=".$conf->entity;
+
+        }
+
+        if(!empty($conf->workstation->enabled)) {
+            if($restrictWS>0) {
+                $sql.=" AND tex.fk_workstation=".(int)$restrictWS;
+            }
+            else if($restrictWS === '0' ) {
+                $sql.=" AND (tex.fk_workstation IS NULL) ";
+            }
+        }
+
+        $sql.=" ORDER BY t.dateo,t.rowid ";
+
+        $res = $db->query($sql);
+        if($res===false) {
+            var_dump($db);exit;
+        }
+
+        dol_include_once('/projet/class/task.class.php');
+        $Tab=array();
+        while($obj = $db->fetch_object($res)) {
+
+            $task = new Task($db);
+            $task->fetch($obj->rowid);
+
+            if($task->id <=0) continue;
+
+            if(empty($task->array_options)) $task->fetch_optionals($task->id);
+
+            $Tab[] = $task;
+        }
+
+        return $Tab;
+    }
+
+	static function get_ws_capacity($wsid, $t_start, $t_end, $fk_task = 0,$scale_unit='day') {
 
 		global $conf;
 
@@ -326,3 +398,5 @@ echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end)
 
 
 }
+
+

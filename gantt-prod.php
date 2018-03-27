@@ -120,6 +120,8 @@ else {
 	else if(GETPOST('close')) $open = false;
 	else if(GETPOST('open_status')) $open = true;
 
+	$move_projects_mode = GETPOST('moveProjects')!='' ? true : false;
+
 	$close_init_status = !empty($fk_project) || $open ? 'true': 'false';
 
 	$t_start  = $t_end = 0;
@@ -133,9 +135,11 @@ else {
     				$fk_parent_project = null;
 
     				if(empty($conf->global->GANTT_DO_NOT_SHOW_PROJECTS)) {
-    					$TData[$project->ganttid] = _get_json_data($project, $close_init_status);
+    				    $TData[$project->ganttid] = _get_json_data($project, $close_init_status,null,0,0,'',$move_projects_mode);
     					$fk_parent_project= $project->ganttid;
     				}
+
+    				if($move_projects_mode) continue; // view just project
 
     				_get_events( $TData,$TLink,$project->id);
 
@@ -248,7 +252,7 @@ else {
 			    }
 			}
 
-			_get_events($TData,$TLink);
+			if(!$move_projects_mode) _get_events($TData,$TLink);
 
 			checkDataGantt($TData, $TLink);
 
@@ -282,13 +286,14 @@ else {
 			echo $form->select_date($range->date_start, 'range_start');
 			echo $form->select_date($range->date_end,'range_end');
 
-			if($fk_project == 0){
+			if($fk_project == 0 && !$move_projects_mode){
 				if(!$open) echo $formCore->btsubmit($langs->trans('OpenAllTask'), 'open');
 				else  echo $formCore->btsubmit($langs->trans('ClosedTask'), 'close');
 
+
 			}
 
-			if(!empty($conf->workstation->enabled)) {
+			if(!empty($conf->workstation->enabled) && !$move_projects_mode) {
 			   $PDOdb=new TPDOdb;
 			   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , (GETPOST('restrictWS') == '' ? -1 : GETPOST('restrictWS')));
 
@@ -303,6 +308,11 @@ else {
 
 			echo $formCore->btsubmit($langs->trans('ok'), 'bt_select_date');
 
+
+			if($fk_project == 0 && !$move_projects_mode){
+			    echo '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'. $formCore->btsubmit($langs->trans('MoveProjects'), 'moveProjects');
+			}
+
 			$formCore->end();
 
 			if($range->autotime && $range->date_end - $range->date_start > (86400 * 60)) {
@@ -313,20 +323,28 @@ else {
 				exit;
 			}
 
-			echo '</td><td align="right" width="20%"><a href="javascript:downloadThisGanttAsCSV()" >'.img_picto($langs->trans('DownloadAsCSV'), 'csv@gantt').'<a>';
+			if(!$move_projects_mode) {
+
+    			echo '</td><td align="right" width="20%"><a href="javascript:downloadThisGanttAsCSV()" >'.img_picto($langs->trans('DownloadAsCSV'), 'csv@gantt').'<a>';
 
 
-			?>
-			</td><td align="right">
-			<span id="ajax-waiter" class="waiter"><?php echo $langs->trans('AjaxRequestRunning') ?></span>
-			<a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
-			<?php
-			if (!empty($TTaskOlder)) {
-			     ?><a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTaskOlder) ?>');" class="button"><?php echo $langs->trans('MoveAllOlderTasks') ?></a><?php
+    			?>
+    			</td><td align="right">
+    			<span id="ajax-waiter" class="waiter"><?php echo $langs->trans('AjaxRequestRunning') ?></span>
+
+    			<a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
+    			<?php
+    			if (!empty($TTaskOlder)) {
+    			     ?><a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTaskOlder) ?>');" class="button"><?php echo $langs->trans('MoveAllOlderTasks') ?></a><?php
+    			}
+
+    			?>
+    			</td><?php
+
 			}
 
 			?>
-			</td></tr></table>
+			</tr></table>
 
 			<div id="gantt_here" style='width:100%; height:100%;'></div>
 
@@ -762,13 +780,22 @@ else {
 
 	gantt.attachEvent("onBeforeTaskDrag", function(sid, parent, tindex){
 		var task = gantt.getTask(sid);
-		if(task.id[0]!='T' && task.id[0]!='A') {
-			gantt.message('<?php echo $langs->trans('OnlyTaskCanBeMoved') ?>');
+<?php
 
-			return false;
-		}
+if(!$move_projects_mode) {
+  ?>
+	if(task.id[0]!='T' && task.id[0]!='A') {
+		gantt.message('<?php echo $langs->trans('OnlyTaskCanBeMoved') ?>');
 
-		initTaskDrag(task);
+		return false;
+	}
+
+	initTaskDrag(task);
+  <?php
+}
+
+?>
+
 
 		return true;
 	});
@@ -777,6 +804,14 @@ else {
 
 	gantt.attachEvent("onAfterTaskDrag", function(id, mode, e){
 		var modes = gantt.config.drag_mode;
+		<?php
+				if($move_projects_mode) {
+				    ?>
+
+				    <?php
+				}
+				else {
+	    ?>
 
 	   if(mode == modes.progress) {
 			task = gantt.getTask(id);
@@ -802,6 +837,10 @@ else {
 		}
 
 		TAnotherTaskToSave = {};
+
+		<?php
+				}
+		?>
 	});
 
 //gantt.callEvent("onTaskDrag",[s.id,e.mode,o,r,t]);
@@ -809,7 +848,14 @@ else {
 	gantt.attachEvent("onTaskDrag", function(id, mode, task, original){
 		drag_start_date = +task.start_date;
 	    var modes = gantt.config.drag_mode;
-	    if(mode == modes.move || mode == modes.resize){
+
+        <?php
+				if($move_projects_mode) {
+				    echo 'if(mode != modes.move) return false; ';
+				}
+	    ?>
+
+		if(mode == modes.move || mode == modes.resize){
 
 	        var diff = original.duration*(1000*60*60*24);
 
@@ -891,6 +937,13 @@ else {
 	gantt.config.drag_links = false;
 	gantt.config.autoscroll = false;
 	gantt.config.autosize = "y";
+
+<?php
+if($move_projects_mode) {
+    echo 'gantt.config.drag_resize = false;gantt.config.drag_progress = false;';
+}
+
+?>
 
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $range->date_start) ?>"), new Date("<?php echo date('Y-m-d', $range->date_end) ?>"));
 	//modSampleHeight();
