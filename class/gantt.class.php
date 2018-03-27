@@ -50,7 +50,7 @@ class GanttPatern {
             }
         }
 
-        $sql.=" ORDER BY t.rowid ";
+        $sql.=" ORDER BY t.dateo,t.rowid ";
 
         $res = $db->query($sql);
         if($res===false) {
