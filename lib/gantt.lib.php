@@ -688,7 +688,7 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 			if(empty($range->date_end) || $range->date_end<$object->date_end)$range->date_end=$object->date_end;
 		}
 
-		if($object->date_start>$object->date_end && !empty($object->date_end))$object->date_start=$object->date_end;
+		if($object->date_start>$object->date_end && !empty($object->date_end))$object->date_start=$object->date_end; //TODO or the contrary ?
 
 		$duration = $object->date_end>0 ? ceil( ($object->date_end - $object->date_start) / 86400 ) : ceil($object->planned_workload / (3600 * 7));
 		if($duration<1)$duration = 1;

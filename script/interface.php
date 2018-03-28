@@ -54,7 +54,7 @@
 	switch ($get) {
 
 		case 'workstation-capacity':
-			__out(_get_ws_capactiy(  GETPOST('wsid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
+			__out(_get_ws_capactiy(  GETPOST('wsid'),GETPOST('t_start'),GETPOST('t_end'),GETPOST('scale_unit') ),'json' );
 
 			break;
 
@@ -284,9 +284,9 @@
 
 	}
 
-	function _get_ws_capactiy($wsid, $t_start, $t_end) {
+	function _get_ws_capactiy($wsid, $t_start, $t_end,$scale_unit) {
 
-		return GanttPatern::get_ws_capacity($wsid, $t_start, $t_end);
+	    return GanttPatern::get_ws_capacity($wsid, $t_start, $t_end,0,$scale_unit);
 	}
 
 	function _put_projects(&$TProject) {

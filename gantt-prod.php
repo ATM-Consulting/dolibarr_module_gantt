@@ -38,7 +38,7 @@ $langs->load("projects");
 $langs->load("workstation@workstation");
 $langs->load("gantt@gantt");
 $fk_project = (int)GETPOST('fk_project');
-
+$scale_unit = GETPOST('scale');
 
 if($fk_project>0) {
 
@@ -298,6 +298,9 @@ else {
 			   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , (GETPOST('restrictWS') == '' ? -1 : GETPOST('restrictWS')));
 
 			}
+
+			echo $formCore->combo('', 'scale', array('day'=>$langs->trans('Days'),'week'=>$langs->trans('Weeks')) , GETPOST('scale'));
+
 
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
@@ -586,11 +589,17 @@ else {
 
 	<?php
 
-	if(GETPOST('scale')=='week') { //TODO make it work ?
-		echo 'gantt.config.scale_unit = "week"; gantt.config.date_scale = "'.$langs->trans('WeekShort').' %W";';
+	if($scale_unit=='week') {
+		echo 'gantt.config.scale_unit = "week";
+        gantt.config.date_scale = "%d/%m (%W)";
+        gantt.config.fit_tasks = false;gantt.config.step = 1;
+        gantt.config.round_dnd_dates = false;
+        gantt.config.subscales = [
+				{ unit:"year", step:1, date:"'.$langs->transnoentities('Year').' %Y"}
+		];';
 	}
 	else {
-		echo 'gantt.config.subscales = [
+		echo 'gantt.config.fit_tasks = true; gantt.config.subscales = [
 				{ unit:"week", step:1, date:"'.$langs->transnoentities('Week').' %W'.( date('Y',$range->date_end)!=date('Y',$range->date_start) ? ' %Y' : '').'"}
 			];
 		';
@@ -928,7 +937,6 @@ if(!$move_projects_mode) {
 	gantt.config.drag_links = false;
 	gantt.config.autoscroll = false;
 	gantt.config.autosize = "y";
-	gantt.config.fit_tasks = true;
 
 <?php
 if($move_projects_mode) {
@@ -954,10 +962,11 @@ if($move_projects_mode) {
 	<?php
 	if($fk_project == 0 || !empty($conf->global->GANTT_SHOW_WORKSTATION_ON_1PROJECT)) {
 
-		?>
+	    echo 'var w_cell = $(\'div.gantt_task_bg div.gantt_task_cell\').first().outerWidth();';
+
+	    ?>
 		var w_workstation = $('div.gantt_bars_area').width();
 		var w_workstation_title = $('div.gantt_grid_data').width();
-		var w_cell = $('div.gantt_task_bg div.gantt_task_cell').first().outerWidth();
 
 		$('style[rel=drawLine]').remove();
 
@@ -972,9 +981,20 @@ if($move_projects_mode) {
 
 		$cells = '';
 		$t_cur = $range->date_start;
+		if($scale_unit=='week') {
+		    $day_of_week = date('N',$t_cur);
+		    $t_cur=strtotime('-'.$day_of_week.'days + 1 day', $t_cur);
+		}
+
 		while($t_cur<=$range->date_end) {
 			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">N/A</div>';
-			$t_cur = strtotime('+1day',$t_cur);
+
+			if($scale_unit=='week') {
+			    $t_cur = strtotime('+1week',$t_cur);
+			}
+			else {
+			    $t_cur = strtotime('+1day',$t_cur);
+			}
 
 		}
 
@@ -1095,6 +1115,8 @@ if($move_projects_mode) {
 		$body.removeClass("loading");
 		var colWidth = $( ".gantt_task_row .gantt_task_cell" ).first().width();
 		/*window.alert(colWidth);*/
+		/*console.log('colWidth',colWidth);*/
+
 		$( ".ws_container .gantt_task_cell" ).width(colWidth);
 
 		setInterval(function(){
