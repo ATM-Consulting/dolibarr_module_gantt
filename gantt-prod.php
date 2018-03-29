@@ -38,7 +38,7 @@ $langs->load("projects");
 $langs->load("workstation@workstation");
 $langs->load("gantt@gantt");
 $fk_project = (int)GETPOST('fk_project');
-
+$scale_unit = GETPOST('scale');
 
 if($fk_project>0) {
 
@@ -120,6 +120,8 @@ else {
 	else if(GETPOST('close')) $open = false;
 	else if(GETPOST('open_status')) $open = true;
 
+	$move_projects_mode = GETPOST('moveProjects')!='' ? true : false;
+
 	$close_init_status = !empty($fk_project) || $open ? 'true': 'false';
 
 	$t_start  = $t_end = 0;
@@ -133,9 +135,11 @@ else {
     				$fk_parent_project = null;
 
     				if(empty($conf->global->GANTT_DO_NOT_SHOW_PROJECTS)) {
-    					$TData[$project->ganttid] = _get_json_data($project, $close_init_status);
+    				    $TData[$project->ganttid] = _get_json_data($project, $close_init_status,null,0,0,'',$move_projects_mode);
     					$fk_parent_project= $project->ganttid;
     				}
+
+    				if($move_projects_mode) continue; // view just project
 
     				_get_events( $TData,$TLink,$project->id);
 
@@ -248,7 +252,7 @@ else {
 			    }
 			}
 
-			_get_events($TData,$TLink);
+			if(!$move_projects_mode) _get_events($TData,$TLink);
 
 			checkDataGantt($TData, $TLink);
 
@@ -282,23 +286,32 @@ else {
 			echo $form->select_date($range->date_start, 'range_start');
 			echo $form->select_date($range->date_end,'range_end');
 
-			if($fk_project == 0){
+			if($fk_project == 0 && !$move_projects_mode){
 				if(!$open) echo $formCore->btsubmit($langs->trans('OpenAllTask'), 'open');
 				else  echo $formCore->btsubmit($langs->trans('ClosedTask'), 'close');
 
+
 			}
 
-			if(!empty($conf->workstation->enabled)) {
+			if(!empty($conf->workstation->enabled) && !$move_projects_mode) {
 			   $PDOdb=new TPDOdb;
 			   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , (GETPOST('restrictWS') == '' ? -1 : GETPOST('restrictWS')));
 
 			}
+
+			echo $formCore->combo('', 'scale', array('day'=>$langs->trans('Days'),'week'=>$langs->trans('Weeks')) , GETPOST('scale'));
+
 
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
 			echo $formCore->hidden('scrollLeft', 0);
 
 			echo $formCore->btsubmit($langs->trans('ok'), 'bt_select_date');
+
+
+			if($fk_project == 0 && !$move_projects_mode){
+			    echo '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'. $formCore->btsubmit($langs->trans('MoveProjects'), 'moveProjects');
+			}
 
 			$formCore->end();
 
@@ -310,20 +323,28 @@ else {
 				exit;
 			}
 
-			echo '</td><td align="right" width="20%"><a href="javascript:downloadThisGanttAsCSV()" >'.img_picto($langs->trans('DownloadAsCSV'), 'csv@gantt').'<a>';
+			if(!$move_projects_mode) {
+
+    			echo '</td><td align="right" width="20%"><a href="javascript:downloadThisGanttAsCSV()" >'.img_picto($langs->trans('DownloadAsCSV'), 'csv@gantt').'<a>';
 
 
-			?>
-			</td><td align="right">
-			<span id="ajax-waiter" class="waiter"><?php echo $langs->trans('AjaxRequestRunning') ?></span>
-			<a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
-			<?php
-			if (!empty($TTaskOlder)) {
-			     ?><a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTaskOlder) ?>');" class="button"><?php echo $langs->trans('MoveAllOlderTasks') ?></a><?php
+    			?>
+    			</td><td align="right">
+    			<span id="ajax-waiter" class="waiter"><?php echo $langs->trans('AjaxRequestRunning') ?></span>
+
+    			<a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
+    			<?php
+    			if (!empty($TTaskOlder)) {
+    			     ?><a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTaskOlder) ?>');" class="button"><?php echo $langs->trans('MoveAllOlderTasks') ?></a><?php
+    			}
+
+    			?>
+    			</td><?php
+
 			}
 
 			?>
-			</td></tr></table>
+			</tr></table>
 
 			<div id="gantt_here" style='width:100%; height:100%;'></div>
 
@@ -568,11 +589,17 @@ else {
 
 	<?php
 
-	if(GETPOST('scale')=='week') { //TODO make it work ?
-		echo 'gantt.config.scale_unit = "week"; gantt.config.date_scale = "'.$langs->trans('WeekShort').' %W";';
+	if($scale_unit=='week') {
+		echo 'gantt.config.scale_unit = "week";
+        gantt.config.date_scale = "%d/%m (%W)";
+        gantt.config.fit_tasks = false;gantt.config.step = 1;
+        gantt.config.round_dnd_dates = false;
+        gantt.config.subscales = [
+				{ unit:"year", step:1, date:"'.$langs->transnoentities('Year').' %Y"}
+		];';
 	}
 	else {
-		echo 'gantt.config.subscales = [
+		echo 'gantt.config.fit_tasks = true; gantt.config.subscales = [
 				{ unit:"week", step:1, date:"'.$langs->transnoentities('Week').' %W'.( date('Y',$range->date_end)!=date('Y',$range->date_start) ? ' %Y' : '').'"}
 			];
 		';
@@ -753,13 +780,22 @@ else {
 
 	gantt.attachEvent("onBeforeTaskDrag", function(sid, parent, tindex){
 		var task = gantt.getTask(sid);
-		if(task.id[0]!='T' && task.id[0]!='A') {
-			gantt.message('<?php echo $langs->trans('OnlyTaskCanBeMoved') ?>');
+<?php
 
-			return false;
-		}
+if(!$move_projects_mode) {
+  ?>
+	if(task.id[0]!='T' && task.id[0]!='A') {
+		gantt.message('<?php echo $langs->trans('OnlyTaskCanBeMoved') ?>');
 
-		initTaskDrag(task);
+		return false;
+	}
+
+	initTaskDrag(task);
+  <?php
+}
+
+?>
+
 
 		return true;
 	});
@@ -768,6 +804,14 @@ else {
 
 	gantt.attachEvent("onAfterTaskDrag", function(id, mode, e){
 		var modes = gantt.config.drag_mode;
+		<?php
+				if($move_projects_mode) {
+				    ?>
+
+				    <?php
+				}
+				else {
+	    ?>
 
 	   if(mode == modes.progress) {
 			task = gantt.getTask(id);
@@ -793,6 +837,10 @@ else {
 		}
 
 		TAnotherTaskToSave = {};
+
+		<?php
+				}
+		?>
 	});
 
 //gantt.callEvent("onTaskDrag",[s.id,e.mode,o,r,t]);
@@ -800,7 +848,14 @@ else {
 	gantt.attachEvent("onTaskDrag", function(id, mode, task, original){
 		drag_start_date = +task.start_date;
 	    var modes = gantt.config.drag_mode;
-	    if(mode == modes.move || mode == modes.resize){
+
+        <?php
+				if($move_projects_mode) {
+				    echo 'if(mode != modes.move) return false; ';
+				}
+	    ?>
+
+		if(mode == modes.move || mode == modes.resize){
 
 	        var diff = original.duration*(1000*60*60*24);
 
@@ -882,7 +937,13 @@ else {
 	gantt.config.drag_links = false;
 	gantt.config.autoscroll = false;
 	gantt.config.autosize = "y";
-	gantt.config.fit_tasks = true;
+
+<?php
+if($move_projects_mode) {
+    echo 'gantt.config.drag_resize = false;gantt.config.drag_progress = false;';
+}
+
+?>
 
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $range->date_start) ?>"), new Date("<?php echo date('Y-m-d', $range->date_end) ?>"));
 	//modSampleHeight();
@@ -901,10 +962,11 @@ else {
 	<?php
 	if($fk_project == 0 || !empty($conf->global->GANTT_SHOW_WORKSTATION_ON_1PROJECT)) {
 
-		?>
+	    echo 'var w_cell = $(\'div.gantt_task_bg div.gantt_task_cell\').first().outerWidth();';
+
+	    ?>
 		var w_workstation = $('div.gantt_bars_area').width();
 		var w_workstation_title = $('div.gantt_grid_data').width();
-		var w_cell = $('div.gantt_task_bg div.gantt_task_cell').first().outerWidth();
 
 		$('style[rel=drawLine]').remove();
 
@@ -919,9 +981,20 @@ else {
 
 		$cells = '';
 		$t_cur = $range->date_start;
+		if($scale_unit=='week') {
+		    $day_of_week = date('N',$t_cur);
+		    $t_cur=strtotime('-'.$day_of_week.'days + 1 day', $t_cur);
+		}
+
 		while($t_cur<=$range->date_end) {
 			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">N/A</div>';
-			$t_cur = strtotime('+1day',$t_cur);
+
+			if($scale_unit=='week') {
+			    $t_cur = strtotime('+1week',$t_cur);
+			}
+			else {
+			    $t_cur = strtotime('+1day',$t_cur);
+			}
 
 		}
 
@@ -1042,6 +1115,8 @@ else {
 		$body.removeClass("loading");
 		var colWidth = $( ".gantt_task_row .gantt_task_cell" ).first().width();
 		/*window.alert(colWidth);*/
+		/*console.log('colWidth',colWidth);*/
+
 		$( ".ws_container .gantt_task_cell" ).width(colWidth);
 
 		setInterval(function(){

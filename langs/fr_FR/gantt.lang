@@ -70,6 +70,7 @@ AjaxRequestRunning=Opération en cours...
 NoHourPlanned=Pas d'heure plannifiée
 shortDays=j
 Workstation=Poste de charge
+MoveProjects=Déplacer des projets
 GANTT_SHOW_TASK_INTO_CALENDAR_VIEW=Afficher les tâches dans la vue agenda
 BasedOn=Basé sur 
 

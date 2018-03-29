@@ -50,7 +50,7 @@ class GanttPatern {
             }
         }
 
-        $sql.=" ORDER BY t.rowid ";
+        $sql.=" ORDER BY t.dateo,t.rowid ";
 
         $res = $db->query($sql);
         if($res===false) {
@@ -74,7 +74,7 @@ class GanttPatern {
         return $Tab;
     }
 
-	static function get_ws_capacity($wsid, $t_start, $t_end, $fk_task = 0) {
+	static function get_ws_capacity($wsid, $t_start, $t_end, $fk_task = 0,$scale_unit='day') {
 
 		global $conf;
 
@@ -87,9 +87,41 @@ class GanttPatern {
 		$ws=new TWorkstation;
 		$ws->load($PDOdb, $wsid);
 
-		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end, true, $fk_task);
+		if($scale_unit=='week') {
+		    $day_of_week = date('N',$t_start);
+		    $t_start=strtotime('-'.$day_of_week.'days + 1 day', $t_start);
+		}
 
-		return $Tab;
+		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end, true, $fk_task,$scale_unit);
+
+		if($scale_unit == 'week') {
+            $i = 0;
+		    foreach($Tab as $k=>$data) {
+
+   		        if($i == 0) {
+                    $k_hold = $k;
+                }
+		        else {
+		            if($data['capacityLeft']!='NA') {
+    		            $Tab[$k_hold]['capacity']+=$data['capacity'];
+    		            $Tab[$k_hold]['nb_hour_capacity']+=$data['nb_hour_capacity'];
+    		            $Tab[$k_hold]['capacityLeft']+=$data['capacityLeft'];
+		            }
+
+		            unset($Tab[$k]);
+		        }
+
+                $i++;
+                if($i == 7)$i = 0;
+
+		    }
+
+            return $Tab;
+		}
+		else {
+		    return $Tab;
+		}
+
 
 	}
 
