@@ -20,6 +20,8 @@ $row_height = 20;
 
 $langs->load('workstation@workstation');
 
+$skin = empty($conf->global->GANTT_SKIN) ? 'dhtmlxgantt_terrace.css' : $conf->global->GANTT_SKIN;
+
 llxHeader('', $langs->trans('GanttProd') , '', '', 0, 0, array(
 		'/gantt/lib/dhx/codebase/dhtmlxgantt.js',
 		'/gantt/lib/dhx/codebase/ext/dhtmlxgantt_smart_rendering.js',
@@ -28,7 +30,7 @@ llxHeader('', $langs->trans('GanttProd') , '', '', 0, 0, array(
 		'/gantt/lib/dhx/codebase/locale/locale_fr.js',
 		'/gantt/lib/he.js'
 		),
-		array('/gantt/lib/dhx/codebase/dhtmlxgantt.css','/gantt/css/gantt.css') );
+    array('/gantt/lib/dhx/codebase/sources/skins/'.$skin,'/gantt/css/gantt.css') );
 
 dol_include_once('/core/lib/project.lib.php');
 dol_include_once('/gantt/class/color_tools.class.php');
@@ -934,6 +936,20 @@ if(!$move_projects_mode) {
 	    }
 	});
 
+	gantt.attachEvent("onLoadEnd", function(){
+		console.log('gantt::onLoadEnd');
+		<?php
+		if(GETPOST('scrollLeft')>10 && $scale_unit!='week') {
+
+				    echo ' gantt.scrollTo('.(int)GETPOST('scrollLeft').',0); ';
+		}
+		else {
+			echo 'updateWSRangeCapacity(0);';
+		}
+
+		?>
+    });
+
 	gantt.config.drag_links = false;
 	gantt.config.autoscroll = false;
 	gantt.config.autosize = "y";
@@ -948,16 +964,6 @@ if($move_projects_mode) {
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $range->date_start) ?>"), new Date("<?php echo date('Y-m-d', $range->date_end) ?>"));
 	//modSampleHeight();
 	gantt.parse(tasks);
-
-	<?php
-	if(GETPOST('scrollLeft')>10) {
-		echo 'gantt.scrollTo('.(int)GETPOST('scrollLeft').',0);';
-	}
-	else {
-		echo '$(document).ready(function() { updateWSRangeCapacity(0); });';
-	}
-
-	?>
 
 	<?php
 	if($fk_project == 0 || !empty($conf->global->GANTT_SHOW_WORKSTATION_ON_1PROJECT)) {
