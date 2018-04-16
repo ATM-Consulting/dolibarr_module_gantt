@@ -547,10 +547,10 @@ function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $ma
 		$sql.= " tex.fk_gantt_parent_task = '".$gantt_parent_objet->ganttid."'";
 	}
 
-	if(GETPOST('restrictWS')>0) {
+	if(GETPOST('restrictWS')>0 && !empty($conf->workstation->enabled)) {
 		$sql.=" AND tex.fk_workstation=".(int)GETPOST('restrictWS');
 	}
-	else if(GETPOST('restrictWS','int') == 0 ) {
+	else if(GETPOST('restrictWS','int') == 0 && !empty($conf->workstation->enabled)) {
 		$sql.=" AND (tex.fk_workstation IS NULL) ";
 	}
 
