@@ -808,7 +808,9 @@ function _get_events( &$TData,&$TLink,$fk_project=0,$owner=0,$taskColor= '#f7d60
 
 	$sql.=" ( a.datep BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."' ";
 	$sql.=" OR a.datep2 BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."' )";
-	$sql.=" AND aex.fk_workstation > 0 ";
+	if (!empty($conf->workstation->enabled)) {
+		$sql.=" AND aex.fk_workstation > 0 ";
+	}
 
 	if($fk_project > 0)
 	{
