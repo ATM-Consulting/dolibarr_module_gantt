@@ -127,15 +127,33 @@ function _get_task_for_of($fk_project = 0) {
 
 
 			$of=new TAssetOF();
-			$of->load($PDOdb, $task->array_options['options_fk_of']);
+			
+            // object OF too heavy for that                
+            $resof = $db->query("SELECT of.numero,p.label,l.qty_needed,of.status,of.fk_commande FROM ".MAIN_DB_PREFIX."assetOf of 
+                            LEFT JOIN ".MAIN_DB_PREFIX."assetOf_line l ON (l.fk_assetOf=of.rowid)
+                                LEFT JOIN ".MAIN_DB_PREFIX."product p ON (l.fk_product=p.rowid)
+                        WHERE of.rowid=".(int)$task->array_options['options_fk_of']." AND l.type='TO_MAKE'
+                    
+                ");  
+            if($resof===false) {
+                var_dump($db);exit;
+            }
+            $oobjOf=$db->fetch_object($resof);
+            
+                            
+            $of->id = (int)$task->array_options['options_fk_of'];
+            $of->numero = $oobjOf->numero;
+            $of->fk_commande = (int)$oobjOf->fk_commande;
+            $of->qty_needed = $oobjOf->qty_needed;
 			$of->ref = $of->numero;
-			$line = $of->getLineProductToMake();
-
+			
+			$of->product_to_make_name = $oobjOf->label;
+			
 			if(!empty($conf->global->GANTT_HIDE_TASK_REF)) {
-				$of->title = $of->numero.' '.$line->product->label.' x '.$line->qty_needed;
+			    $of->title = $of->numero.' '.$of->product_to_make_name.' x '.$of->qty_needed;
 			}
 			else {
-				$of->title = $of->numero.' '.$of->getLibStatus(true).' '.$line->product->label .' x '.$line->qty_needed;
+			    $of->title = $of->numero.' '.$of->getLibStatus(true).' '.$of->product_to_make_name .' x '.$of->qty_needed;
 			}
 
 			$TCacheOF[$task->array_options['options_fk_of']] = $of;
@@ -558,7 +576,6 @@ function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $ma
 
 	$sql.=" AND p.entity IN (".getEntity('project',1).")";
 
-	//echo $sql.$sqlWhere;
 	$res = $db->query($sql);
 	if($res===false) {
 		var_dump($db);exit;
@@ -593,7 +610,14 @@ function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $ma
 function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $time_task_limit_no_before=0,$time_task_limit_no_after=0, $taskColor = '',$move_projects_mode = false) {
 
 	if($object->element == 'commande') {
-		return '{"id":"'.$object->ganttid.'",ref:"'.$object->ref.'", date_max:'.(int)strtotime('+1day midnight',$object->date_livraison).',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
+	    $date_max = $object->date_livraison ? strtotime('+1day midnight',$object->date_livraison) : 0;
+	    
+		$r = '{"id":"'.$object->ganttid.'",ref:"'.$object->ref.'"';
+		if($date_max>0) $r.=', date_max:'.(int)$date_max;
+		$r.= ',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
+		
+		return $r;
+		
 	}
 	else if($object->element == 'workstation') {
 
