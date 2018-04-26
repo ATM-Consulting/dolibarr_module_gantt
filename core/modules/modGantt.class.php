@@ -199,6 +199,7 @@ class modGantt extends DolibarrModules
 				'url'=>'/gantt/gantt-prod.php',
 				'position'=>711,
 				'enabled'=>'$conf->gantt->enabled',			// Define condition to show or hide menu entry. Use '$conf->mymodule->enabled' if entry must be visible if module is enabled.
+				'langs'=>'gantt@gantt',
 				//'perms'=>'',			// Use 'perms'=>'$user->rights->mymodule->level1->level2' if you want your menu with a permission rules
 				'target'=>'',
 				'user'=>2);
@@ -211,6 +212,7 @@ class modGantt extends DolibarrModules
 		    'leftmenu'=>'gantt',		// Use 1 if you also want to add left menu entries using this descriptor. Use 0 if left menu entries are defined in a file pre.inc.php (old school).
 		    'url'=>'/gantt/gantt-prod.php',
 		    'position'=>712,
+			'langs'=>'gantt@gantt',
 		    'enabled'=>'$conf->gantt->enabled',			// Define condition to show or hide menu entry. Use '$conf->mymodule->enabled' if entry must be visible if module is enabled.
 		    //'perms'=>'',			// Use 'perms'=>'$user->rights->mymodule->level1->level2' if you want your menu with a permission rules
 		    'target'=>'',

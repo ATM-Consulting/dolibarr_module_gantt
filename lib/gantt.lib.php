@@ -547,10 +547,10 @@ function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $ma
 		$sql.= " tex.fk_gantt_parent_task = '".$gantt_parent_objet->ganttid."'";
 	}
 
-	if(GETPOST('restrictWS')>0) {
+	if(GETPOST('restrictWS')>0 && !empty($conf->workstation->enabled)) {
 		$sql.=" AND tex.fk_workstation=".(int)GETPOST('restrictWS');
 	}
-	else if(GETPOST('restrictWS','int') == 0 ) {
+	else if(GETPOST('restrictWS','int') == 0 && !empty($conf->workstation->enabled)) {
 		$sql.=" AND (tex.fk_workstation IS NULL) ";
 	}
 
@@ -808,7 +808,9 @@ function _get_events( &$TData,&$TLink,$fk_project=0,$owner=0,$taskColor= '#f7d60
 
 	$sql.=" ( a.datep BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."' ";
 	$sql.=" OR a.datep2 BETWEEN '".$range->sql_date_start."' AND '".$range->sql_date_end."' )";
-	$sql.=" AND aex.fk_workstation > 0 ";
+	if (!empty($conf->workstation->enabled)) {
+		$sql.=" AND aex.fk_workstation > 0 ";
+	}
 
 	if($fk_project > 0)
 	{

@@ -19,6 +19,7 @@ dol_include_once('/gantt/lib/gantt.lib.php');
 $row_height = 20;
 
 $langs->load('workstation@workstation');
+$langs->load('gantt@gantt');
 
 $skin = empty($conf->global->GANTT_SKIN) ? 'dhtmlxgantt_terrace.css' : $conf->global->GANTT_SKIN;
 
