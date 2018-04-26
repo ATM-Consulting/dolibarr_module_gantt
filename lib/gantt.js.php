@@ -822,8 +822,8 @@ function updateWSRangeCapacity(sl) {
 		});
 
 		updateWSCapacity(0, date_start, date_end)<?php
-			foreach($TWS as &$ws) { //TODO trop de Workstation, à purger
-				if($ws->id>0) {
+			foreach($TWS as &$ws) { 
+			    if($ws->type!='STT' && !is_null($ws->id) && $ws->id>0 ) {
 					echo '.pipe(updateWSCapacity('.$ws->id.',  date_start, date_end))';
 
 					$first = false;
