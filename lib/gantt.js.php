@@ -632,6 +632,8 @@ function pop_event(callback) {
 	}
 
 
+	var TPipeUWSC={};
+
 	function updateWSCapacity(wsid, t_start, t_end) { //, nb_hour_capacity = 0
 
 		var nb_hour_capacity = 0;
@@ -647,7 +649,12 @@ function pop_event(callback) {
 //console.log('updateWSCapacity', wsid, t_start, t_end, nb_hour_capacity);
 		var deferred = $.Deferred();
 
-		$.ajax({
+		if(TPipeUWSC[wsid]) {
+			TPipeUWSC[wsid].abort();
+			console.log('updateWSCapacity::Cloture appel '+wsid);
+		}
+
+		var xhr = $.ajax({
 			url:"<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>"
 			,data:{
 				get:"workstation-capacity"
@@ -749,6 +756,8 @@ function pop_event(callback) {
 		}
 
 	});
+	
+	TPipeUWSC[wsid] = xhr;
 
 	return deferred.promise();
 }
@@ -813,8 +822,8 @@ function updateWSRangeCapacity(sl) {
 		});
 
 		updateWSCapacity(0, date_start, date_end)<?php
-			foreach($TWS as &$ws) {
-				if($ws->id>0) {
+			foreach($TWS as &$ws) { 
+			    if($ws->type!='STT' && !is_null($ws->id) && $ws->id>0 ) {
 					echo '.pipe(updateWSCapacity('.$ws->id.',  date_start, date_end))';
 
 					$first = false;

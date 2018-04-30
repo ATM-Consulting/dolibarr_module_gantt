@@ -4,7 +4,24 @@ class GanttPatern {
 
     static function getTasks($date_start, $date_end, $fk_project = 0, $restrictWS=0) {
         global $conf,$db;
+        
+        dol_include_once('/projet/class/task.class.php');
+        
+        $restrictWS = (int)$restrictWS;
+        $fk_project = (int)$fk_project;
+        
+        /*if(!empty($conf->global->GANTT_USE_CACHE_FOR_X_MINUTES)) {
 
+            $TCache = & $_SESSION['ganttcache']['getTasks'][$date_start][$date_end][$fk_project][$restrictWS];
+            
+            if(!empty($TCache) && $TCache['@time']>0 && $TCache['@time']>time() - 60 * $conf->global->GANTT_USE_CACHE_FOR_X_MINUTES) {
+             
+                return $TCache['@data'];
+                
+            }
+            
+        }*/
+        
         if(empty($conf->of->enabled)) {
             $sql = "SELECT t.rowid
 		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
@@ -57,7 +74,6 @@ class GanttPatern {
             var_dump($db);exit;
         }
 
-        dol_include_once('/projet/class/task.class.php');
         $Tab=array();
         while($obj = $db->fetch_object($res)) {
 
@@ -70,6 +86,12 @@ class GanttPatern {
 
             $Tab[] = $task;
         }
+        
+       /* if(!empty($conf->global->GANTT_USE_CACHE_FOR_X_MINUTES)) {
+            unset( $_SESSION['ganttcache']['getTasks'] );
+            $_SESSION['ganttcache']['getTasks'][$date_start][$date_end][$fk_project][$restrictWS]['@time'] = time();
+            $_SESSION['ganttcache']['getTasks'][$date_start][$date_end][$fk_project][$restrictWS]['@data'] = $Tab;
+        }*/
 
         return $Tab;
     }
