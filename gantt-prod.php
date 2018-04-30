@@ -338,18 +338,16 @@ else {
 
     			echo '</td><td align="right" width="20%"><a href="javascript:downloadThisGanttAsCSV()" >'.img_picto($langs->trans('DownloadAsCSV'), 'csv@gantt').'<a>';
 
-
     			?>
-    			</td><td align="right">
-    			<span id="ajax-waiter" class="waiter"><?php echo $langs->trans('AjaxRequestRunning') ?></span>
-
+    			</td><td align="right" valign="top">
     			<a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
     			<?php
     			if (!empty($TTaskOlder)) {
-    			     ?><a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTaskOlder) ?>');" class="button"><?php echo $langs->trans('MoveAllOlderTasks') ?></a><?php
+    			     ?><br /><a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTaskOlder) ?>');" class="button"><?php echo $langs->trans('MoveAllOlderTasks') ?></a><?php
     			}
-
+    			
     			?>
+    			<span id="ajax-waiter" class="waiter"><br /><?php echo $langs->trans('AjaxRequestRunning') ?></span>
     			</td><?php
 
 			}

@@ -166,11 +166,36 @@ class GanttPatern {
 		}
 		if($obj = $db->fetch_object($res)) {
 			if($obj->nb_days_before_beginning>0) {
-			$t_start_bound=strtotime('+'.((int)$obj->nb_days_before_beginning+1).' days midnight');
-			if(GETPOST('_givemesolution')=='yes') {
-				echo 'start bound delai '.date('Y-m-d', $t_start_bound).' '.$obj->nb_days_before_beginning.'<br>';
-			}
-			$TInfo[] = 'start bound delai '.date('Y-m-d', $t_start_bound);
+			    if(!empty($conf->global->GANTT_DELAY_IS_BETWEEN_TASK)) {
+			        $time_ref = time();
+			        
+			        if($task->fk_task_parent>0) { // s'il y a une tâche parente
+			            if(isset($TCacheTask[$task->fk_task_parent])) $parent = $TCacheTask[$task->fk_task_parent];
+			            else {
+			                $parent = new Task($db);
+			                $parent->fetch($task->fk_task_parent);
+			                $TCacheTask[$task->fk_task_parent] = $parent;
+			            }
+			            
+			            if($parent->progress<100) {
+			                $time_ref = strtotime('midnight',$parent->date_end);
+			                if(GETPOST('_givemesolution')=='yes') {
+			                    echo 'GANTT_DELAY_IS_BETWEEN_TASK '.date('Y-m-d H:i:s', $time_ref).' '.$obj->nb_days_before_beginning.'<br>';
+			                }
+			                $TInfo[] = 'GANTT_DELAY_IS_BETWEEN_TASK '.date('Y-m-d H:i:s', $time_ref).' '.$obj->nb_days_before_beginning;
+			            }
+			        }
+			        
+			        $t_start_bound=strtotime('+'.((int)$obj->nb_days_before_beginning).' days midnight', $time_ref);
+			    }
+			    else {
+			        $t_start_bound=strtotime('+'.((int)$obj->nb_days_before_beginning+1).' days midnight');
+			    }
+    			
+    			if(GETPOST('_givemesolution')=='yes') {
+    				echo 'start bound delai '.date('Y-m-d H:i:s', $t_start_bound).' '.$obj->nb_days_before_beginning.'<br>';
+    			}
+    			$TInfo[] = 'start bound delai '.date('Y-m-d', $t_start_bound);
 			}
 
 			if($t_start_bound>$t_start)$t_start = $t_start_bound;
