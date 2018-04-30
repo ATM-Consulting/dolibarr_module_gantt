@@ -219,7 +219,7 @@ function moveTasks(tasksid) {
 	}).done(function(data) {
 
 		$.each(data, function(i, item) {
-		console.log(i,item);
+		
 			var t = gantt.getTask('T'+i);
 
 			if(item.duration>0) {
@@ -242,13 +242,7 @@ function moveTasks(tasksid) {
 			}
 
 		});
-/*
-		window.setTimeout(function() {
-			var sl = $("div.ws_container").scrollLeft();
-			console.log(sl);
-			updateWSRangeCapacity(sl);
-		},2000);
-*/
+
 	});
 
 }
@@ -358,7 +352,7 @@ function dragTaskLimit(task, diff ,mode) {
 
 function moveParentIfNeccessary(task) {
 
-		<?php
+	<?php
 	if(empty($conf->global->GANTT_MODIFY_PARENT_DATES_AS_CHILD)) {
 		echo 'return true;';
 	}

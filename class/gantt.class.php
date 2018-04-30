@@ -2,7 +2,7 @@
 
 class GanttPatern {
 
-    static function getTasks($date_start, $date_end, $fk_project = 0, $restrictWS=0) {
+    static function getTasks($date_start, $date_end, $fk_project = 0, $restrictWS=0, $ref_of='',$ref_cmd='') {
         global $conf,$db;
         
         dol_include_once('/projet/class/task.class.php');
@@ -35,12 +35,16 @@ class GanttPatern {
 			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
 				LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of)
 					LEFT JOIN ".MAIN_DB_PREFIX."asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
+                        LEFT JOIN ".MAIN_DB_PREFIX."commande cmd ON (of.fk_commande=cmd.rowid)
 						";
 
         }
 
         $sql.="	WHERE t.dateo IS NOT NULL ";
 
+        if(!empty($ref_of)) { $sql.=" AND (of.numero LIKE '%".$ref_of."%' AND of.entity=".$conf->entity." ) "; }
+        if(!empty($ref_cmd)) { $sql.=" AND (cmd.ref LIKE '%".$ref_cmd."%' AND cmd.entity=".$conf->entity.") "; }
+        
         if($fk_project>0) $sql.= " AND fk_projet=".$fk_project;
         else {
 
@@ -67,8 +71,8 @@ class GanttPatern {
             }
         }
 
-        $sql.=" ORDER BY t.dateo,t.rowid ";
-
+        $sql.=" ORDER BY t.dateo ASC,t.rowid ASC";
+        
         $res = $db->query($sql);
         if($res===false) {
             var_dump($db);exit;

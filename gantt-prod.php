@@ -277,7 +277,7 @@ else {
 			}
 
 			?>
-			<table border="0" width="100%"><tr><td width="50%">
+			<table border="0" width="100%"><tr><td >
 			<?php
 
 			$formCore=new TFormCore('auto','formDate','get');
@@ -296,15 +296,21 @@ else {
 
 			}
 
+			echo '</td><td>';
+			
 			if(!empty($conf->workstation->enabled) && !$move_projects_mode) {
 			   $PDOdb=new TPDOdb;
-			   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , (GETPOST('restrictWS') == '' ? -1 : GETPOST('restrictWS')));
+			   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , (GETPOST('restrictWS') == '' ? -1 : GETPOST('restrictWS'))).'<br />';
 
 			}
 
 			echo $formCore->combo('', 'scale', array('day'=>$langs->trans('Days'),'week'=>$langs->trans('Weeks')) , GETPOST('scale'));
+			echo '</td><td>';
+			if(!empty($conf->of->enabled)) echo $formCore->texte($langs->trans('OFFilter'), 'ref_of',GETPOST('ref_of'),5,255).'<br />';
+			echo $formCore->texte($langs->trans('CMDFilter'), 'ref_cmd',GETPOST('ref_cmd'),5,255);
 
-
+			echo '</td><td>';
+			
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
 			echo $formCore->hidden('scrollLeft', 0);
@@ -313,7 +319,9 @@ else {
 
 
 			if($fk_project == 0 && !$move_projects_mode){
-			    echo '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'. $formCore->btsubmit($langs->trans('MoveProjects'), 'moveProjects');
+			    echo '</td><td align="center">';
+			    echo $formCore->btsubmit($langs->trans('MoveProjects'), 'moveProjects');
+			    echo '</td><td>';
 			}
 
 			$formCore->end();
@@ -895,10 +903,14 @@ if(!$move_projects_mode) {
     })
 	gantt.attachEvent("onBeforeTaskDisplay", function(id, task){
 
-	    if (typeof task.visible != "undefined" && task.visible == 0){
+		if (typeof task.visible != "undefined" && task.visible == 0){
 	    	/*console.log(id,task.visible);*/
 	        return false;
 	    }
+
+
+
+	    
 	    return true;
 	});
 

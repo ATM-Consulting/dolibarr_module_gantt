@@ -76,3 +76,5 @@ MoveProjects=Déplacer des projets
 GANTT_SHOW_TASK_INTO_CALENDAR_VIEW=Afficher les tâches dans la vue agenda
 BasedOn=Basé sur 
 GANTT_USE_CACHE_FOR_X_MINUTES=Utiliser un cache de X minutes pour fluidifier l'affichage
+OFFilter= - OF :
+CMDFilter= - Commande :
