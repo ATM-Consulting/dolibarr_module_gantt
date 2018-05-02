@@ -299,9 +299,10 @@ class modGantt extends DolibarrModules
 
 		}
 
-
-		$extrafields=new ExtraFields($this->db);
-		$res = $extrafields->addExtraField('fk_workstation', 'Poste de charge immobilisé', 'sellist', 0, '', 'actioncomm',0,0,'',serialize(array('options'=>array('workstation:name:rowid'=>null))));
+		if(!empty($conf->workstation->enabled)) {
+			$extrafields=new ExtraFields($this->db);
+			$res = $extrafields->addExtraField('fk_workstation', 'Poste de charge immobilisé', 'sellist', 0, '', 'actioncomm',0,0,'',serialize(array('options'=>array('workstation:name:rowid'=>null))));
+		}
 		$extrafields=new ExtraFields($this->db);
 		$res = $extrafields->addExtraField('needed_ressource', 'nb ressources immobilisées', 'int', 0, '', 'actioncomm');
 
