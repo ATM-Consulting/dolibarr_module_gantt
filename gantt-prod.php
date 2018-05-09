@@ -276,11 +276,11 @@ else {
 				if($range->date_end > $range->date_start + 86400 * 366) $range->date_end = $range->date_start + 86400 * 366;
 			}
 
+			$formCore=new TFormCore('auto','formDate','get');
 			?>
 			<table border="0" width="100%"><tr><td >
 			<?php
 
-			$formCore=new TFormCore('auto','formDate','get');
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
 			echo $formCore->hidden('scrollLeft', 0);
@@ -324,8 +324,6 @@ else {
 			    echo '</td><td>';
 			}
 
-			$formCore->end();
-
 			if($range->autotime && $range->date_end - $range->date_start > (86400 * 60)) {
 
 				echo '</td></tr></table><div class="error">La plage détectée faisant plus de 60 jours, merci de confirmer ces dates</div>';
@@ -354,7 +352,9 @@ else {
 
 			?>
 			</tr></table>
-
+<?php 
+$formCore->end();
+?>
 			<div id="gantt_here" style='width:100%; height:100%;'></div>
 
 			<script type="text/javascript">
@@ -731,11 +731,15 @@ else {
 
 			task.text = task.title;
 
-			if(task.planned_workload>0) {
+			if(task.planned_workload>1) {
 				var m = task.planned_workload%900;
 
 				if(m>0) task.planned_workload = task.planned_workload - m + 900;
 			}
+			else {
+				task.planned_workload = 0;
+			}
+			
 			console.log(task);
 			return true;
 		}
