@@ -286,8 +286,14 @@
 	}
 
 	function _get_ws_capactiy($wsid, $t_start, $t_end,$scale_unit) {
-//TODO $wsid -> array of ids
-	    return GanttPatern::get_ws_capacity($wsid, $t_start, $t_end,0,$scale_unit);
+
+	    $wsids=explode(',',$wsid);
+	    
+	    $Tab=array();
+	    foreach($wsids as $wsid) {
+	        $Tab[$wsid] =  GanttPatern::get_ws_capacity($wsid, $t_start, $t_end,0,$scale_unit);
+	    }
+	    return $Tab;
 	}
 
 	function _put_projects(&$TProject) {

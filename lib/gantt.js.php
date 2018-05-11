@@ -660,8 +660,11 @@ function pop_event(callback) {
 		,dataType:"json"
 		}).done(function(data) {
 //console.log('nb_hour_capacity', data);
-			for(d in data) {
-				row = data[d];
+			for(wsid in data) {
+			var data2 = data[wsid];
+			
+			for(d in data2) {
+				row = data2[d];
 				var c = row.capacityLeft;
 
 				total_hour_capacity = row.nb_hour_capacity * row.nb_ressource;
@@ -748,7 +751,7 @@ function pop_event(callback) {
 
 			deferred.resolve();
 		}
-
+		}
 	});
 	
 	TPipeUWSC[wsid] = xhr;
@@ -833,16 +836,17 @@ function updateWSRangeCapacity(sl, forceRefresh) {
 			});
 		});
 
-		updateWSCapacity(0, date_start, date_end)<?php
-			foreach($TWS as &$ws) { 
-			    if($ws->type!='STT' && !is_null($ws->id) && $ws->id>0 ) {
-					echo '.pipe(updateWSCapacity('.$ws->id.',  date_start, date_end))';
+<?php 
+$TabToUpdateWSCapacity=array();
+foreach($TWS as &$ws) {
+    if($ws->type!='STT' && !is_null($ws->id) && $ws->id>0 ) {
+        $TabToUpdateWSCapacity[] = $ws->id;
+    }
+}
 
-					$first = false;
-				}
-			}
+echo 'updateWSCapacity("0,'.implode(',',$TabToUpdateWSCapacity).'", date_start, date_end);';
 
-		?>;
+?>
 
 	}
 }
