@@ -305,12 +305,13 @@ else {
 			}
 
 			echo $formCore->combo('', 'scale', array('day'=>$langs->trans('Days'),'week'=>$langs->trans('Weeks')) , GETPOST('scale'));
+			if($fk_project == 0 && !$move_projects_mode){
 			echo '</td><td>';
 			if(!empty($conf->of->enabled)) echo $formCore->texte($langs->trans('OFFilter'), 'ref_of',GETPOST('ref_of'),5,255).'<br />';
 			echo $formCore->texte($langs->trans('CMDFilter'), 'ref_cmd',GETPOST('ref_cmd'),5,255);
 
 			echo '</td><td>';
-			
+			}
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
 			echo $formCore->hidden('scrollLeft', 0);

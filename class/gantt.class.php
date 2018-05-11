@@ -45,7 +45,7 @@ class GanttPatern {
         if(!empty($ref_of)) { $sql.=" AND (of.numero LIKE '%".$ref_of."%' AND of.entity=".$conf->entity." ) "; }
         if(!empty($ref_cmd)) { $sql.=" AND (cmd.ref LIKE '%".$ref_cmd."%' AND cmd.entity=".$conf->entity.") "; }
         
-        if($fk_project>0) $sql.= " AND fk_projet=".$fk_project;
+        if($fk_project>0) $sql.= " AND t.fk_projet=".$fk_project;
         else {
 
             $sql.=" AND p.fk_statut = 1 ";
