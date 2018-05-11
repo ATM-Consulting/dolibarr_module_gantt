@@ -628,7 +628,7 @@ function pop_event(callback) {
 
 	var TPipeUWSC={};
 
-	function updateWSCapacity(wsid, t_start, t_end) { //, nb_hour_capacity = 0
+	function updateWSCapacity(wsid, t_start, t_end,forceRefresh) { //, nb_hour_capacity = 0
 
 		var nb_hour_capacity = 0;
 		var nb_ressource = 0;
@@ -757,10 +757,28 @@ function pop_event(callback) {
 }
 
 
+function updateWSRangeCapacityButton() {
+
+	var sl = $("div.ws_container").scrollLeft();
+    updateWSRangeCapacity(sl, 1);
+
+}
+
 var start_refresh_ws = 0;
 var end_refresh_ws = 0;
 
-function updateWSRangeCapacity(sl) {
+function updateWSRangeCapacity(sl, forceRefresh) {
+
+	<?php 
+
+        if(!empty($conf->global->GANTT_DONT_AUTO_REFRESH_WS)) {
+               echo ' if(!forceRefresh) return; ';
+                
+        }
+    
+    ?>
+
+
 	var sr = sl + $('#gantt_here div.gantt_task').width();
 
 	var date_start = gantt.dateFromPos(sl).setHours(0,0,0,0) / 1000 - (86400 * 2);

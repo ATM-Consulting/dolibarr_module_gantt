@@ -344,6 +344,10 @@ else {
     			     ?><br /><a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTaskOlder) ?>');" class="button"><?php echo $langs->trans('MoveAllOlderTasks') ?></a><?php
     			}
     			
+    			if(!empty($conf->global->GANTT_DONT_AUTO_REFRESH_WS)) {
+    			    ?><br /><a id="refresh-ws" style="display:inline" href="javascript:;" onclick="updateWSRangeCapacityButton();" class="button"><?php echo $langs->trans('RefreshWS') ?></a><?php
+    			}
+    			
     			?>
     			<span id="ajax-waiter" class="waiter"><br /><?php echo $langs->trans('AjaxRequestRunning') ?></span>
     			</td><?php
@@ -1007,7 +1011,7 @@ if($move_projects_mode) {
 		}
 
 		while($t_cur<=$range->date_end) {
-			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">N/A</div>';
+			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">...</div>';
 
 			if($scale_unit=='week') {
 			    $t_cur = strtotime('+1week',$t_cur);
