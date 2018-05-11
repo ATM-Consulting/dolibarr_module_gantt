@@ -951,8 +951,7 @@ if(!$move_projects_mode) {
 	    }
 	});
 
-	gantt.attachEvent("onLoadEnd", function(){
-		console.log('gantt::onLoadEnd');
+	$(document).ready(function() {
 		<?php
 		if(GETPOST('scrollLeft')>10 && $scale_unit!='week') {
 
