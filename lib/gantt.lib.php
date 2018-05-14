@@ -89,7 +89,7 @@ function _get_task_for_of($fk_project = 0) {
 	$PDOdb=new TPDOdb;
 
     dol_include_once('/gantt/class/gantt.class.php');
-	$TTaskObject = GanttPatern::getTasks($range->sql_date_start, $range->sql_date_end, $fk_project, GETPOST('restrictWS','int'));
+	$TTaskObject = GanttPatern::getTasks($range->sql_date_start, $range->sql_date_end, $fk_project, GETPOST('restrictWS','int'),GETPOST('ref_of'),GETPOST('ref_cmd'));
 
 	$TTask=array();
 	if($fk_project == 0 && !empty($conf->global->GANTT_INCLUDE_PROJECT_WIHOUT_TASK)) {

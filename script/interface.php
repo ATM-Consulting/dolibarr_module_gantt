@@ -54,6 +54,7 @@
 	switch ($get) {
 
 		case 'workstation-capacity':
+		    header('Content-Type: application/json');
 			__out(_get_ws_capactiy(  GETPOST('wsid'),GETPOST('t_start'),GETPOST('t_end'),GETPOST('scale_unit') ),'json' );
 
 			break;
@@ -286,7 +287,13 @@
 
 	function _get_ws_capactiy($wsid, $t_start, $t_end,$scale_unit) {
 
-	    return GanttPatern::get_ws_capacity($wsid, $t_start, $t_end,0,$scale_unit);
+	    $wsids=explode(',',$wsid);
+	    
+	    $Tab=array();
+	    foreach($wsids as $wsid) {
+	        $Tab[$wsid] =  GanttPatern::get_ws_capacity($wsid, $t_start, $t_end,0,$scale_unit);
+	    }
+	    return $Tab;
 	}
 
 	function _put_projects(&$TProject) {

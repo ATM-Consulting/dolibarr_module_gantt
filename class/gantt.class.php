@@ -2,7 +2,7 @@
 
 class GanttPatern {
 
-    static function getTasks($date_start, $date_end, $fk_project = 0, $restrictWS=0) {
+    static function getTasks($date_start, $date_end, $fk_project = 0, $restrictWS=0, $ref_of='',$ref_cmd='') {
         global $conf,$db;
         
         dol_include_once('/projet/class/task.class.php');
@@ -35,13 +35,17 @@ class GanttPatern {
 			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
 				LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of)
 					LEFT JOIN ".MAIN_DB_PREFIX."asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
+                        LEFT JOIN ".MAIN_DB_PREFIX."commande cmd ON (of.fk_commande=cmd.rowid)
 						";
 
         }
 
         $sql.="	WHERE t.dateo IS NOT NULL ";
 
-        if($fk_project>0) $sql.= " AND fk_projet=".$fk_project;
+        if(!empty($ref_of)) { $sql.=" AND (of.numero LIKE '%".$ref_of."%' AND of.entity=".$conf->entity." ) "; }
+        if(!empty($ref_cmd)) { $sql.=" AND (cmd.ref LIKE '%".$ref_cmd."%' AND cmd.entity=".$conf->entity.") "; }
+        
+        if($fk_project>0) $sql.= " AND t.fk_projet=".$fk_project;
         else {
 
             $sql.=" AND p.fk_statut = 1 ";
@@ -67,8 +71,8 @@ class GanttPatern {
             }
         }
 
-        $sql.=" ORDER BY t.dateo,t.rowid ";
-
+        $sql.=" ORDER BY t.dateo ASC,t.rowid ASC";
+        
         $res = $db->query($sql);
         if($res===false) {
             var_dump($db);exit;
@@ -162,11 +166,36 @@ class GanttPatern {
 		}
 		if($obj = $db->fetch_object($res)) {
 			if($obj->nb_days_before_beginning>0) {
-			$t_start_bound=strtotime('+'.((int)$obj->nb_days_before_beginning+1).' days midnight');
-			if(GETPOST('_givemesolution')=='yes') {
-				echo 'start bound delai '.date('Y-m-d', $t_start_bound).' '.$obj->nb_days_before_beginning.'<br>';
-			}
-			$TInfo[] = 'start bound delai '.date('Y-m-d', $t_start_bound);
+			    if(!empty($conf->global->GANTT_DELAY_IS_BETWEEN_TASK)) {
+			        $time_ref = time();
+			        
+			        if($task->fk_task_parent>0) { // s'il y a une tâche parente
+			            if(isset($TCacheTask[$task->fk_task_parent])) $parent = $TCacheTask[$task->fk_task_parent];
+			            else {
+			                $parent = new Task($db);
+			                $parent->fetch($task->fk_task_parent);
+			                $TCacheTask[$task->fk_task_parent] = $parent;
+			            }
+			            
+			            if($parent->progress<100) {
+			                $time_ref = strtotime('midnight',$parent->date_end);
+			                if(GETPOST('_givemesolution')=='yes') {
+			                    echo 'GANTT_DELAY_IS_BETWEEN_TASK '.date('Y-m-d H:i:s', $time_ref).' '.$obj->nb_days_before_beginning.'<br>';
+			                }
+			                $TInfo[] = 'GANTT_DELAY_IS_BETWEEN_TASK '.date('Y-m-d H:i:s', $time_ref).' '.$obj->nb_days_before_beginning;
+			            }
+			        }
+			        
+			        $t_start_bound=strtotime('+'.((int)$obj->nb_days_before_beginning).' days midnight', $time_ref);
+			    }
+			    else {
+			        $t_start_bound=strtotime('+'.((int)$obj->nb_days_before_beginning+1).' days midnight');
+			    }
+    			
+    			if(GETPOST('_givemesolution')=='yes') {
+    				echo 'start bound delai '.date('Y-m-d H:i:s', $t_start_bound).' '.$obj->nb_days_before_beginning.'<br>';
+    			}
+    			$TInfo[] = 'start bound delai '.date('Y-m-d', $t_start_bound);
 			}
 
 			if($t_start_bound>$t_start)$t_start = $t_start_bound;
@@ -295,8 +324,13 @@ class GanttPatern {
 			while(!empty($TDates[$datetest]) && $timetest<=$task->end && $ok) {
 
 				$data = &$TDates[$datetest];
-
-				if($data['capacityLeft'] - $task->hour_needed < $tolerance) {
+				$capacityLeft = $data['capacityLeft'];
+				if($data['capacity']!=='NA' && $data['nb_ressource']>0 && $data['capacity']>0 && empty($data['is_parallele'])) {
+				    $capacityLeft=min($capacityLeft,$data['nb_hour_capacity']);
+				    //var_dump('la',$datetest,$task->hour_needed,$data,$capacityLeft);exit;
+				}
+				
+				if($capacityLeft - $task->hour_needed < $tolerance) {
 					$ok =false;
 					break;
 				}

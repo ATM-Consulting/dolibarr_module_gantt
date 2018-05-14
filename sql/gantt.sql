@@ -5,6 +5,7 @@ ALTER TABLE llx_projet_task ADD INDEX ( dateo );
 ALTER TABLE llx_projet_task ADD INDEX ( datee );
 ALTER TABLE llx_projet_task ADD INDEX ( progress );
 ALTER TABLE llx_projet_task ADD INDEX ( planned_workload );
+ALTER TABLE llx_projet_task ADD INDEX dateo_datee (dateo, datee);
 ALTER TABLE llx_projet ADD INDEX ( fk_statut );
 ALTER TABLE llx_assetOf ADD INDEX ( status );
 ALTER TABLE llx_projet ADD INDEX ( dateo );

@@ -276,11 +276,11 @@ else {
 				if($range->date_end > $range->date_start + 86400 * 366) $range->date_end = $range->date_start + 86400 * 366;
 			}
 
+			$formCore=new TFormCore('auto','formDate','get');
 			?>
-			<table border="0" width="100%"><tr><td width="50%">
+			<table border="0" width="100%"><tr><td >
 			<?php
 
-			$formCore=new TFormCore('auto','formDate','get');
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
 			echo $formCore->hidden('scrollLeft', 0);
@@ -296,15 +296,22 @@ else {
 
 			}
 
+			echo '</td><td>';
+			
 			if(!empty($conf->workstation->enabled) && !$move_projects_mode) {
 			   $PDOdb=new TPDOdb;
-			   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , (GETPOST('restrictWS') == '' ? -1 : GETPOST('restrictWS')));
+			   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , (GETPOST('restrictWS') == '' ? -1 : GETPOST('restrictWS'))).'<br />';
 
 			}
 
 			echo $formCore->combo('', 'scale', array('day'=>$langs->trans('Days'),'week'=>$langs->trans('Weeks')) , GETPOST('scale'));
+			if($fk_project == 0 && !$move_projects_mode){
+			echo '</td><td>';
+			if(!empty($conf->of->enabled)) echo $formCore->texte($langs->trans('OFFilter'), 'ref_of',GETPOST('ref_of'),5,255).'<br />';
+			echo $formCore->texte($langs->trans('CMDFilter'), 'ref_cmd',GETPOST('ref_cmd'),5,255);
 
-
+			echo '</td><td>';
+			}
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
 			echo $formCore->hidden('scrollLeft', 0);
@@ -313,10 +320,10 @@ else {
 
 
 			if($fk_project == 0 && !$move_projects_mode){
-			    echo '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'. $formCore->btsubmit($langs->trans('MoveProjects'), 'moveProjects');
+			    echo '</td><td align="center">';
+			    echo $formCore->btsubmit($langs->trans('MoveProjects'), 'moveProjects');
+			    echo '</td><td>';
 			}
-
-			$formCore->end();
 
 			if($range->autotime && $range->date_end - $range->date_start > (86400 * 60)) {
 
@@ -330,25 +337,29 @@ else {
 
     			echo '</td><td align="right" width="20%"><a href="javascript:downloadThisGanttAsCSV()" >'.img_picto($langs->trans('DownloadAsCSV'), 'csv@gantt').'<a>';
 
-
     			?>
-    			</td><td align="right">
-    			<span id="ajax-waiter" class="waiter"><?php echo $langs->trans('AjaxRequestRunning') ?></span>
-
+    			</td><td align="right" valign="top">
     			<a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
     			<?php
     			if (!empty($TTaskOlder)) {
-    			     ?><a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTaskOlder) ?>');" class="button"><?php echo $langs->trans('MoveAllOlderTasks') ?></a><?php
+    			     ?><br /><a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTaskOlder) ?>');" class="button"><?php echo $langs->trans('MoveAllOlderTasks') ?></a><?php
     			}
-
+    			
+    			if(!empty($conf->global->GANTT_DONT_AUTO_REFRESH_WS)) {
+    			    ?><br /><a id="refresh-ws" style="display:inline" href="javascript:;" onclick="updateWSRangeCapacityButton();" class="button"><?php echo $langs->trans('RefreshWS') ?></a><?php
+    			}
+    			
     			?>
+    			<span id="ajax-waiter" class="waiter"><br /><?php echo $langs->trans('AjaxRequestRunning') ?></span>
     			</td><?php
 
 			}
 
 			?>
 			</tr></table>
-
+<?php 
+$formCore->end();
+?>
 			<div id="gantt_here" style='width:100%; height:100%;'></div>
 
 			<script type="text/javascript">
@@ -725,11 +736,15 @@ else {
 
 			task.text = task.title;
 
-			if(task.planned_workload>0) {
+			if(task.planned_workload>1) {
 				var m = task.planned_workload%900;
 
 				if(m>0) task.planned_workload = task.planned_workload - m + 900;
 			}
+			else {
+				task.planned_workload = 0;
+			}
+			
 			console.log(task);
 			return true;
 		}
@@ -895,10 +910,14 @@ if(!$move_projects_mode) {
     })
 	gantt.attachEvent("onBeforeTaskDisplay", function(id, task){
 
-	    if (typeof task.visible != "undefined" && task.visible == 0){
+		if (typeof task.visible != "undefined" && task.visible == 0){
 	    	/*console.log(id,task.visible);*/
 	        return false;
 	    }
+
+
+
+	    
 	    return true;
 	});
 
@@ -937,8 +956,7 @@ if(!$move_projects_mode) {
 	    }
 	});
 
-	gantt.attachEvent("onLoadEnd", function(){
-		console.log('gantt::onLoadEnd');
+	$(document).ready(function() {
 		<?php
 		if(GETPOST('scrollLeft')>10 && $scale_unit!='week') {
 
@@ -994,7 +1012,7 @@ if($move_projects_mode) {
 		}
 
 		while($t_cur<=$range->date_end) {
-			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">N/A</div>';
+			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">...</div>';
 
 			if($scale_unit=='week') {
 			    $t_cur = strtotime('+1week',$t_cur);
