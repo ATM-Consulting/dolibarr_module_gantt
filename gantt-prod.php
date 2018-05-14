@@ -297,7 +297,7 @@ else {
 			}
 
 			echo '</td><td>';
-			
+
 			if(!empty($conf->workstation->enabled) && !$move_projects_mode) {
 			   $PDOdb=new TPDOdb;
 			   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , (GETPOST('restrictWS') == '' ? -1 : GETPOST('restrictWS'))).'<br />';
@@ -344,11 +344,11 @@ else {
     			if (!empty($TTaskOlder)) {
     			     ?><br /><a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTaskOlder) ?>');" class="button"><?php echo $langs->trans('MoveAllOlderTasks') ?></a><?php
     			}
-    			
+
     			if(!empty($conf->global->GANTT_DONT_AUTO_REFRESH_WS)) {
     			    ?><br /><a id="refresh-ws" style="display:inline" href="javascript:;" onclick="updateWSRangeCapacityButton();" class="button"><?php echo $langs->trans('RefreshWS') ?></a><?php
     			}
-    			
+
     			?>
     			<span id="ajax-waiter" class="waiter"><br /><?php echo $langs->trans('AjaxRequestRunning') ?></span>
     			</td><?php
@@ -357,7 +357,7 @@ else {
 
 			?>
 			</tr></table>
-<?php 
+<?php
 $formCore->end();
 ?>
 			<div id="gantt_here" style='width:100%; height:100%;'></div>
@@ -744,7 +744,7 @@ $formCore->end();
 			else {
 				task.planned_workload = 0;
 			}
-			
+
 			console.log(task);
 			return true;
 		}
@@ -917,7 +917,7 @@ if(!$move_projects_mode) {
 
 
 
-	    
+
 	    return true;
 	});
 
@@ -1025,7 +1025,7 @@ if($move_projects_mode) {
 
 		echo 'function replicateDates() {
 				$(\'div.ws_container_label div.dates, div.ws_container>div div.dates\').remove();
-				$(\'div.ws_container_label\').append(\'<div class="gantt_row dates" style="height:12px;">&nbsp;</div>\');
+				$(\'div.ws_container_label\').append(\'<div class="gantt_row dates" style="height:12px; text-align:right;"><a href="javascript:gantt.showDate(new Date());">'.addslashes($langs->trans('GoToToday')).'</a></div>\');
 				$(\'div.ws_container>div\').append($(\'#gantt_here div.gantt_container div.gantt_task div.gantt_task_scale div.gantt_scale_line:eq(1)\').clone().addClass(\'dates\'));
 
 
