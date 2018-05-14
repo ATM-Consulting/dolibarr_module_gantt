@@ -2,26 +2,26 @@
 
 class GanttPatern {
 
-    static function getTasks($date_start, $date_end, $fk_project = 0, $restrictWS=0, $ref_of='',$ref_cmd='') {
+    static function getTasks($date_start, $date_end, $fk_project = 0, $restrictWS=0, $ref_of='',$ref_cmd='',$fk_user=0) {
         global $conf,$db;
-        
+
         dol_include_once('/projet/class/task.class.php');
-        
+
         $restrictWS = (int)$restrictWS;
         $fk_project = (int)$fk_project;
-        
+
         /*if(!empty($conf->global->GANTT_USE_CACHE_FOR_X_MINUTES)) {
 
             $TCache = & $_SESSION['ganttcache']['getTasks'][$date_start][$date_end][$fk_project][$restrictWS];
-            
+
             if(!empty($TCache) && $TCache['@time']>0 && $TCache['@time']>time() - 60 * $conf->global->GANTT_USE_CACHE_FOR_X_MINUTES) {
-             
+
                 return $TCache['@data'];
-                
+
             }
-            
+
         }*/
-        
+
         if(empty($conf->of->enabled)) {
             $sql = "SELECT t.rowid
 		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
@@ -40,11 +40,22 @@ class GanttPatern {
 
         }
 
+        if($fk_user>0) {
+
+            $sql.=" LEFT JOIN ".MAIN_DB_PREFIX."element_contact ec ON (ec.element_id=t.rowid)";
+
+        }
+
+
         $sql.="	WHERE t.dateo IS NOT NULL ";
+
+        if($fk_user>0) {
+            $sql.=" AND ec.fk_socpeople=".$fk_user." AND ec.fk_c_type_contact IN (180,181) ";
+        }
 
         if(!empty($ref_of)) { $sql.=" AND (of.numero LIKE '%".$ref_of."%' AND of.entity=".$conf->entity." ) "; }
         if(!empty($ref_cmd)) { $sql.=" AND (cmd.ref LIKE '%".$ref_cmd."%' AND cmd.entity=".$conf->entity.") "; }
-        
+
         if($fk_project>0) $sql.= " AND t.fk_projet=".$fk_project;
         else {
 
@@ -72,7 +83,7 @@ class GanttPatern {
         }
 
         $sql.=" ORDER BY t.dateo ASC,t.rowid ASC";
-        
+
         $res = $db->query($sql);
         if($res===false) {
             var_dump($db);exit;
@@ -90,7 +101,7 @@ class GanttPatern {
 
             $Tab[] = $task;
         }
-        
+
        /* if(!empty($conf->global->GANTT_USE_CACHE_FOR_X_MINUTES)) {
             unset( $_SESSION['ganttcache']['getTasks'] );
             $_SESSION['ganttcache']['getTasks'][$date_start][$date_end][$fk_project][$restrictWS]['@time'] = time();
@@ -168,7 +179,7 @@ class GanttPatern {
 			if($obj->nb_days_before_beginning>0) {
 			    if(!empty($conf->global->GANTT_DELAY_IS_BETWEEN_TASK)) {
 			        $time_ref = time();
-			        
+
 			        if($task->fk_task_parent>0) { // s'il y a une tâche parente
 			            if(isset($TCacheTask[$task->fk_task_parent])) $parent = $TCacheTask[$task->fk_task_parent];
 			            else {
@@ -176,7 +187,7 @@ class GanttPatern {
 			                $parent->fetch($task->fk_task_parent);
 			                $TCacheTask[$task->fk_task_parent] = $parent;
 			            }
-			            
+
 			            if($parent->progress<100) {
 			                $time_ref = strtotime('midnight',$parent->date_end);
 			                if(GETPOST('_givemesolution')=='yes') {
@@ -185,13 +196,13 @@ class GanttPatern {
 			                $TInfo[] = 'GANTT_DELAY_IS_BETWEEN_TASK '.date('Y-m-d H:i:s', $time_ref).' '.$obj->nb_days_before_beginning;
 			            }
 			        }
-			        
+
 			        $t_start_bound=strtotime('+'.((int)$obj->nb_days_before_beginning).' days midnight', $time_ref);
 			    }
 			    else {
 			        $t_start_bound=strtotime('+'.((int)$obj->nb_days_before_beginning+1).' days midnight');
 			    }
-    			
+
     			if(GETPOST('_givemesolution')=='yes') {
     				echo 'start bound delai '.date('Y-m-d H:i:s', $t_start_bound).' '.$obj->nb_days_before_beginning.'<br>';
     			}
@@ -329,7 +340,7 @@ class GanttPatern {
 				    $capacityLeft=min($capacityLeft,$data['nb_hour_capacity']);
 				    //var_dump('la',$datetest,$task->hour_needed,$data,$capacityLeft);exit;
 				}
-				
+
 				if($capacityLeft - $task->hour_needed < $tolerance) {
 					$ok =false;
 					break;

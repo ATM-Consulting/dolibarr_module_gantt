@@ -83,11 +83,11 @@ class ActionsGantt
                 $start = date('Y-m-01',$time);
                 $end = date('Y-m-t',$time);
 
+                $fk_user = (int)GETPOST('filtert');
                 $fk_project = (int)GETPOST('projectid');
-
                 dol_include_once('/gantt/class/gantttask.class.php');
                 dol_include_once('/gantt/class/gantt.class.php');
-                $TTaskObject = GanttPatern::getTasks($start, $end, $fk_project);
+                $TTaskObject = GanttPatern::getTasks($start, $end, $fk_project,0,'','',$fk_user);
 
                 if(!empty($TTaskObject)) {
 
