@@ -191,3 +191,11 @@ div.gantt_row:hover .misted {
 	background-image: url("../img/arrow.png");
 	background-repeat: no-repeat;
 }
+.weekend { background: #f4f7f4 !important; }
+.gantt_selected .weekend {
+	background:#FFF3A1 !important;
+}
+
+div.gantt_task_cell.eventImpact {
+	border:2px dotted #3333ff;
+}

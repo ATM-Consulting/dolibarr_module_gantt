@@ -82,7 +82,7 @@ class GanttPatern {
             }
         }
 
-        $sql.=" ORDER BY t.dateo ASC,t.rowid ASC";
+        $sql.=" ORDER BY t.dateo ASC,t.planned_workload ASC, t.rowid ASC";
 
         $res = $db->query($sql);
         if($res===false) {
@@ -99,8 +99,47 @@ class GanttPatern {
 
             if(empty($task->array_options)) $task->fetch_optionals($task->id);
 
+            $task->days_workload=array();
+            $task->linked_events=array();
+            if(!empty($conf->global->GANTT_ALLOW_TO_IMPACT_EVENT_ON_TASK)) {
+
+                $task->fetchObjectLinked($task->id, 'task', null, 'action');
+
+                if(!empty($task->linkedObjectsIds['action'])) {
+                    foreach($task->linkedObjectsIds['action'] as $fk_action) {
+
+                        $a=new ActionComm($db);
+                        $a->fetch($fk_action);
+                        $duration = $a->datef - $a->datep;
+                        $nb = ceil($duration / 86400);
+                        $t_cur = $a->datep;
+                        while($t_cur<$a->datef) {
+                            $d=date('Y-m-d', $t_cur);
+                            if(!isset($task->days_workload[$d]))$task->days_workload[$d] = array(0, array());
+
+                            $task->days_workload[$d][0]+=$duration/$nb;
+                            $task->days_workload[$d][1][]=$a->id;
+
+                            if(!isset($task->linked_events[$a->id])) {
+
+                                $url = $a->getNomUrl(1);
+                                $url.=' '.round($duration / 3600,1).'h';
+
+                                $task->linked_events[$a->id]=array($url,dol_print_date($a->datep),dol_print_date($a->datef), $duration);
+                            }
+
+                            $t_cur=strtotime('+1day',$t_cur);
+                        }
+
+                    }
+
+                }
+
+            }
             $Tab[] = $task;
         }
+
+
 
        /* if(!empty($conf->global->GANTT_USE_CACHE_FOR_X_MINUTES)) {
             unset( $_SESSION['ganttcache']['getTasks'] );

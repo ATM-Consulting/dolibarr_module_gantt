@@ -26,6 +26,7 @@ $skin = empty($conf->global->GANTT_SKIN) ? 'dhtmlxgantt_terrace.css' : $conf->gl
 llxHeader('', $langs->trans('GanttProd') , '', '', 0, 0, array(
 		'/gantt/lib/dhx/codebase/dhtmlxgantt.js',
 		'/gantt/lib/dhx/codebase/ext/dhtmlxgantt_smart_rendering.js',
+        '/gantt/lib/dhx/codebase/ext/dhtmlxgantt_undo.js',
 		/*'/gantt/lib/dhx/codebase/ext/dhtmlxgantt_quick_info.js', // display info popin on click event*/
 		'/gantt/lib/dhx/codebase/ext/dhtmlxgantt_tooltip.js',
 		'/gantt/lib/dhx/codebase/locale/locale_fr.js',
@@ -335,8 +336,15 @@ else {
 
 			if(!$move_projects_mode) {
 
-    			echo '</td><td align="right" width="20%"><a href="javascript:downloadThisGanttAsCSV()" >'.img_picto($langs->trans('DownloadAsCSV'), 'csv@gantt').'<a>';
+    			echo '</td><td align="right" width="20%">
+                    <a href="javascript:downloadThisGanttAsCSV()" >'.img_picto($langs->trans('DownloadAsCSV'), 'csv@gantt').'<a>';
 
+			}
+/*
+			     echo '<a href="javascript:gantt.undo();">'.img_picto($langs->trans('UndoLastAction'), 'undo@gantt').'</a>';
+			     echo '<a href="javascript:gantt.redo();">'.img_picto($langs->trans('RedoLastAction'), 'redo@gantt').'</a>';
+*/
+    	    if(!$move_projects_mode) {
     			?>
     			</td><td align="right" valign="top">
     			<a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTask) ?>');" class="button"><?php echo $langs->trans('MoveAllTasks') ?></a>
@@ -472,6 +480,27 @@ $formCore->end();
 	    }
 	};
 	gantt.templates.task_cell_class = function(item,date){
+
+		for (d in item.days_workload) {
+
+			date2 = new Date(d);
+			date2.setHours(0,0,0,0);
+
+			if(+date == +date2) {
+				r = 'eventImpact';
+
+				for(x in item.days_workload[d][1]) {
+					fk_action = item.days_workload[d][1][x];
+					r+=' fk_action'+fk_action;
+				}
+
+				return r;
+			}
+
+
+
+		}
+
 	    if(date.getDay()==0||date.getDay()==6){
 	        return "weekend" ;
 	    }
@@ -664,6 +693,13 @@ $formCore->end();
 
 			r+="<br /><?php echo $langs->trans('TodoFor') ?> "+d.toLocaleDateString();
 
+		}
+
+		if(task.linked_events) {
+    		for(i in task.linked_events) {
+    			var url = task.linked_events[i][0];
+    			r+='<br />'+url;
+    		}
 		}
 
 		return r;
@@ -972,6 +1008,9 @@ if(!$move_projects_mode) {
 	gantt.config.drag_links = false;
 	gantt.config.autoscroll = false;
 	gantt.config.autosize = "y";
+	gantt.config.undo = true;
+	gantt.config.redo = true;
+	gantt.config.undo_steps = 100;
 
 <?php
 if($move_projects_mode) {
@@ -1149,16 +1188,28 @@ if($move_projects_mode) {
 				url:"<?php echo dol_buildpath('/gantt/script/interface.php',1) ?>?get=keep-alive"
 			});
 		}, 60000);
+/*
+		$('div.gantt_task_cell.eventImpact').each(function(i,item) {
+			$item = $(item);
+			var classList = $item[0].classList;
+
+			for(i=0;i<classList.length;i++) {
+					if(classList[i].indexOf('fk_action')!=-1) {
+						var fk_action = classList[i].substring(9);
+
+						$item.append('<a href="<?php echo dol_buildpath('/comm/action/card.php', 1) ?>?id='+fk_action+'" target="_blank">'+fk_action+'</a>');
+					}
+			}
+
+
+		});
+*/
 	});
 
 	</script>
 
 
 	<style type="text/css" media="screen">
-		.weekend { background: #f4f7f4 !important; }
-		.gantt_selected .weekend {
-			background:#FFF3A1 !important;
-		}
 
 		<?php
 
