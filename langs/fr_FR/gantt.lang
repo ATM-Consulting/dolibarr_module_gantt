@@ -82,5 +82,7 @@ GANTT_DELAY_IS_BETWEEN_TASK=La notion de délai se rapporte à la tâche parente
 GANTT_DONT_AUTO_REFRESH_WS=Ne pas rafraîchir automatique la capacité des postes de charges affichés
 RefreshWS=Rafraîchir les capacités
 GoToToday=Aller à aujourd'hui
+AndSplitedChildTask=et les tâches enfants issues
+
 
  

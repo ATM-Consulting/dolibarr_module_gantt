@@ -117,7 +117,7 @@ else {
 //pre($TElement,1);exit;
 
 	_get_workstation(); // init tableau de WS
-
+    $splited_container_i = 0;
 	$open = false;
 	if(GETPOST('open')) $open = true;
 	else if(GETPOST('close')) $open = false;
@@ -227,6 +227,8 @@ else {
                 							}
 
                 							if(!empty($wsData['childs'])) {
+                							    $splited_container_i++;
+
 	                							foreach($wsData['childs'] as &$task) {
 
 	                								$task->ws = &$ws;
@@ -235,7 +237,29 @@ else {
 
 	                								if($task->date_start<time())$TTaskOlder[] = $task->id;
 
-	                								$TData[$task->ganttid] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after,$taskColor);
+	                								if(!empty($task->array_options['options_fk_gantt_parent_task'])
+	                								    && substr($task->array_options['options_fk_gantt_parent_task'],0,7) === 'SPLITCN') {
+	                								    // container
+	                								    $containerId = $task->array_options['options_fk_gantt_parent_task'].$splited_container_i;
+
+	                								    if(!isset($TData[$containerId])) {
+
+	                								       $container = new stdClass();
+	                								       $container->text = $task->text.' '.$langs->trans('AndSplitedChildTask');
+	                								       $container->element = 'container';
+	                								       $container->ganttid = $containerId;
+	                								       $container->array_options= $task->array_options;
+
+	                								       $TData[$container->ganttid] = _get_json_data($container, 'false', $fk_parent_ws, 0,0,$taskColor);
+
+	                								    }
+
+	                								    $TData[$task->ganttid] = _get_json_data($task, $close_init_status, $containerId, $time_task_limit_no_before,$time_task_limit_no_after,$taskColor);
+
+	                								}
+	                								else {
+	                								    $TData[$task->ganttid] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after,$taskColor);
+	                								}
 
 													if($task->fk_task_parent>0) {
 														$linkId = count($TLink)+1;
