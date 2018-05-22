@@ -59,7 +59,7 @@ class GanttPatern {
         if($fk_project>0) $sql.= " AND t.fk_projet=".$fk_project;
         else {
 
-            $sql.=" AND p.fk_statut = 1 ";
+            if(empty($conf->global->GANTT_SHOW_TASK_FROM_ANY_PROJECT_STATUS)) $sql.=" AND p.fk_statut = 1 ";
 
             if(!empty($conf->of->enabled)) {
                 $sql.= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
