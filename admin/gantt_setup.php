@@ -339,6 +339,19 @@ echo ajax_constantonoff('GANTT_DONT_AUTO_REFRESH_WS');
 print '</form>';
 print '</td></tr>';
 
+
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("GANTT_ALLOW_DIRECT_PROGRESS_EDITING").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="right" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+print '<input type="hidden" name="action" value="set_GANTT_ALLOW_DIRECT_PROGRESS_EDITING">';
+echo ajax_constantonoff('GANTT_ALLOW_DIRECT_PROGRESS_EDITING');
+print '</form>';
+print '</td></tr>';
+
 /*
 $var=!$var;
 print '<tr '.$bc[$var].'>';

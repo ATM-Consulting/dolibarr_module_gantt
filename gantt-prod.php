@@ -1198,6 +1198,13 @@ if($move_projects_mode) {
 			}
 		}
 
+		if(empty($conf->global->GANTT_ALLOW_DIRECT_PROGRESS_EDITING)) {
+		  echo '.gantt_task_line:hover div.gantt_task_progress_drag {
+		        display:none;
+		  }';
+
+		}
+
 		?>
 
 

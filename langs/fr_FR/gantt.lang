@@ -83,6 +83,7 @@ GANTT_DONT_AUTO_REFRESH_WS=Ne pas rafraîchir automatique la capacité des poste
 RefreshWS=Rafraîchir les capacités
 GoToToday=Aller à aujourd'hui
 AndSplitedChildTask=et les tâches enfants issues
+GANTT_ALLOW_DIRECT_PROGRESS_EDITING=Permettre l'édition directe du pourcentage de progression
 
 
  

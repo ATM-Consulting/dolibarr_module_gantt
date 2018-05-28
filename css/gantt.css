@@ -37,7 +37,8 @@
 ,.gantt_task_line.gantt_order div.gantt_task_progress_drag
 ,.gantt_task_line.gantt_milestone div.gantt_task_progress_drag
 ,.gantt_task_line.gantt_release div.gantt_task_progress_drag
-,.gantt_task_line.gantt_of div.gantt_task_progress_drag {
+,.gantt_task_line.gantt_of div.gantt_task_progress_drag
+,.gantt_task_line.gantt_dependent_task div.gantt_task_progress_drag {
 	display:none;
 }
 .gantt_task_line.gantt_of {
