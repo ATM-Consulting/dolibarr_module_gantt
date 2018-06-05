@@ -580,12 +580,14 @@ $formCore->end();
     gantt.locale.labels["section_workstation"] = "<?php echo $langs->transnoentities('Workstation') ?>";
     gantt.locale.labels["section_needed_ressource"] = "<?php echo $langs->transnoentities('needed_ressource') ?>";
     gantt.locale.labels["section_planned_workload"] = "<?php echo $langs->transnoentities('planned_workload') ?>";
+    gantt.locale.labels["section_user"] = "<?php echo $langs->transnoentities('User') ?>";
 
 	gantt.config.lightbox.sections = [
         {name: "description", height: 26, map_to: "text", type: "textarea", focus: true},
         {name: "workstation", label:"<?php echo $langs->transnoentities('Workstation'); ?>", height: 22, type: "select", width:"60%", map_to: "workstation",options: [
             <?php echo _get_workstation_list(); ?>
         ]},
+        {name: "user", label:"<?php echo $langs->transnoentities('User'); ?>", height: 22, type: "select", width:"60%", map_to: "fk_user",options: []},
 
         {name: "needed_ressource", height: 26, map_to: "needed_ressource", type: "textarea"},
         {name: "progress", height: 22, map_to: "progress", type: "select", options: [
@@ -716,12 +718,22 @@ $formCore->end();
 		$('div.ws_container ').scrollLeft( $('div.gantt_hor_scroll').scrollLeft() );
 	});
 
-	/*gantt.attachEvent("onBeforeLightbox", function(id) {
+	gantt.attachEvent("onBeforeLightbox", function(id) {
 	    var task = gantt.getTask(id);
 
-		gantt.getLightboxSection('workstation').setValue(task.workstation);
+		var opts=[];
+		for(x in workstations[task.workstation].users) {
+			opts.push({ key:x, label:workstations[task.workstation].users[x] });
+		}
+
+		for(x in gantt.config.lightbox.sections) { //TODO it's hack, find a better way
+			if(gantt.config.lightbox.sections[x].name=="user") {
+				gantt.config.lightbox.sections[x].options = opts;
+			}
+		}
+
 	    return true;
-	});*/
+	});
 
 	gantt.attachEvent("onAfterTaskAdd", function(id,task){
 		//console.log('createTask',id, task);

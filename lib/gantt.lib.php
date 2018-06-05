@@ -749,7 +749,10 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 		$ws_type = (empty($workstationList[$fk_workstation])?'':$workstationList[$fk_workstation]->type);
 		$visible = isset($object->visible) && $object->visible == 0 ? 0 : 1;
 
-		return '{"id":"'.$object->ganttid.'"'.$taskColorCode.',"ref":"'.$object->ref.'","needed_ressource":'.(int)$needed_ressource
+		$contacts = $object->getListContactId();
+		$fk_user = empty($contacts[0]) ? 0 : $contacts[0];
+
+		return '{"id":"'.$object->ganttid.'"'.$taskColorCode.',"fk_user":'.$fk_user.',"ref":"'.$object->ref.'","needed_ressource":'.(int)$needed_ressource
 				.',"time_task_limit_no_before":'.(int)$time_task_limit_no_before.',"time_task_limit_no_after":'.(int)$time_task_limit_no_after
 				.',"planned_workload":'.(int)$object->planned_workload.' ,"objElement":"'.$object->element.'","objId":"'.$object->id.'"'
 				.',"workstation_type":"'.$ws_type.'"'
@@ -796,7 +799,7 @@ function _get_workstation()
 		return 0;
 	}
 
-	$sql = "SELECT w.rowid as id , w.name, w.nb_hour_capacity, w.nb_hour_capacity, w.nb_ressource,w.background,w.type FROM ".MAIN_DB_PREFIX."workstation w  ";
+	$sql = "SELECT w.rowid as id , w.name, w.nb_hour_capacity, w.nb_hour_capacity, w.nb_ressource,w.background,w.type,w.fk_usergroup FROM ".MAIN_DB_PREFIX."workstation w  ";
 
 	//echo $sql.$sqlWhere;
 	$res = $db->query($sql);
@@ -804,10 +807,21 @@ function _get_workstation()
 		var_dump($db);exit;
 	}
 
+	dol_include_once('/user/class/usergroup.class.php');
+
 	$workstationList = array();
 
 	while($obj = $db->fetch_object($res)) {
 		$workstationList[$obj->id] = $obj;
+
+		$usergroup=new UserGroup($db);
+		$usergroup->fetch($obj->fk_usergroup);
+		$users = $usergroup->listUsersForGroup('',0);
+		foreach($users as &$u) {
+		    $u = $u->getFullName();
+		}
+
+		$workstationList[$obj->id]->users = $users;
 	}
 	return count($workstationList);
 }

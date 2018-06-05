@@ -256,6 +256,11 @@
 			if($res<0 ) {
 				var_dump($res);
 			}
+
+			if($data['fk_user']>0) {
+			    $o->delete_linked_contact('internal');
+			    $o->add_contact($data['fk_user'], 181,'internal');//todo code !
+			}
 				return $res;
 				break;
 
