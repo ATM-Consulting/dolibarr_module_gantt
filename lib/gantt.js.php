@@ -219,7 +219,7 @@ function moveTasks(tasksid) {
 	}).done(function(data) {
 
 		$.each(data, function(i, item) {
-		
+
 			var t = gantt.getTask('T'+i);
 
 			if(item.duration>0) {
@@ -499,6 +499,7 @@ function saveTask(task, old_event=false,is_new = false)
 			,description:task.title
 			,needed_ressource:task.needed_ressource
 			,planned_workload:task.planned_workload
+			,fk_user:task.fk_user
 		},
 		method:"post",
 	    success: function(data){
@@ -662,7 +663,7 @@ function pop_event(callback) {
 //console.log('nb_hour_capacity', data);
 			for(wsid in data) {
 			var data2 = data[wsid];
-			
+
 			for(d in data2) {
 				row = data2[d];
 				var c = row.capacityLeft;
@@ -753,7 +754,7 @@ function pop_event(callback) {
 		}
 		}
 	});
-	
+
 	TPipeUWSC[wsid] = xhr;
 
 	return deferred.promise();
@@ -772,13 +773,13 @@ var end_refresh_ws = 0;
 
 function updateWSRangeCapacity(sl, forceRefresh) {
 
-	<?php 
+	<?php
 
         if(!empty($conf->global->GANTT_DONT_AUTO_REFRESH_WS)) {
                echo ' if(!forceRefresh) return; ';
-                
+
         }
-    
+
     ?>
 
 
@@ -836,7 +837,7 @@ function updateWSRangeCapacity(sl, forceRefresh) {
 			});
 		});
 
-<?php 
+<?php
 $TabToUpdateWSCapacity=array();
 foreach($TWS as &$ws) {
     if($ws->type!='STT' && !is_null($ws->id) && $ws->id>0 ) {
