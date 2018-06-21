@@ -31,7 +31,7 @@ class GanttTask extends Task {
                         $linkclose.=' alt="'.dol_escape_htmltag($label, 1).'"';
                     }
                     $linkclose.= ' title="'.dol_escape_htmltag($label, 1).'"';
-                    $linkclose.=' class="classfortooltip"';
+                    $linkclose.=' class="classfortooltip cal_event"';
 
 
                 $linkstart = '<a href="'.$url.'"';
