@@ -505,7 +505,6 @@ function saveTask(task, old_event=false,is_new = false)
 	    success: function(data){
 
 		    // TODO : gérer un vrai message avec des retour en json
-			/*gantt.message(task.title + ' <?php echo $langs->trans('Saved') ?>');*/
 
 				if(old_event)
 				{

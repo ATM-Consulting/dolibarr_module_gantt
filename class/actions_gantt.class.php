@@ -159,7 +159,62 @@ class ActionsGantt
 
 			}
 
+
 		}
 
+		if (in_array('projecttaskcard', $TContext)) {
+		    global $langs;
+
+		    ?>
+				<script type="text/javascript">
+				$(document).ready(function() {
+					$('div.tabsAction').first().append('<a class="butAction" href="?id=<?php echo $object->id ?>&action=gantt-move-all-task"><?php echo $langs->trans('MoveAllTasks') ?></a>');
+				});
+				</script>
+
+		    <?php
+		}
+	}
+
+
+	function doActions($parameters, &$object, &$action, $hookmanager)
+	{
+
+	    $TContext = explode(':', $parameters['context']);
+
+	    if (in_array('projecttaskcard', $TContext) && $action == 'gantt-move-all-task') {
+		    global $langs, $user;
+
+		    $db = &$object->db;
+
+		    $task=new Task($db);
+		    $tasks = $task->getTasksArray(null, null, $object->id);
+
+		    $tasksid=array();
+		    foreach($tasks as &$t) {
+		        if($t->progress<100 && $t->planned_workload>0) $tasksid[] = $t->id;
+		    }
+		    if(!empty($tasksid)) {
+
+    		    define('INC_FROM_DOLIBARR',true);
+    		    dol_include_once('/gantt/config.php');
+    		    dol_include_once('/gantt/class/gantt.class.php');
+
+    		    $t_start = strtotime('midnight +1day');
+    		    $t_end = strtotime('+6 month');
+
+    		    $Tab = GanttPatern::get_better($tasksid, $t_start, $t_end);
+
+    		    foreach($Tab as $fk_task=>$pattern) {
+
+    		          $task=new Task($db);
+    		          $task->fetch($fk_task);
+    		          $task->date_start = $pattern['start'];
+    		          $task->date_end = strtotime('+'.$pattern['duration'].'day -1day', $task->date_start) + 86399;
+                      $task->update($user);
+
+    		    }
+		    }
+		}
 	}
 }

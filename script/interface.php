@@ -285,13 +285,36 @@
                 $o=new Project($db);
                 $o->fetch((int)$data['id']);
 
-                $old_start_date = $o->date_start;
+                if($o->date_start<=0) {
+                // date de début du projet non défini, on prends donc la date de début de la 1ère tâche
+
+                    $res = $db->query("SELECT MIN(dateo) as date_start
+                            FROM ".MAIN_DB_PREFIX."projet_task as t
+                            WHERE fk_projet=".$o->id." AND (progress IS NULL OR progress<100) AND dateo IS NOT NULL ");
+
+                    if($res!==false) {
+                        $obj = $db->fetch_object($res);
+                        if($obj && !empty($obj->date_start)) {
+
+                            $old_start_date = strtotime($obj->date_start);
+
+                        }
+
+
+                    }
+
+                }
+                else {
+                    $old_start_date = $o->date_start;
+                }
+
 
                 $o->date_start = $data['start'] / 1000;
                 $o->date_end = ($data['end'] / 1000) - 1;
                 $o->update($user);
 
-                return $o->shiftTaskDate($old_start_date);
+                if(empty($old_start_date)) return -1;
+                else return $o->shiftTaskDate($old_start_date);
 
 			    break;
 
