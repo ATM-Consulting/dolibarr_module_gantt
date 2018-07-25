@@ -33,7 +33,7 @@ class GanttPatern {
             $sql = "SELECT t.rowid,wof.nb_days_before_beginning
 		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
 			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
-				LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of)
+				LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of AND of.fk_project = t.fk_projet)
 					LEFT JOIN ".MAIN_DB_PREFIX."asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
                         LEFT JOIN ".MAIN_DB_PREFIX."commande cmd ON (of.fk_commande=cmd.rowid)
 						";
