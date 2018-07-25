@@ -818,7 +818,7 @@ function _get_workstation()
 		$usergroup->fetch($obj->fk_usergroup);
 		$users = $usergroup->listUsersForGroup('',0);
 		foreach($users as &$u) {
-		    $u = $u->getFullName();
+		    $u = $u->getFullName($langs);
 		}
 
 		$workstationList[$obj->id]->users = $users;
