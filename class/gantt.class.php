@@ -318,15 +318,15 @@ class GanttPatern {
 
 		$tolerance = empty($conf->global->GANTT_OVERLOAD_TOLERANCE) ? 0 : -(float)$conf->global->GANTT_OVERLOAD_TOLERANCE;
 
-		$row = array('start'=>-1, 'duration'=>$task->duration);
-
+		$row = array('start'=>-1, 'duration'=>ceil($task->planned_workload) / 86400);
+		
 		foreach($TDates as $date=>&$data) {
 
-			$time = strtotime($date);
+		    $time = strtotime($date); 
 			if($time>$t_end || $time < $t_start) continue;
-
+			
 			$task->start = $time;
-			$task->end = $time + (86400 * $task->duration) - 1;
+			$task->end = $time + ($task->planned_workload) - 1;
 
 			$timetest= $task->start;
 			$datetest = $date;
@@ -340,8 +340,8 @@ class GanttPatern {
 				    $capacityLeft=min($capacityLeft,$data['nb_hour_capacity']);
 				    //var_dump('la',$datetest,$task->hour_needed,$data,$capacityLeft);exit;
 				}
-
-				if($capacityLeft - $task->hour_needed < $tolerance) {
+                
+				if(!empty($tolerance) && $capacityLeft - $task->hour_needed < $tolerance) {
 					$ok =false;
 					break;
 				}
@@ -357,7 +357,7 @@ class GanttPatern {
 					$data2 = &$TDates[$date];
 					$data2['capacityLeft'] -= $task->hour_needed;
 				}
-
+				
 				$row['start'] = $time;
 				$row['hour_needed'] = $task->hour_needed; //juste pour debug TODO remove
 				$row['date_start'] = date('Y-m-d H:i:s',$time); //juste pour debug TODO remove
@@ -392,9 +392,9 @@ if(GETPOST('_givemesolution')=='yes') {
 echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end).'<br />';
 }
 			$row = self::gb_search_days($TDates, $task, $t_start, $t_end);
-
+			
 			if($row['start'] == -1) $row = self::gb_search($TDates, $task, $t_start, $t_end, $duration + 1);
-
+			
 		}
 
 		return array_merge($row,$TInfo);
@@ -403,9 +403,9 @@ echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end)
 	static function get_better_task(&$TWS, &$task, $t_start, $t_end) {
 
 		$fk_workstation = (int)$task->array_options['options_fk_workstation'];
-
+		
 		if($fk_workstation>0 && $task->progress < 100) {
-			if(empty($TWS[$fk_workstation])) $TWS[$fk_workstation] = self::get_ws_capacity($fk_workstation, $t_start, $t_end, $task->id);
+		    if(empty($TWS[$fk_workstation])) $TWS[$fk_workstation] = self::get_ws_capacity($fk_workstation, $t_start, $t_end, $task->id);
 			return self::gb_search($TWS[$fk_workstation], $task, $t_start, $t_end);
 
 		}
