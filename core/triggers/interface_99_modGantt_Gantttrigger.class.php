@@ -122,7 +122,15 @@ class InterfaceGantttrigger
 			$project->fetch($object->fk_project);
 
 			$t_current = time();
-
+			
+			if (!empty($object->fk_task_parent)) // si la tâche a un parent elle ne peut débuter qu'après la fin de celui-ci
+			{
+			    $parent = new Task($db);
+			    $parent->fetch($object->fk_task_parent);
+			    
+			    $t_current = $parent->date_end;
+			}
+// 			var_dump($t_current); 
 			$t_start =  max( $project->date_start, $t_current);
 			
 			$day_range = empty($conf->global->GANTT_DAY_RANGE_FROM_NOW) ? 90 : $conf->global->GANTT_DAY_RANGE_FROM_NOW;
