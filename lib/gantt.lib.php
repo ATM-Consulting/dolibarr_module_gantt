@@ -632,7 +632,7 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 		}
 
 
-		return '{"id":"'.$object->ganttid.'"'.$taskColorCode.',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.(($conf->global->GANTT_DEFAULT_OPENTAB_STATUS) ? $conf->global->GANTT_DEFAULT_OPENTAB_STATUS : true).'}';
+		return '{"id":"'.$object->ganttid.'"'.$taskColorCode.',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.((!$conf->global->GANTT_DEFAULT_OPENTAB_STATUS) ? 'true' : 'false').'}';
 	}
 	else if($object->element == 'project') {
 
