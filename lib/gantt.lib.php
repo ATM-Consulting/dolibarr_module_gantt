@@ -1,3 +1,4 @@
+
 <?php
 /* <one line to give the program's name and a brief idea of what it does.>
  * Copyright (C) 2015 ATM Consulting <support@atm-consulting.fr>
@@ -608,6 +609,7 @@ function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $ma
 }
 
 function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $time_task_limit_no_before=0,$time_task_limit_no_after=0, $taskColor = '',$move_projects_mode = false) {
+        global $conf;
 
 	if($object->element == 'commande') {
 	    $date_max = $object->date_livraison ? strtotime('+1day midnight',$object->date_livraison) : 0;
@@ -630,7 +632,7 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 		}
 
 
-		return '{"id":"'.$object->ganttid.'"'.$taskColorCode.',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: true}';
+		return '{"id":"'.$object->ganttid.'"'.$taskColorCode.',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.(($conf->global->GANTT_DEFAULT_OPENTAB_STATUS) ? $conf->global->GANTT_DEFAULT_OPENTAB_STATUS : true).'}';
 	}
 	else if($object->element == 'project') {
 

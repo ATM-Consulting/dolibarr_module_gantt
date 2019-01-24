@@ -84,6 +84,6 @@ RefreshWS=Rafraîchir les capacités
 GoToToday=Aller à aujourd'hui
 AndSplitedChildTask=et les tâches enfants issues
 GANTT_ALLOW_DIRECT_PROGRESS_EDITING=Permettre l'édition directe du pourcentage de progression
-
+GANTT_DEFAULT_OPENTAB_STATUS=Dérouler par défaut les jalons liés aux postes de travail dans la vue Gantt
 
  
