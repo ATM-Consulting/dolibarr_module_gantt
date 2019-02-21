@@ -246,6 +246,7 @@ class modGantt extends DolibarrModules
 	 */
 	function init($options='')
 	{
+	    global $conf;
 		$sql = array();
 
 		define('INC_FROM_DOLIBARR',true);
