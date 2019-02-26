@@ -125,7 +125,11 @@ function _get_task_for_of($fk_project = 0) {
         if(((!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK) && !empty($task->linkedObjectsIds['tassetof'])) || $task->array_options['options_fk_of'] > 0)
             && !empty($conf->of->enabled)) {
 
-            if(!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)) foreach($task->linkedObjectsIds['tassetof'] as $fk_of) $TTaskOfs[] = _loadOF($TCacheOF, $fk_of);
+            if(!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)) {
+                if(!empty($task->linkedObjectsIds['tassetof'])) {
+                    foreach($task->linkedObjectsIds['tassetof'] as $fk_of) $TTaskOfs[] = _loadOF($TCacheOF, $fk_of);
+                }
+            }
             else $TTaskOfs[] = _loadOF($TCacheOF, $task->array_options['options_fk_of']);
         }
         else {
