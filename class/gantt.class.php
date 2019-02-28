@@ -30,13 +30,24 @@ class GanttPatern {
 
         }
         else {
-            $sql = "SELECT t.rowid,wof.nb_days_before_beginning
-		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
-			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
-				LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of AND of.fk_project = t.fk_projet)
-					LEFT JOIN ".MAIN_DB_PREFIX."asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
-                        LEFT JOIN ".MAIN_DB_PREFIX."commande cmd ON (of.fk_commande=cmd.rowid)
-						";
+            if(!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)){
+                $sql = "SELECT t.rowid,wof.nb_days_before_beginning
+                FROM " . MAIN_DB_PREFIX . "projet_task t 
+                LEFT JOIN " . MAIN_DB_PREFIX . "element_element ee  ON (ee.fk_target=t.rowid AND ee.targettype='project_task' AND ee.sourcetype='tassetof')
+                    LEFT JOIN " . MAIN_DB_PREFIX . "projet p ON (p.rowid=t.fk_projet)
+                        LEFT JOIN " . MAIN_DB_PREFIX . "assetOf of ON (of.rowid = ee.fk_source AND of.fk_project = t.fk_projet)
+                            LEFT JOIN " . MAIN_DB_PREFIX . "asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
+                                LEFT JOIN " . MAIN_DB_PREFIX . "commande cmd ON (of.fk_commande=cmd.rowid)
+                                ";
+            }else {
+                $sql = "SELECT t.rowid,wof.nb_days_before_beginning
+                FROM " . MAIN_DB_PREFIX . "projet_task t LEFT JOIN " . MAIN_DB_PREFIX . "projet_task_extrafields tex ON (tex.fk_object=t.rowid)
+                    LEFT JOIN " . MAIN_DB_PREFIX . "projet p ON (p.rowid=t.fk_projet)
+                        LEFT JOIN " . MAIN_DB_PREFIX . "assetOf of ON (of.rowid = tex.fk_of AND of.fk_project = t.fk_projet)
+                            LEFT JOIN " . MAIN_DB_PREFIX . "asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
+                                LEFT JOIN " . MAIN_DB_PREFIX . "commande cmd ON (of.fk_commande=cmd.rowid)
+                                ";
+            }
 
         }
 
@@ -62,9 +73,15 @@ class GanttPatern {
             if(empty($conf->global->GANTT_SHOW_TASK_FROM_ANY_PROJECT_STATUS)) $sql.=" AND p.fk_statut = 1 ";
 
             if(!empty($conf->of->enabled)) {
-                $sql.= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
-			AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
-			";
+                if(!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)){
+                    $sql .= " AND ee.fk_source IS NOT NULL AND ee.fk_source>0 AND (t.progress<100 OR t.progress IS NULL)
+                    AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
+                    ";
+                }else {
+                    $sql .= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
+                    AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
+                    ";
+                }
             }
             $sql.=" AND t.dateo <= '".$date_end."' AND t.datee >=  '".$date_start."' ";
 
