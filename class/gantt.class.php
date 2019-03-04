@@ -30,13 +30,24 @@ class GanttPatern {
 
         }
         else {
-            $sql = "SELECT t.rowid,wof.nb_days_before_beginning
-		FROM ".MAIN_DB_PREFIX."projet_task t LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object=t.rowid)
-			LEFT JOIN ".MAIN_DB_PREFIX."projet p ON (p.rowid=t.fk_projet)
-				LEFT JOIN ".MAIN_DB_PREFIX."assetOf of ON (of.rowid = tex.fk_of AND of.fk_project = t.fk_projet)
-					LEFT JOIN ".MAIN_DB_PREFIX."asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
-                        LEFT JOIN ".MAIN_DB_PREFIX."commande cmd ON (of.fk_commande=cmd.rowid)
-						";
+            if(!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)){
+                $sql = "SELECT t.rowid,wof.nb_days_before_beginning
+                FROM " . MAIN_DB_PREFIX . "projet_task t 
+                LEFT JOIN " . MAIN_DB_PREFIX . "element_element ee  ON (ee.fk_target=t.rowid AND ee.targettype='project_task' AND ee.sourcetype='tassetof')
+                    LEFT JOIN " . MAIN_DB_PREFIX . "projet p ON (p.rowid=t.fk_projet)
+                        LEFT JOIN " . MAIN_DB_PREFIX . "assetOf of ON (of.rowid = ee.fk_source AND of.fk_project = t.fk_projet)
+                            LEFT JOIN " . MAIN_DB_PREFIX . "asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
+                                LEFT JOIN " . MAIN_DB_PREFIX . "commande cmd ON (of.fk_commande=cmd.rowid)
+                                ";
+            }else {
+                $sql = "SELECT t.rowid,wof.nb_days_before_beginning
+                FROM " . MAIN_DB_PREFIX . "projet_task t LEFT JOIN " . MAIN_DB_PREFIX . "projet_task_extrafields tex ON (tex.fk_object=t.rowid)
+                    LEFT JOIN " . MAIN_DB_PREFIX . "projet p ON (p.rowid=t.fk_projet)
+                        LEFT JOIN " . MAIN_DB_PREFIX . "assetOf of ON (of.rowid = tex.fk_of AND of.fk_project = t.fk_projet)
+                            LEFT JOIN " . MAIN_DB_PREFIX . "asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
+                                LEFT JOIN " . MAIN_DB_PREFIX . "commande cmd ON (of.fk_commande=cmd.rowid)
+                                ";
+            }
 
         }
 
@@ -62,9 +73,15 @@ class GanttPatern {
             if(empty($conf->global->GANTT_SHOW_TASK_FROM_ANY_PROJECT_STATUS)) $sql.=" AND p.fk_statut = 1 ";
 
             if(!empty($conf->of->enabled)) {
-                $sql.= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
-			AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
-			";
+                if(!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)){
+                    $sql .= " AND ee.fk_source IS NOT NULL AND ee.fk_source>0 AND (t.progress<100 OR t.progress IS NULL)
+                    AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
+                    ";
+                }else {
+                    $sql .= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
+                    AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
+                    ";
+                }
             }
             $sql.=" AND t.dateo <= '".$date_end."' AND t.datee >=  '".$date_start."' ";
 
@@ -241,20 +258,26 @@ class GanttPatern {
 
 		}
 
-		if(empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE) && $task->array_options['options_fk_of']>0 &&  !empty($conf->of->enabled) ) {
+        if(!empty($conf->of->enabled) && !empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)) {
+            if(!isset($conf->tassetof)) $conf->tassetof = new \stdClass(); // for warning
+            $conf->tassetof->enabled = 1; // pour fetchobjectlinked
+            $task->fetchObjectLinked(0, 'tassetof', $task->id, $task->element, 'OR', 1, 'sourcetype', 0);
+        }
+
+		if(empty($conf->global->GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE) &&
+            ((!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK) && !empty($task->linkedObjectsIds['tassetof'])) ||$task->array_options['options_fk_of']>0) &&
+            !empty($conf->of->enabled) ) {
 
 			dol_include_once('/fourn/class/fournisseur.commande.class.php');
 			dol_include_once('/of/class/ordre_fabrication_asset.class.php');
 
-			if(isset($TCacheOFSupplierOrder[$task->array_options['options_fk_of']]))$TIdCommandeFourn = $TCacheOFSupplierOrder[$task->array_options['options_fk_of']];
-			else {
-
-				$PDOdb=new TPDOdb;
-				$of=new TAssetOF();
-				$of->load($PDOdb, $task->array_options['options_fk_of']);
-				$TIdCommandeFourn = $TCacheOFSupplierOrder[$task->array_options['options_fk_of']] = $of->getElementElement($PDOdb);
-
-			}
+            if(empty($conf->global->ASSET_CUMULATE_PROJECT_TASK))$TIdCommandeFourn = GanttPatern::_getIdCommandeFournByOf($TCacheOFSupplierOrder,$task->array_options['options_fk_of']);
+            else {
+                $TIdCommandeFourn = array();
+                foreach($task->linkedObjectsIds['tassetof'] as $fk_of){
+                    $TIdCommandeFourn = array_merge($TIdCommandeFourn, GanttPatern::_getIdCommandeFournByOf($TCacheOFSupplierOrder,$fk_of));
+                }
+            }
 
 			if(count($TIdCommandeFourn)){
 				foreach($TIdCommandeFourn as $idcommandeFourn){
@@ -285,28 +308,26 @@ class GanttPatern {
 
 			}
 
-			if(empty($conf->global->GANTT_DISABLE_ORDER_MILESTONE) && $task->array_options['options_fk_of']>0 &&  !empty($conf->of->enabled)) {
+			if(empty($conf->global->GANTT_DISABLE_ORDER_MILESTONE)
+                && ((!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK) && !empty($task->linkedObjectsIds['tassetof'])) ||$task->array_options['options_fk_of']>0)
+                &&  !empty($conf->of->enabled)) {
+
 				dol_include_once('/of/class/ordre_fabrication_asset.class.php');
 				dol_include_once('/commande/class/commande.class.php');
+                $TOrders = array();
+                if(empty($conf->global->ASSET_CUMULATE_PROJECT_TASK))$TOrders[] = GanttPatern::_getOrderByOf($TCacheOFOrder,$task->array_options['options_fk_of']>0);
+                else {
+                    foreach($task->linkedObjectsIds['tassetof'] as $fk_of){
+                        $TOrders[] = GanttPatern::_getOrderByOf($TCacheOFOrder,$fk_of);
+                    }
+                }
 
-				if(isset($TCacheOFOrder[$task->array_options['options_fk_of']]))$order = $TCacheOFOrder[$task->array_options['options_fk_of']];
-				else {
-
-					$PDOdb=new TPDOdb;
-					$of=new TAssetOF();
-					$of->load($PDOdb, $task->array_options['options_fk_of']);
-					$order = new Commande($db);
-					if($of->fk_commande) $order->fetch($of->fk_commande);
-
-					$TCacheOFOrder[$task->array_options['options_fk_of']] = $order;
-
-				}
-
-				if($order->date_livraison>0) {
-					$t_end_bound = $order->date_livraison+ 84399; //23:59:59
-					if($t_end_bound<$t_end) $t_end = $t_end_bound;
-
-				}
+                foreach($TOrders as $order) {
+                    if($order->date_livraison > 0) {
+                        $t_end_bound = $order->date_livraison + 84399; //23:59:59
+                        if($t_end_bound < $t_end) $t_end = $t_end_bound;
+                    }
+                }
 			}
 
 		}
@@ -461,7 +482,37 @@ echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end)
 
 	}
 
+static function _getIdCommandeFournByOf(&$TCacheOFSupplierOrder, $fk_of){
 
+    if(isset($TCacheOFSupplierOrder[$fk_of]))return $TCacheOFSupplierOrder[$fk_of];
+    else {
+
+        $PDOdb=new TPDOdb;
+        $of=new TAssetOF();
+        $of->load($PDOdb, $fk_of);
+        $TIdCommandeFourn = $TCacheOFSupplierOrder[$fk_of] = $of->getElementElement($PDOdb);
+        return $TIdCommandeFourn;
+
+    }
+}
+
+    static function _getOrderByOf(&$TCacheOFOrder, $fk_of) {
+        global $db;
+
+        if(isset($TCacheOFOrder[$fk_of])) $order = $TCacheOFOrder[$fk_of];
+        else {
+
+            $PDOdb = new TPDOdb;
+            $of = new TAssetOF();
+            $of->load($PDOdb, $fk_of);
+            $order = new Commande($db);
+            if($of->fk_commande) $order->fetch($of->fk_commande);
+
+            $TCacheOFOrder[$fk_of] = $order;
+        }
+
+        return $order;
+    }
 
 
 }
