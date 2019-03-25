@@ -312,24 +312,30 @@ class GanttPatern {
                 && ((!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK) && !empty($task->linkedObjectsIds['tassetof'])) ||$task->array_options['options_fk_of']>0)
                 &&  !empty($conf->of->enabled)) {
 
-				dol_include_once('/of/class/ordre_fabrication_asset.class.php');
-				dol_include_once('/commande/class/commande.class.php');
+                dol_include_once('/of/class/ordre_fabrication_asset.class.php');
+                dol_include_once('/commande/class/commande.class.php');
                 $TOrders = array();
-                if(empty($conf->global->ASSET_CUMULATE_PROJECT_TASK))$TOrders[] = GanttPatern::_getOrderByOf($TCacheOFOrder,$task->array_options['options_fk_of']>0);
+                if(empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)) $TOrders[] = GanttPatern::_getOrderByOf($TCacheOFOrder, $task->array_options['options_fk_of'] > 0);
                 else {
-                    foreach($task->linkedObjectsIds['tassetof'] as $fk_of){
-                        $TOrders[] = GanttPatern::_getOrderByOf($TCacheOFOrder,$fk_of);
+                    foreach($task->linkedObjectsIds['tassetof'] as $fk_of) {
+                        $TOrders[] = GanttPatern::_getOrderByOf($TCacheOFOrder, $fk_of);
                     }
                 }
 
-                foreach($TOrders as $order) {
-                    if($order->date_livraison > 0) {
-                        $t_end_bound = $order->date_livraison + 84399; //23:59:59
+                foreach($TOrders as $orders) {
+                    if(is_array($orders)) {
+                        foreach($orders as $order)
+                            if($order->date_livraison > 0) {
+                                $t_end_bound = $order->date_livraison + 84399; //23:59:59
+                                if($t_end_bound < $t_end) $t_end = $t_end_bound;
+                            }
+                    }
+                    else if($orders->date_livraison > 0) {
+                        $t_end_bound = $orders->date_livraison + 84399; //23:59:59
                         if($t_end_bound < $t_end) $t_end = $t_end_bound;
                     }
                 }
-			}
-
+            }
 		}
 
 	}
@@ -497,7 +503,7 @@ static function _getIdCommandeFournByOf(&$TCacheOFSupplierOrder, $fk_of){
 }
 
     static function _getOrderByOf(&$TCacheOFOrder, $fk_of) {
-        global $db;
+        global $db, $conf;
 
         if(isset($TCacheOFOrder[$fk_of])) $order = $TCacheOFOrder[$fk_of];
         else {
@@ -506,9 +512,24 @@ static function _getIdCommandeFournByOf(&$TCacheOFSupplierOrder, $fk_of){
             $of = new TAssetOF();
             $of->load($PDOdb, $fk_of);
             $order = new Commande($db);
-            if($of->fk_commande) $order->fetch($of->fk_commande);
+            if(empty($conf->global->OF_MANAGE_ORDER_LINK_BY_LINE)) {
+                if($of->fk_commande) $order->fetch($of->fk_commande);
 
-            $TCacheOFOrder[$fk_of] = $order;
+                $TCacheOFOrder[$fk_of] = $order;
+            }
+            else {
+                $TLine = $of->getLinesProductToMake();
+                if(!empty($TLine)) {
+                    foreach($TLine as $line) {
+                        if(!empty($line->fk_commandedet)) {
+                            $orderLine = new OrderLine($db);
+                            $orderLine->fetch($line->fk_commandedet);
+                            $order->fetch($orderLine->fk_commande);
+                            $order[$orderLine->fk_commande]=$order;
+                        }
+                    }
+                }
+            }
         }
 
         return $order;
