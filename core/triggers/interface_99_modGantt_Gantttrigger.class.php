@@ -128,11 +128,11 @@ class InterfaceGantttrigger
 			    $parent->fetch($object->fk_task_parent);
 			    $t_current = $parent->date_end;
 			}
-
+/*
 			if(!empty($object->array_options['options_fk_of']) && date('Ymd',$t_current) === date('Ymd')){
 			    $t_current = $object->date_start;
             }
-
+*/
 
 			$t_start =  max( $project->date_start, $t_current);
 			
