@@ -171,7 +171,8 @@ class GanttPatern {
 		if(empty($TCacheProject))$TCacheProject=array();
 
 		if(!empty($conf->of->enabled)) {
-		$res = $db->query("SELECT nb_days_before_beginning FROM ".MAIN_DB_PREFIX."asset_workstation_of WHERE fk_project_task=".$task->id);
+        $query = "SELECT nb_days_before_beginning FROM ".MAIN_DB_PREFIX."asset_workstation_of WHERE fk_assetOf=".$task->array_options['options_fk_of']." AND fk_asset_workstation=".$task->array_options['options_fk_workstation'];
+		$res = $db->query($query);
 		if($res === false) {
 			var_dump($db);exit;
 		}
