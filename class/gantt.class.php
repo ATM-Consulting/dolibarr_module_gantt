@@ -340,7 +340,7 @@ class GanttPatern {
 				if($data['capacity']!=='NA' && $data['nb_ressource']>0 && $data['capacity']>0 && empty($data['is_parallele'])) {
 				    $capacityLeft=min($capacityLeft,$data['nb_hour_capacity']);
 				    //var_dump('la',$datetest,$task->hour_needed,$data,$capacityLeft);exit;
-				}
+				} else $ok= false;
                 
 				if(!empty($tolerance) && $capacityLeft - $task->hour_needed < $tolerance) {
 					$ok =false;
