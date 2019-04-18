@@ -314,7 +314,7 @@ class GanttPatern {
 
 	}
 
-	static function gb_search_days(&$TDates, &$task, $t_start, $t_end ) {
+	static function gb_search_days(&$TDates, &$task, $t_start, &$t_end ) {
 		global $conf;
 
 		$tolerance = empty($conf->global->GANTT_OVERLOAD_TOLERANCE) ? 0 : -(float)$conf->global->GANTT_OVERLOAD_TOLERANCE;
@@ -358,7 +358,8 @@ class GanttPatern {
 					$data2 = &$TDates[$date];
 					$data2['capacityLeft'] -= $task->hour_needed;
 				}
-				
+				$planned_workload_hour_based = ceil($task->planned_workload)/3600;
+                $row['end'] = GanttPatern::getGoodEnd($TDates, $time, $planned_workload_hour_based);//durée en heure
 				$row['start'] = $time;
 				$row['hour_needed'] = $task->hour_needed; //juste pour debug TODO remove
 				$row['date_start'] = date('Y-m-d H:i:s',$time); //juste pour debug TODO remove
@@ -370,6 +371,17 @@ class GanttPatern {
 
 		return $row;
 	}
+
+	static function getGoodEnd($TDates, $start, $duration){
+
+        foreach($TDates as $date => $data){
+            if($start < strtotime($date) && $data['capacity']!=='NA' && $data['nb_ressource']>0 && $data['capacity']>0 && empty($data['is_parallele'])){
+                $duration-= $data['capacity'];
+                if($duration < 0) return strtotime($date);
+            }
+        }
+        return 0;
+    }
 
 	static function gb_search(&$TDates, &$task, $t_start, $t_end, $duration = 1) {
 		global $conf,$db, $langs;
