@@ -124,8 +124,11 @@
 		$task->fetch($taskid);
 		$task->fetch_optionals($task->id);
 
+		$codeSplit = strpos($task->array_options['options_fk_gantt_parent_task'],'SPLITCN')===false ? 'SPLITCN'.$task->id : $task->array_options['options_fk_gantt_parent_task'];
+
+		$task->array_options['options_fk_gantt_parent_task'] = $codeSplit;
 		$task->planned_workload = $task1time * 3600;
-		$task->update($user);
+
 
 		$task2 = new Task($db);
 		foreach($task as $k=>$v) {
@@ -152,8 +155,14 @@
 		$task2->ref = $defaultref;
 
 		$task2->fk_task_parent = $task->id;
+        $task2->date_c=time();
 
-		$task2->create($user);
+		if($task2->create($user)>0) {
+		    $task->update($user);
+		}
+		else {
+		    var_dump($task2);
+		}
 
 		return $task2->id;
 	}
@@ -247,6 +256,11 @@
 			if($res<0 ) {
 				var_dump($res);
 			}
+
+			if($data['fk_user']>0) {
+			    $o->delete_linked_contact('internal');
+			    $o->add_contact($data['fk_user'], 181,'internal');//todo code !
+			}
 				return $res;
 				break;
 
@@ -271,13 +285,36 @@
                 $o=new Project($db);
                 $o->fetch((int)$data['id']);
 
-                $old_start_date = $o->date_start;
+                if($o->date_start<=0) {
+                // date de début du projet non défini, on prends donc la date de début de la 1ère tâche
+
+                    $res = $db->query("SELECT MIN(dateo) as date_start
+                            FROM ".MAIN_DB_PREFIX."projet_task as t
+                            WHERE fk_projet=".$o->id." AND (progress IS NULL OR progress<100) AND dateo IS NOT NULL ");
+
+                    if($res!==false) {
+                        $obj = $db->fetch_object($res);
+                        if($obj && !empty($obj->date_start)) {
+
+                            $old_start_date = strtotime($obj->date_start);
+
+                        }
+
+
+                    }
+
+                }
+                else {
+                    $old_start_date = $o->date_start;
+                }
+
 
                 $o->date_start = $data['start'] / 1000;
                 $o->date_end = ($data['end'] / 1000) - 1;
                 $o->update($user);
 
-                return $o->shiftTaskDate($old_start_date);
+                if(empty($old_start_date)) return -1;
+                else return $o->shiftTaskDate($old_start_date);
 
 			    break;
 
@@ -286,8 +323,14 @@
 	}
 
 	function _get_ws_capactiy($wsid, $t_start, $t_end,$scale_unit) {
-//TODO $wsid -> array of ids
-	    return GanttPatern::get_ws_capacity($wsid, $t_start, $t_end,0,$scale_unit);
+
+	    $wsids=explode(',',$wsid);
+
+	    $Tab=array();
+	    foreach($wsids as $wsid) {
+	        $Tab[$wsid] =  GanttPatern::get_ws_capacity($wsid, $t_start, $t_end,0,$scale_unit);
+	    }
+	    return $Tab;
 	}
 
 	function _put_projects(&$TProject) {

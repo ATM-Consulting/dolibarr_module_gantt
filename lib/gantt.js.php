@@ -219,7 +219,7 @@ function moveTasks(tasksid) {
 	}).done(function(data) {
 
 		$.each(data, function(i, item) {
-		
+
 			var t = gantt.getTask('T'+i);
 
 			if(item.duration>0) {
@@ -499,12 +499,12 @@ function saveTask(task, old_event=false,is_new = false)
 			,description:task.title
 			,needed_ressource:task.needed_ressource
 			,planned_workload:task.planned_workload
+			,fk_user:task.fk_user
 		},
 		method:"post",
 	    success: function(data){
 
 		    // TODO : gérer un vrai message avec des retour en json
-			/*gantt.message(task.title + ' <?php echo $langs->trans('Saved') ?>');*/
 
 				if(old_event)
 				{
@@ -628,7 +628,7 @@ function pop_event(callback) {
 
 	var TPipeUWSC={};
 
-	function updateWSCapacity(wsid, t_start, t_end) { //, nb_hour_capacity = 0
+	function updateWSCapacity(wsid, t_start, t_end,forceRefresh) { //, nb_hour_capacity = 0
 
 		var nb_hour_capacity = 0;
 		var nb_ressource = 0;
@@ -660,8 +660,11 @@ function pop_event(callback) {
 		,dataType:"json"
 		}).done(function(data) {
 //console.log('nb_hour_capacity', data);
-			for(d in data) {
-				row = data[d];
+			for(wsid in data) {
+			var data2 = data[wsid];
+
+			for(d in data2) {
+				row = data2[d];
 				var c = row.capacityLeft;
 
 				total_hour_capacity = row.nb_hour_capacity * row.nb_ressource;
@@ -735,7 +738,7 @@ function pop_event(callback) {
 					else {
 
     					?>
-    					if(row.capacityLeft!='NA' && (nb_hour_capacity!=row.nb_hour_capacity || nb_ressource!=row.nb_ressource)) {
+    					if(row.customized==1) {
     						$ws.addClass('starred').attr('title','<?php echo $langs->transnoentities('DayCapacityModify'); ?>');
     					}
     					else {
@@ -748,25 +751,43 @@ function pop_event(callback) {
 
 			deferred.resolve();
 		}
-
+		}
 	});
-	
+
 	TPipeUWSC[wsid] = xhr;
 
 	return deferred.promise();
 }
 
 
+function updateWSRangeCapacityButton() {
+
+	var sl = $("div.ws_container").scrollLeft();
+    updateWSRangeCapacity(sl, 1);
+
+}
+
 var start_refresh_ws = 0;
 var end_refresh_ws = 0;
 
-function updateWSRangeCapacity(sl) {
+function updateWSRangeCapacity(sl, forceRefresh) {
+
+	<?php
+
+        if(!empty($conf->global->GANTT_DONT_AUTO_REFRESH_WS)) {
+               echo ' if(!forceRefresh) return; ';
+
+        }
+
+    ?>
+
+
 	var sr = sl + $('#gantt_here div.gantt_task').width();
 
-	var date_start = gantt.dateFromPos(sl).setHours(0,0,0,0) / 1000 - (86400 * 5);
-	var date_end = gantt.dateFromPos(sr).setHours(23,59,59,0) / 1000 + (86400 * 5);
+	var date_start = gantt.dateFromPos(sl).setHours(0,0,0,0) / 1000 - (86400 * 2);
+	var date_end = gantt.dateFromPos(sr).setHours(23,59,59,0) / 1000 + (86400 * 2);
 
-	if(date_start < start_refresh_ws - (86400*5) || date_start > start_refresh_ws + (86400*5)) {
+	if(date_start < start_refresh_ws - (86400*2) || date_start > start_refresh_ws + (86400*2)) {
 		start_refresh_ws = date_start;
 		end_refresh_ws = date_end;
 
@@ -815,16 +836,17 @@ function updateWSRangeCapacity(sl) {
 			});
 		});
 
-		updateWSCapacity(0, date_start, date_end)<?php
-			foreach($TWS as &$ws) { 
-			    if($ws->type!='STT' && !is_null($ws->id) && $ws->id>0 ) {
-					echo '.pipe(updateWSCapacity('.$ws->id.',  date_start, date_end))';
+<?php
+$TabToUpdateWSCapacity=array();
+foreach($TWS as &$ws) {
+    if($ws->type!='STT' && !is_null($ws->id) && $ws->id>0 ) {
+        $TabToUpdateWSCapacity[] = $ws->id;
+    }
+}
 
-					$first = false;
-				}
-			}
+echo 'updateWSCapacity("0,'.implode(',',$TabToUpdateWSCapacity).'", date_start, date_end);';
 
-		?>;
+?>
 
 	}
 }

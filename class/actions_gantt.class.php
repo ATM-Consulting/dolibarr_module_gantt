@@ -83,11 +83,11 @@ class ActionsGantt
                 $start = date('Y-m-01',$time);
                 $end = date('Y-m-t',$time);
 
+                $fk_user = (int)GETPOST('filtert');
                 $fk_project = (int)GETPOST('projectid');
-
                 dol_include_once('/gantt/class/gantttask.class.php');
                 dol_include_once('/gantt/class/gantt.class.php');
-                $TTaskObject = GanttPatern::getTasks($start, $end, $fk_project);
+                $TTaskObject = GanttPatern::getTasks($start, $end, $fk_project,0,'','',$fk_user);
 
                 if(!empty($TTaskObject)) {
 
@@ -159,7 +159,93 @@ class ActionsGantt
 
 			}
 
+
 		}
 
+		if (in_array('projecttaskcard', $TContext)) {
+		    global $langs;
+
+		    ?>
+				<script type="text/javascript">
+				$(document).ready(function() {
+					$('div.tabsAction').first().append('<a class="butAction" href="?id=<?php echo $object->id ?>&action=gantt-move-all-task"><?php echo $langs->trans('MoveAllTasks') ?></a>');
+				});
+				</script>
+
+		    <?php
+		}
+	}
+
+
+	function doActions($parameters, &$object, &$action, $hookmanager)
+	{
+
+	    $TContext = explode(':', $parameters['context']);
+	    global $conf,$user;
+
+	    if (in_array('projecttaskcard', $TContext)) {
+	        if(!empty($conf->global->GANTT_SHOW_TASK_INTO_CALENDAR_VIEW)) {
+
+    	        if (GETPOST('actionmove','alpha') == 'mupdate')
+    	        {
+    	            list($dummy, $newday) = explode('_',GETPOST('newdate'));
+
+    	            $object->fetch(GETPOST('id'));
+
+    	            $newtime=strtotime($newday);
+
+    	            $diff = $newtime - $object->date_start;
+
+    	            if(abs($diff)>86399) {
+    	                $object->date_start+=$diff;
+    	                $object->date_end+=$diff;
+    	                $object->update($user);
+    	            }
+
+    	            $backtopage=GETPOST('backtopage','alpha');
+    	            if (! empty($backtopage))
+    	            {
+    	                header("Location: ".$backtopage);
+    	                exit;
+    	            }
+    	        }
+
+	        }
+
+	        if($action == 'gantt-move-all-task') {
+    		    global $langs, $user;
+
+    		    $db = &$object->db;
+
+    		    $task=new Task($db);
+    		    $tasks = $task->getTasksArray(null, null, $object->id);
+
+    		    $tasksid=array();
+    		    foreach($tasks as &$t) {
+    		        if($t->progress<100 && $t->planned_workload>0) $tasksid[] = $t->id;
+    		    }
+    		    if(!empty($tasksid)) {
+
+        		    define('INC_FROM_DOLIBARR',true);
+        		    dol_include_once('/gantt/config.php');
+        		    dol_include_once('/gantt/class/gantt.class.php');
+
+        		    $t_start = strtotime('midnight +1day');
+        		    $t_end = strtotime('+6 month');
+
+        		    $Tab = GanttPatern::get_better($tasksid, $t_start, $t_end);
+
+        		    foreach($Tab as $fk_task=>$pattern) {
+
+        		          $task=new Task($db);
+        		          $task->fetch($fk_task);
+        		          $task->date_start = $pattern['start'];
+        		          $task->date_end = strtotime('+'.$pattern['duration'].'day -1day', $task->date_start) + 86399;
+                          $task->update($user);
+
+        		    }
+    		    }
+	        }
+		}
 	}
 }

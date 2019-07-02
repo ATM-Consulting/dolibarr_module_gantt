@@ -6,10 +6,16 @@
 	llxHeader();
 	
 	$l=new Listview($db, 'listTask');
-	
-	$sql="SELECT t.rowid,tex.fk_of,tex.fk_workstation FROM ".MAIN_DB_PREFIX."projet_task t
-				LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object = t.rowid) ";
-	
+    if(!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)){
+        $sql="SELECT DISTINCT t.rowid,ee.fk_source as fk_of,tex.fk_workstation FROM ".MAIN_DB_PREFIX."projet_task t
+                    LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object = t.rowid) 
+                    LEFT JOIN " . MAIN_DB_PREFIX . "element_element ee  ON (ee.fk_target=t.rowid AND ee.targettype='project_task' AND ee.sourcetype='tassetof')
+                    WHERE ee.fk_source IS NOT NULL";
+    }else{
+        $sql="SELECT t.rowid,tex.fk_of,tex.fk_workstation FROM ".MAIN_DB_PREFIX."projet_task t
+                    LEFT JOIN ".MAIN_DB_PREFIX."projet_task_extrafields tex ON (tex.fk_object = t.rowid) ";
+    }
+
 	echo $l->render($sql,array(
 			'title'=>array(
 				'fk_of'=>$langs->trans('AssetOf')	

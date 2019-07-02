@@ -117,7 +117,7 @@ else {
 //pre($TElement,1);exit;
 
 	_get_workstation(); // init tableau de WS
-
+    $splited_container_i = 0;
 	$open = false;
 	if(GETPOST('open')) $open = true;
 	else if(GETPOST('close')) $open = false;
@@ -227,6 +227,8 @@ else {
                 							}
 
                 							if(!empty($wsData['childs'])) {
+                							    $splited_container_i++;
+
 	                							foreach($wsData['childs'] as &$task) {
 
 	                								$task->ws = &$ws;
@@ -235,7 +237,29 @@ else {
 
 	                								if($task->date_start<time())$TTaskOlder[] = $task->id;
 
-	                								$TData[$task->ganttid] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after,$taskColor);
+	                								if(!empty($task->array_options['options_fk_gantt_parent_task'])
+	                								    && substr($task->array_options['options_fk_gantt_parent_task'],0,7) === 'SPLITCN') {
+	                								    // container
+	                								    $containerId = $task->array_options['options_fk_gantt_parent_task'].$splited_container_i;
+
+	                								    if(!isset($TData[$containerId])) {
+
+	                								       $container = new stdClass();
+	                								       $container->text = $task->text.' '.$langs->trans('AndSplitedChildTask');
+	                								       $container->element = 'container';
+	                								       $container->ganttid = $containerId;
+	                								       $container->array_options= $task->array_options;
+
+	                								       $TData[$container->ganttid] = _get_json_data($container, 'false', $fk_parent_ws, 0,0,$taskColor);
+
+	                								    }
+
+	                								    $TData[$task->ganttid] = _get_json_data($task, $close_init_status, $containerId, $time_task_limit_no_before,$time_task_limit_no_after,$taskColor);
+
+	                								}
+	                								else {
+	                								    $TData[$task->ganttid] = _get_json_data($task, $close_init_status, $fk_parent_ws, $time_task_limit_no_before,$time_task_limit_no_after,$taskColor);
+	                								}
 
 													if($task->fk_task_parent>0) {
 														$linkId = count($TLink)+1;
@@ -276,11 +300,11 @@ else {
 				if($range->date_end > $range->date_start + 86400 * 366) $range->date_end = $range->date_start + 86400 * 366;
 			}
 
+			$formCore=new TFormCore('auto','formDate','get');
 			?>
 			<table border="0" width="100%"><tr><td >
 			<?php
 
-			$formCore=new TFormCore('auto','formDate','get');
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
 			echo $formCore->hidden('scrollLeft', 0);
@@ -297,7 +321,7 @@ else {
 			}
 
 			echo '</td><td>';
-			
+
 			if(!empty($conf->workstation->enabled) && !$move_projects_mode) {
 			   $PDOdb=new TPDOdb;
 			   echo $formCore->combo('', 'restrictWS', TWorkstation::getWorstations($PDOdb, false, true) + array(0=>$langs->trans('NotOrdonnanced')) , (GETPOST('restrictWS') == '' ? -1 : GETPOST('restrictWS'))).'<br />';
@@ -305,12 +329,13 @@ else {
 			}
 
 			echo $formCore->combo('', 'scale', array('day'=>$langs->trans('Days'),'week'=>$langs->trans('Weeks')) , GETPOST('scale'));
+			if($fk_project == 0 && !$move_projects_mode){
 			echo '</td><td>';
 			if(!empty($conf->of->enabled)) echo $formCore->texte($langs->trans('OFFilter'), 'ref_of',GETPOST('ref_of'),5,255).'<br />';
 			echo $formCore->texte($langs->trans('CMDFilter'), 'ref_cmd',GETPOST('ref_cmd'),5,255);
 
 			echo '</td><td>';
-			
+			}
 			echo $formCore->hidden('open_status',(int)$open);
 			echo $formCore->hidden('fk_project',$fk_project);
 			echo $formCore->hidden('scrollLeft', 0);
@@ -323,8 +348,6 @@ else {
 			    echo $formCore->btsubmit($langs->trans('MoveProjects'), 'moveProjects');
 			    echo '</td><td>';
 			}
-
-			$formCore->end();
 
 			if($range->autotime && $range->date_end - $range->date_start > (86400 * 60)) {
 
@@ -345,7 +368,11 @@ else {
     			if (!empty($TTaskOlder)) {
     			     ?><br /><a id="move-all-task" style="display:inline" href="javascript:;" onclick="$(this).hide();moveTasks('<?php echo implode(',', $TTaskOlder) ?>');" class="button"><?php echo $langs->trans('MoveAllOlderTasks') ?></a><?php
     			}
-    			
+
+    			if(!empty($conf->global->GANTT_DONT_AUTO_REFRESH_WS)) {
+    			    ?><br /><a id="refresh-ws" style="display:inline" href="javascript:;" onclick="updateWSRangeCapacityButton();" class="button"><?php echo $langs->trans('RefreshWS') ?></a><?php
+    			}
+
     			?>
     			<span id="ajax-waiter" class="waiter"><br /><?php echo $langs->trans('AjaxRequestRunning') ?></span>
     			</td><?php
@@ -354,7 +381,9 @@ else {
 
 			?>
 			</tr></table>
-
+<?php
+$formCore->end();
+?>
 			<div id="gantt_here" style='width:100%; height:100%;'></div>
 
 			<script type="text/javascript">
@@ -551,12 +580,14 @@ else {
     gantt.locale.labels["section_workstation"] = "<?php echo $langs->transnoentities('Workstation') ?>";
     gantt.locale.labels["section_needed_ressource"] = "<?php echo $langs->transnoentities('needed_ressource') ?>";
     gantt.locale.labels["section_planned_workload"] = "<?php echo $langs->transnoentities('planned_workload') ?>";
+    gantt.locale.labels["section_user"] = "<?php echo $langs->transnoentities('User') ?>";
 
 	gantt.config.lightbox.sections = [
         {name: "description", height: 26, map_to: "text", type: "textarea", focus: true},
         {name: "workstation", label:"<?php echo $langs->transnoentities('Workstation'); ?>", height: 22, type: "select", width:"60%", map_to: "workstation",options: [
             <?php echo _get_workstation_list(); ?>
         ]},
+        {name: "user", label:"<?php echo $langs->transnoentities('User'); ?>", height: 22, type: "select", width:"60%", map_to: "fk_user",options: []},
 
         {name: "needed_ressource", height: 26, map_to: "needed_ressource", type: "textarea"},
         {name: "progress", height: 22, map_to: "progress", type: "select", options: [
@@ -687,12 +718,22 @@ else {
 		$('div.ws_container ').scrollLeft( $('div.gantt_hor_scroll').scrollLeft() );
 	});
 
-	/*gantt.attachEvent("onBeforeLightbox", function(id) {
+	gantt.attachEvent("onBeforeLightbox", function(id) {
 	    var task = gantt.getTask(id);
 
-		gantt.getLightboxSection('workstation').setValue(task.workstation);
+		var opts=[];
+		for(x in workstations[task.workstation].users) {
+			opts.push({ key:x, label:workstations[task.workstation].users[x] });
+		}
+
+		for(x in gantt.config.lightbox.sections) { //TODO it's hack, find a better way
+			if(gantt.config.lightbox.sections[x].name=="user") {
+				gantt.config.lightbox.sections[x].options = opts;
+			}
+		}
+
 	    return true;
-	});*/
+	});
 
 	gantt.attachEvent("onAfterTaskAdd", function(id,task){
 		//console.log('createTask',id, task);
@@ -731,11 +772,15 @@ else {
 
 			task.text = task.title;
 
-			if(task.planned_workload>0) {
+			if(task.planned_workload>1) {
 				var m = task.planned_workload%900;
 
 				if(m>0) task.planned_workload = task.planned_workload - m + 900;
 			}
+			else {
+				task.planned_workload = 0;
+			}
+
 			console.log(task);
 			return true;
 		}
@@ -908,7 +953,7 @@ if(!$move_projects_mode) {
 
 
 
-	    
+
 	    return true;
 	});
 
@@ -947,8 +992,7 @@ if(!$move_projects_mode) {
 	    }
 	});
 
-	gantt.attachEvent("onLoadEnd", function(){
-		console.log('gantt::onLoadEnd');
+	$(document).ready(function() {
 		<?php
 		if(GETPOST('scrollLeft')>10 && $scale_unit!='week') {
 
@@ -1004,7 +1048,7 @@ if($move_projects_mode) {
 		}
 
 		while($t_cur<=$range->date_end) {
-			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">N/A</div>';
+			$cells.='<div class="gantt_task_cell" date="'.date('Y-m-d', $t_cur).'">...</div>';
 
 			if($scale_unit=='week') {
 			    $t_cur = strtotime('+1week',$t_cur);
@@ -1017,7 +1061,7 @@ if($move_projects_mode) {
 
 		echo 'function replicateDates() {
 				$(\'div.ws_container_label div.dates, div.ws_container>div div.dates\').remove();
-				$(\'div.ws_container_label\').append(\'<div class="gantt_row dates" style="height:12px;">&nbsp;</div>\');
+				$(\'div.ws_container_label\').append(\'<div class="gantt_row dates" style="height:12px; text-align:right;"><a href="javascript:gantt.showDate(new Date());">'.addslashes($langs->trans('GoToToday')).'</a></div>\');
 				$(\'div.ws_container>div\').append($(\'#gantt_here div.gantt_container div.gantt_task div.gantt_task_scale div.gantt_scale_line:eq(1)\').clone().addClass(\'dates\'));
 
 
@@ -1164,6 +1208,13 @@ if($move_projects_mode) {
 				}';
 
 			}
+		}
+
+		if(empty($conf->global->GANTT_ALLOW_DIRECT_PROGRESS_EDITING)) {
+		  echo '.gantt_task_line:hover div.gantt_task_progress_drag {
+		        display:none;
+		  }';
+
 		}
 
 		?>

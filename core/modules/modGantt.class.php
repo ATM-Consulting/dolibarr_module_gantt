@@ -58,7 +58,7 @@ class modGantt extends DolibarrModules
 		// Module description, used if translation string 'ModuleXXXDesc' not found (where XXX is value of numeric property 'numero' of module)
 		$this->description = "Description of module Gantt";
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '1.0';
+		$this->version = '1.2.0';
 		// Key used in llx_const table to save module status enabled/disabled (where MYMODULE is value of property name of module in uppercase)
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		// Where to store the module in setup page (0=common,1=interface,2=others,3=very specific)
@@ -246,6 +246,7 @@ class modGantt extends DolibarrModules
 	 */
 	function init($options='')
 	{
+	    global $conf;
 		$sql = array();
 
 		define('INC_FROM_DOLIBARR',true);
@@ -267,7 +268,7 @@ class modGantt extends DolibarrModules
 		// Create link to parent gantt task
 		$e=new ExtraFields($this->db);
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
-		$e->addExtraField('fk_gantt_parent_task', 'Tâche parente Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);
+		$e->addExtraField('fk_gantt_parent_task', 'Tâche parente Gantt', 'varchar', 1, 30, 'projet_task',0,0,'',$param);
 
 		$e->addExtraField('needed_ressource', 'NeededRessource', 'int', 0, '', 'projet_task');
 

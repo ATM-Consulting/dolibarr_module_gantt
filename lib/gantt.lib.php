@@ -1,3 +1,4 @@
+
 <?php
 /* <one line to give the program's name and a brief idea of what it does.>
  * Copyright (C) 2015 ATM Consulting <support@atm-consulting.fr>
@@ -98,231 +99,201 @@ function _get_task_for_of($fk_project = 0) {
 
 	foreach($TTaskObject as &$task) {
 
-		$task->ganttid = 'T'.$task->id;
-		$task->label = strip_tags(strtr($task->label, array("\n"=>' ',"\r"=>'')));
-		$task->title = $task->label;
-		$task->ref= $task->ref;
+        $task->ganttid = 'T' . $task->id;
+        $task->label = strip_tags(strtr($task->label, array("\n" => ' ', "\r" => '')));
+        $task->title = $task->label;
+        $task->ref = $task->ref;
 
-		if(empty($task->planned_workload)) $task->planned_workload = 1;
+        if(empty($task->planned_workload)) $task->planned_workload = 1;
 
-		if(!empty($conf->global->GANTT_HIDE_TASK_REF)) {
-			$task->text = $task->label;
-		}
-		else {
-			$task->text = $task->ref.' '.$task->label;
-			if($task->planned_workload>0) {
-				$task->text.=' '.round($task->planned_workload / 3600,1).'h';
-			}
-		}
-
-		if($task->array_options['options_fk_of']>0 && !empty($conf->of->enabled)) {
-
-                        if(!empty($TCacheOF[$task->array_options['options_fk_of']])) {
-
-                                $of = $TCacheOF[$task->array_options['options_fk_of']];
-
-                        }
-                        else{
-
-
-
-			$of=new TAssetOF();
-			
-            // object OF too heavy for that                
-            $resof = $db->query("SELECT of.numero,p.label,l.qty_needed,of.status,of.fk_commande FROM ".MAIN_DB_PREFIX."assetOf of 
-                            LEFT JOIN ".MAIN_DB_PREFIX."assetOf_line l ON (l.fk_assetOf=of.rowid)
-                                LEFT JOIN ".MAIN_DB_PREFIX."product p ON (l.fk_product=p.rowid)
-                        WHERE of.rowid=".(int)$task->array_options['options_fk_of']." AND l.type='TO_MAKE'
-                    
-                ");  
-            if($resof===false) {
-                var_dump($db);exit;
+        if(!empty($conf->global->GANTT_HIDE_TASK_REF)) {
+            $task->text = $task->label;
+        }
+        else {
+            $task->text = $task->ref . ' ' . $task->label;
+            if($task->planned_workload > 0) {
+                $task->text .= ' ' . round($task->planned_workload / 3600, 1) . 'h';
             }
-            $oobjOf=$db->fetch_object($resof);
-            
-                            
-            $of->id = (int)$task->array_options['options_fk_of'];
-            $of->numero = $oobjOf->numero;
-            $of->fk_commande = (int)$oobjOf->fk_commande;
-            $of->qty_needed = $oobjOf->qty_needed;
-			$of->ref = $of->numero;
-			
-			$of->product_to_make_name = $oobjOf->label;
-			
-			if(!empty($conf->global->GANTT_HIDE_TASK_REF)) {
-			    $of->title = $of->numero.' '.$of->product_to_make_name.' x '.$of->qty_needed;
-			}
-			else {
-			    $of->title = $of->numero.' '.$of->getLibStatus(true).' '.$of->product_to_make_name .' x '.$of->qty_needed;
-			}
+        }
 
-			$TCacheOF[$task->array_options['options_fk_of']] = $of;
-			}
-		}
-		else{
+        if(!empty($conf->of->enabled) && !empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)) {
+            if(!isset($conf->tassetof)) $conf->tassetof = new \stdClass(); // for warning
+            $conf->tassetof->enabled = 1; // pour fetchobjectlinked
+            $task->fetchObjectLinked(0, 'tassetof', $task->id, $task->element, 'OR', 1, 'sourcetype', 0);
+        }
+        $TTaskOfs = array();
+        if(((!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK) && !empty($task->linkedObjectsIds['tassetof'])) || $task->array_options['options_fk_of'] > 0)
+            && !empty($conf->of->enabled)) {
 
-			$of=new stdClass;
-			$of->id = 0;
-			$of->numero = 'None';
-			$of->fk_commande = 0;
-			$of->element = 'of';
-		}
+            if(!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)) {
+                if(!empty($task->linkedObjectsIds['tassetof'])) {
+                    foreach($task->linkedObjectsIds['tassetof'] as $fk_of) $TTaskOfs[] = _loadOF($TCacheOF, $fk_of);
+                }
+            }
+            else $TTaskOfs[] = _loadOF($TCacheOF, $task->array_options['options_fk_of']);
+        }
+        else {
 
-		if($of->id>0) {
-			$of->ganttid = 'M'.(int)$of->id;
-		}
-		else {
-			$of->ganttid = 'MNA'.$idNoAffectation; $idNoAffectation++;
-		}
+            $of = new stdClass;
+            $of->id = 0;
+            $of->numero = 'None';
+            $of->fk_commande = 0;
+            $of->element = 'of';
+            $TTaskOfs[] = $of;
+        }
 
-		if($of->fk_commande>0) {
+        foreach($TTaskOfs as &$of) {
 
-			if(!empty($TCacheOrder[$of->fk_commande])) {
+            if($of->id > 0) {
+                $of->ganttid = 'M' . (int)$of->id;
+            }
+            else {
+                $of->ganttid = 'MNA' . $idNoAffectation;
+                $idNoAffectation++;
+            }
 
-				$order=$TCacheOrder[$of->fk_commande];
+            if($of->fk_commande > 0) {
 
-			}
-			else{
-				$order=new Commande($db);
-				$order->fetch($of->fk_commande);
-				$order->fetch_thirdparty();
+                if(!empty($TCacheOrder[$of->fk_commande])) {
 
-				if($order->id>0){
-					$order->title = $order->ref.' '.$order->thirdparty->name;
-				}
-				else {
-					$order->title = $langs->trans('UndefinedOrder');
-				}
-				$TCacheOrder[(int)$order->id] = $order;
-			}
+                    $order = $TCacheOrder[$of->fk_commande];
+                }
+                else {
+                    $order = new Commande($db);
+                    $order->fetch($of->fk_commande);
+                    $order->fetch_thirdparty();
 
+                    if($order->id > 0) {
+                        $order->title = $order->ref . ' ' . $order->thirdparty->name;
+                    }
+                    else {
+                        $order->title = $langs->trans('UndefinedOrder');
+                    }
+                    $TCacheOrder[(int)$order->id] = $order;
+                }
+            }
+            else {
 
-		}
-		else {
+                $order = new Commande($db);
 
-			$order = new Commande($db);
+                $order->title = $langs->trans('UndefinedOrder');
+            }
+            if($order->id > 0) {
+                $order->ganttid = 'O' . $order->id;
+            }
+            else {
+                $order->ganttid = 'ONA' . $idNoAffectation;
+                $idNoAffectation++;
+            }
 
-			$order->title = $langs->trans('UndefinedOrder');
+            if(!empty($TCacheProject[$task->fk_project])) {
 
-		}
-		if($order->id >0){
-			$order->ganttid = 'O'.$order->id;
-		}
-		else{
-			$order->ganttid= 'ONA'.$idNoAffectation; $idNoAffectation++;
-		}
+                $project = $TCacheProject[$task->fk_project];
+            }
+            else {
+                $project = new Project($db);
+                $project->fetch($task->fk_project);
 
+                if($project->id > 0) {
+                    $project->title = (empty($conf->global->GANTT_HIDE_TASK_REF) ? $project->ref . ' ' : '') . $project->title;
 
-		if(!empty($TCacheProject[$task->fk_project])) {
+                    if($project->socid > 0) {
+                        $project->fetch_thirdparty();
+                        $project->title .= ' - ' . $project->thirdparty->name;
+                    }
+                }
+                else {
+                    $project->title = $langs->trans('UndefinedProject');
+                }
 
-			$project=$TCacheProject[$task->fk_project];
+                $TCacheProject[$project->id] = $project;
+            }
 
-		}
-		else{
-			$project = new Project($db);
-			$project->fetch($task->fk_project);
+            if($project->id > 0) {
+                $project->ganttid = 'P' . $project->id;
+            }
+            else {
+                $project->ganttid = 'PNA' . $idNoAffectation;
+                $idNoAffectation++;
+            }
 
-			if($project->id>0) {
-				$project->title = (empty($conf->global->GANTT_HIDE_TASK_REF) ? $project->ref.' ' : '').$project->title;
+            if(!empty($conf->workstation->enabled)) {
+                if(!empty($TCacheWS[$task->array_options['options_fk_workstation']])) {
 
-				if($project->socid>0) {
-					$project->fetch_thirdparty();
-					$project->title .= ' - '.$project->thirdparty->name;
-				}
-			}
-			else {
-				$project->title = $langs->trans('UndefinedProject');
-			}
+                    $ws = $TCacheWS[$task->array_options['options_fk_workstation']];
+                }
+                else {
+                    $ws = new TWorkstation();
+                    $ws->load($PDOdb, $task->array_options['options_fk_workstation']);
+                    $ws->text = $ws->title = $ws->name;
+                    $TCacheWS[$ws->id] = $ws;
+                }
+            }
+            else {
+                $ws = new StdClass;
+                $ws->element = 'workstation';
+                $ws->id = 0;
+            }
 
-			$TCacheProject[$project->id] = $project;
-		}
+            if($ws->id > 0) {
+                $ws->ganttid = 'W' . (int)$ws->id;
+            }
+            else {
+                $ws->ganttid = 'WNA' . $idNoAffectation;
+                $idNoAffectation++;
+                $ws->title = $langs->trans('UndefinedWorkstation');
+            }
 
-		if($project->id>0) {
-			$project->ganttid = 'P'.$project->id;
-		}
-		else {
-			$project->ganttid = 'PNA'.$idNoAffectation; $idNoAffectation++;
-		}
+            if(empty($TTask[$project->id])) {
 
-		if(!empty($conf->workstation->enabled)) {
-			if(!empty($TCacheWS[$task->array_options['options_fk_workstation']])) {
+                $TTask[$project->id] = array(
+                    'childs' => array()
+                    , 'object' => $project
+                );
+                _adding_task_project_end($project, $TTask[$project->id]['childs']);
+                _load_child_tasks($TTask[$project->id]['childs'], $project);
+            }
 
-				$ws=$TCacheWS[$task->array_options['options_fk_workstation']];
+            $order->id = (int)$order->id;
 
-			}
-			else{
-				$ws = new TWorkstation();
-				$ws->load($PDOdb,$task->array_options['options_fk_workstation']);
-				$ws->text = $ws->title = $ws->name;
-				$TCacheWS[$ws->id] = $ws;
+            if(empty($TTask[$project->id]['childs'][$order->id])) {
 
-			}
-		}
-		else{
-			$ws=new StdClass;
-			$ws->element = 'workstation';
-			$ws->id = 0;
-		}
+                $TTask[$project->id]['childs'][$order->id] = array(
+                    'childs' => array()
+                    , 'object' => $order
+                );
 
-		if($ws->id>0) {
-			$ws->ganttid = 'W'.(int)$ws->id;
-		}
-		else{
-			$ws->ganttid = 'WNA'.$idNoAffectation; $idNoAffectation++;
-			$ws->title = $langs->trans('UndefinedWorkstation');
-		}
+                _load_child_tasks($TTask[$project->id]['childs'][$order->id]['childs'], $order);
+            }
 
+            _adding_task_order($order, $TTask[$project->id]['childs'][$order->id]['childs']);
 
-		if(empty($TTask[$project->id])) {
+            if(empty($TTask[$project->id]['childs'][$order->id]['childs'][$of->id])) {
 
-			$TTask[$project->id]=array(
-					'childs'=>array()
-					,'object'=>$project
-			);
-			_adding_task_project_end($project, $TTask[$project->id]['childs']);
-			_load_child_tasks( $TTask[$project->id]['childs'] , $project);
+                $TTask[$project->id]['childs'][$order->id]['childs'][$of->id] = array(
+                    'childs' => array()
+                    , 'object' => $of
+                );
+            }
+            _adding_task_supplier_order($PDOdb, $of, $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs']);
 
-		}
+            if(empty($TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id])) {
 
-		$order->id=(int)$order->id;
+                $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id] = array(
+                    'childs' => array()
+                    , 'object' => $ws
+                );
+            }
 
-		if(empty($TTask[$project->id]['childs'][$order->id])) {
+            if($obj->nb_days_before_beginning > 0) {
+                _add_delay_included_into_of_ws($obj->nb_days_before_beginning, $task, $of, $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs']);
+            }
 
-			$TTask[$project->id]['childs'][$order->id]=array(
-					'childs'=>array()
-					,'object'=>$order
-			);
+            $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'][$task->id] = $task;
 
-			_load_child_tasks( $TTask[$project->id]['childs'][$order->id]['childs'], $order);
-		}
-
-		_adding_task_order($order, $TTask[$project->id]['childs'][$order->id]['childs']);
-
-		if(empty($TTask[$project->id]['childs'][$order->id]['childs'][$of->id])) {
-
-			$TTask[$project->id]['childs'][$order->id]['childs'][$of->id]=array(
-					'childs'=>array()
-					,'object'=>$of
-			);
-		}
-		_adding_task_supplier_order($PDOdb,$of, $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs']);
-
-		if(empty($TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id])) {
-
-			$TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]=array(
-					'childs'=>array()
-					,'object'=>$ws
-			);
-		}
-
-		if($obj->nb_days_before_beginning>0) {
-			_add_delay_included_into_of_ws($obj->nb_days_before_beginning, $task, $of, $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs']);
-		}
-
-		$TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'][$task->id] = $task;
-
-		_load_child_tasks( $TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'],$task);
-	}
+            _load_child_tasks($TTask[$project->id]['childs'][$order->id]['childs'][$of->id]['childs'][$ws->id]['childs'], $task);
+        }
+    }
 
 	_load_child_tasks( $TTask );
 
@@ -608,16 +579,17 @@ function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $ma
 }
 
 function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $time_task_limit_no_before=0,$time_task_limit_no_after=0, $taskColor = '',$move_projects_mode = false) {
+        global $conf;
 
 	if($object->element == 'commande') {
 	    $date_max = $object->date_livraison ? strtotime('+1day midnight',$object->date_livraison) : 0;
-	    
+
 		$r = '{"id":"'.$object->ganttid.'",ref:"'.$object->ref.'"';
 		if($date_max>0) $r.=', date_max:'.(int)$date_max;
 		$r.= ',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.order'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
-		
+
 		return $r;
-		
+
 	}
 	else if($object->element == 'workstation') {
 
@@ -630,7 +602,7 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 		}
 
 
-		return '{"id":"'.$object->ganttid.'"'.$taskColorCode.',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: true}';
+		return '{"id":"'.$object->ganttid.'"'.$taskColorCode.',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.project'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.((!$conf->global->GANTT_DEFAULT_OPENTAB_STATUS) ? 'true' : 'false').'}';
 	}
 	else if($object->element == 'project') {
 
@@ -702,6 +674,21 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 	else if($object->element == 'of') {
 		return '{"id":"'.$object->ganttid.'",ref:"'.$object->ref.'", date_max:'.(int)strtotime('+1day midnight',$object->date_besoin).',objElement:"'.$object->element.'", "text":"'.$object->title.'", "type":gantt.config.types.of'.(!is_null($fk_parent_object) ? ' ,parent:"'.$fk_parent_object.'" ' : '' ).', open: '.$close_init_status.'}';
 	}
+	elseif($object->element == 'container') {
+
+	    $taskColorCode='';
+	    if(!empty($object->array_options['options_color']) && ColorTools::validate_color($object->array_options['options_color']))
+	    {
+	        $taskColor = $object->array_options['options_color'];
+	    }
+	    if(!empty($taskColor))$taskColorCode= ',"color":"'.$taskColor.'"';
+
+	    return '{"id":"'.$object->ganttid.'"'.$taskColorCode.' ,"objElement":"'.$object->element.'"'
+	           .',"text":"'.strtr($object->text,array('"'=>'\"')).'"'
+	           .',"parent":"'.$fk_parent_object.'"'
+	           .',"type":gantt.config.types.task , "open": '.$close_init_status.'}';
+
+	}
 	elseif($object->element == 'project_task') {
 		global $range,$TWS,$workstationList;
 
@@ -734,7 +721,10 @@ function _get_json_data(&$object, $close_init_status, $fk_parent_object=null, $t
 		$ws_type = (empty($workstationList[$fk_workstation])?'':$workstationList[$fk_workstation]->type);
 		$visible = isset($object->visible) && $object->visible == 0 ? 0 : 1;
 
-		return '{"id":"'.$object->ganttid.'"'.$taskColorCode.',"ref":"'.$object->ref.'","needed_ressource":'.(int)$needed_ressource
+		$contacts = $object->getListContactId();
+		$fk_user = empty($contacts[0]) ? 0 : $contacts[0];
+
+		return '{"id":"'.$object->ganttid.'"'.$taskColorCode.',"fk_user":'.$fk_user.',"ref":"'.$object->ref.'","needed_ressource":'.(int)$needed_ressource
 				.',"time_task_limit_no_before":'.(int)$time_task_limit_no_before.',"time_task_limit_no_after":'.(int)$time_task_limit_no_after
 				.',"planned_workload":'.(int)$object->planned_workload.' ,"objElement":"'.$object->element.'","objId":"'.$object->id.'"'
 				.',"workstation_type":"'.$ws_type.'"'
@@ -781,7 +771,7 @@ function _get_workstation()
 		return 0;
 	}
 
-	$sql = "SELECT w.rowid as id , w.name, w.nb_hour_capacity, w.nb_hour_capacity, w.nb_ressource,w.background,w.type FROM ".MAIN_DB_PREFIX."workstation w  ";
+	$sql = "SELECT w.rowid as id , w.name, w.nb_hour_capacity, w.nb_hour_capacity, w.nb_ressource,w.background,w.type,w.fk_usergroup FROM ".MAIN_DB_PREFIX."workstation w  ";
 
 	//echo $sql.$sqlWhere;
 	$res = $db->query($sql);
@@ -789,10 +779,21 @@ function _get_workstation()
 		var_dump($db);exit;
 	}
 
+	dol_include_once('/user/class/usergroup.class.php');
+
 	$workstationList = array();
 
 	while($obj = $db->fetch_object($res)) {
 		$workstationList[$obj->id] = $obj;
+
+		$usergroup=new UserGroup($db);
+		$usergroup->fetch($obj->fk_usergroup);
+		$users = $usergroup->listUsersForGroup('',0);
+		foreach($users as &$u) {
+		    $u = $u->getFullName($langs);
+		}
+
+		$workstationList[$obj->id]->users = $users;
 	}
 	return count($workstationList);
 }
@@ -974,4 +975,49 @@ function checkDataGantt(&$TData, &$TLink ) {
 		}
 
 	}
+}
+
+function _loadOF(&$TCacheOF, $fk_of){
+    global $db, $conf;
+    if(!empty($TCacheOF[$fk_of])) {
+        $of = $TCacheOF[$fk_of];
+    }
+    else{
+
+
+
+        $of=new TAssetOF();
+
+        // object OF too heavy for that
+        $resof = $db->query("SELECT of.numero,p.label,l.qty_needed,of.status,of.fk_commande FROM ".MAIN_DB_PREFIX."assetOf of
+                            LEFT JOIN ".MAIN_DB_PREFIX."assetOf_line l ON (l.fk_assetOf=of.rowid)
+                                LEFT JOIN ".MAIN_DB_PREFIX."product p ON (l.fk_product=p.rowid)
+                        WHERE of.rowid=".(int)$fk_of." AND l.type='TO_MAKE'
+
+                ");
+        if($resof===false) {
+            var_dump($db);exit;
+        }
+        $oobjOf=$db->fetch_object($resof);
+
+
+        $of->id = (int)$fk_of;
+        $of->numero = $oobjOf->numero;
+        $of->fk_commande = (int)$oobjOf->fk_commande;
+        $of->qty_needed = $oobjOf->qty_needed;
+        $of->ref = $of->numero;
+
+        $of->product_to_make_name = $oobjOf->label;
+
+        if(!empty($conf->global->GANTT_HIDE_TASK_REF)) {
+            $of->title = $of->numero.' '.$of->product_to_make_name.' x '.$of->qty_needed;
+        }
+        else {
+            $of->title = $of->numero.' '.$of->getLibStatus(true).' '.$of->product_to_make_name .' x '.$of->qty_needed;
+        }
+
+        $TCacheOF[$fk_of] = $of;
+    }
+
+    return $of;
 }
