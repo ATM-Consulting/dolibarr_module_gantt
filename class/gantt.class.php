@@ -536,6 +536,56 @@ static function _getIdCommandeFournByOf(&$TCacheOFSupplierOrder, $fk_of){
     }
 
 
+    /**
+     *  TODO ce fonctionnement est un coupé/collé de ce qu'il y avait dans un appel de trigger sur TASK_CREATE, l'objectif est déporter ce comportement dans OF et laisser ici une methodologie bien plus simple qui devra être appelé que si OF n'est pas actif (hook ?)
+     * @param Task $object
+     * @param User $user
+     */
+    public function calculDatesProjectTasks($object, $user, $date_min_start=null)
+    {
+        global $conf;
+
+        require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
+        $db = &$object->db;
+        $project = new Project($db);
+        $project->fetch($object->fk_project);
+
+        $t_current = time();
+
+        if (!empty($object->fk_task_parent)) // si la tâche a un parent elle ne peut débuter qu'après la fin de celui-ci
+        {
+            $parent = new Task($db);
+            $parent->fetch($object->fk_task_parent);
+
+            $t_current = $parent->date_end;
+        }
+// 			var_dump($t_current);
+        $t_start =  max( $project->date_start, $t_current, $date_min_start);
+
+        $day_range = empty($conf->global->GANTT_DAY_RANGE_FROM_NOW) ? 90 : $conf->global->GANTT_DAY_RANGE_FROM_NOW;
+
+        $t_end =  $project->date_end > $t_current ? $project->date_end : strtotime('+'.$day_range.' day', $t_start);
+
+        if($t_end>=$t_current) {
+            $TWS=array();
+
+            $Tab = GanttPatern::get_better_task($TWS, $object,$t_start, $t_end);
+            var_dump($Tab);
+            if($Tab['start']>0 && $Tab['duration']>=1) {
+
+                $object->date_start = $Tab['start'];
+                $object->date_end = $object->date_start + ( $Tab['duration'] * 86400 ) - 1;
+
+                $res = $object->update($user);
+                if($res<=0) {
+
+                    var_dump($object);exit;
+                }
+            }
+
+
+        }
+    }
 }
 
 
