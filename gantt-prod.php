@@ -1016,6 +1016,10 @@ if($move_projects_mode) {
 
 ?>
 
+            gantt.config.work_time = true;
+            // gantt.config.auto_scheduling = true;
+            // gantt.config.schedule_from_end = false;
+
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $range->date_start) ?>"), new Date("<?php echo date('Y-m-d', $range->date_end) ?>"));
 	//modSampleHeight();
 	gantt.parse(tasks);
