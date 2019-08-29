@@ -1017,7 +1017,7 @@ if($move_projects_mode) {
 
 ?>
 
-            gantt.config.work_time = true;
+            // gantt.config.work_time = true;
             // gantt.config.auto_scheduling = true;
             // gantt.config.schedule_from_end = false;
 
