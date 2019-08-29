@@ -265,7 +265,8 @@ else {
 														$linkId = count($TLink)+1;
 														//$TLink[$linkId] =' {id:'.$linkId.', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
 
-														$TLink[$linkId] = array('id'=>$linkId, 'source'=>'T'.$task->fk_task_parent, 'target'=>$task->ganttid, 'type'=>'0');
+//														$TLink[$linkId] = array('id'=>$linkId, 'source'=>'T'.$task->fk_task_parent, 'target'=>$task->ganttid, 'type'=>'0');
+														$TLink[$linkId] = array('id'=>$linkId, 'source'=>$task->ganttid, 'target'=>'T'.$task->fk_task_parent, 'type'=>'0');
 													}
 
 	                							}
