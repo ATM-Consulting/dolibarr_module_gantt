@@ -316,30 +316,30 @@ class modGantt extends DolibarrModules
 
 		global $langs;
 
-		$e=new ExtraFields($this->db);
+		$fields=new ExtraFields($this->db);
 		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
 
 		/**
 		 * Create link to parent gantt task
 		 */
-		$e->addExtraField('fk_gantt_parent_task', 'GanttParentTask', 'varchar', 1, 10, 'projet_task',0,0,'', $param);
+		$fields->addExtraField('fk_gantt_parent_task', 'GanttParentTask', 'varchar', 1, 10, 'projet_task',0,0,'', $param);
 
 		/**
 		 * add gantt color to `projet` and `projet_task`
 		 * @todo use scrumboard color
 		 */
-		$e->addExtraField('color', 'Color', 'varchar', 1, 9, 'projet_task', 0, 0, '', $param);
-		$e->addExtraField('color', 'Color', 'varchar', 1, 9, 'projet', 0, 0, '', $param);
+		$fields->addExtraField('color', 'Color', 'varchar', 1, 9, 'projet_task', 0, 0, '', $param);
+		$fields->addExtraField('color', 'Color', 'varchar', 1, 9, 'projet', 0, 0, '', $param);
 
 		/**
 		 * add `date_start_prod` to `projet_task`
 		 */
-		$e->addExtraField('needed_ressource', 'NeededRessource', 'int', 0, '', 'projet_task');
+		$fields->addExtraField('needed_ressource', 'NeededRessource', 'int', 0, '', 'projet_task');
 
 		/**
 		 * add production start date to `projet`
 		 */
-		$e->addExtraField('date_start_prod', 'DateStartProd', 'date', 1, 0, 'projet');
+		$fields->addExtraField('date_start_prod', 'DateStartProd', 'date', 1, 0, 'projet');
 
 	}
 
