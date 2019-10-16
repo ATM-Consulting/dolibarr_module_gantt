@@ -314,10 +314,8 @@ class modGantt extends DolibarrModules
 	 */
 	function add_extra_fields() {
 
-		global $langs;
-
-		$fields=new ExtraFields($this->db);
-		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
+		$fields = new ExtraFields($this->db);
+		$param = unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
 
 		/**
 		 * Create link to parent gantt task
