@@ -8,6 +8,11 @@ GanttProd=Prod Planning
 GanttSetup = Configuration du module Prod Planning
 GanttAbout = A propos du module Prod Planning
 
+# Extra Fields
+GanttParentTask=Tâche parente Gantt
+
+
+
 UndefinedOrder=OFs sans Commande
 UndefinedMakingOrder=Tâches sans OF
 UndefinedProject=Sans Projet
