@@ -254,25 +254,7 @@ class modGantt extends DolibarrModules
 		dol_include_once('/gantt/config.php');
 		dol_include_once('/gantt/script/create-maj-base.php');
 
-		// Create link to parent gantt task
-		$e=new ExtraFields($this->db);
-		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
-		$e->addExtraField('fk_gantt_parent_task', 'Tâche parente Gantt', 'varchar', 1, 10, 'projet_task',0,0,'',$param);
-
-		// add gantt color // TODO : use scrumboard color
-		$e=new ExtraFields($this->db);
-		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
-		$e->addExtraField('color', '	Couleur', 'varchar', 1, 9, 'projet_task',0,0,'',$param);
-		$e->addExtraField('color', '	Couleur', 'varchar', 1, 9, 'projet',0,0,'',$param);
-
-		// Create link to parent gantt task
-		$e=new ExtraFields($this->db);
-		$param= unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
-		$e->addExtraField('fk_gantt_parent_task', 'Tâche parente Gantt', 'varchar', 1, 30, 'projet_task',0,0,'',$param);
-
-		$e->addExtraField('needed_ressource', 'NeededRessource', 'int', 0, '', 'projet_task');
-
-		$e->addExtraField('date_start_prod', 'DateStartProd', 'date', 1, 0, 'projet');
+		$this->add_extra_fields();
 
 		dol_include_once('/projet/class/project.class.php');
 		global $user, $langs;
@@ -325,6 +307,38 @@ class modGantt extends DolibarrModules
 		$sql = array();
 
 		return $this->_remove($sql, $options);
+	}
+
+	/**
+	 * Extend `projet` and `projet_task` with ExtraFields
+	 */
+	function add_extra_fields() {
+
+		$fields = new ExtraFields($this->db);
+		$param = unserialize('a:1:{s:7:"options";a:1:{s:0:"";N;}}');
+
+		/**
+		 * Create link to parent gantt task
+		 */
+		$fields->addExtraField('fk_gantt_parent_task', 'GanttParentTask', 'varchar', 1, 10, 'projet_task',0,0,'', $param);
+
+		/**
+		 * add gantt color to `projet` and `projet_task`
+		 * @todo use scrumboard color
+		 */
+		$fields->addExtraField('color', 'Color', 'varchar', 1, 9, 'projet_task', 0, 0, '', $param);
+		$fields->addExtraField('color', 'Color', 'varchar', 1, 9, 'projet', 0, 0, '', $param);
+
+		/**
+		 * add `date_start_prod` to `projet_task`
+		 */
+		$fields->addExtraField('needed_ressource', 'NeededRessource', 'int', 0, '', 'projet_task');
+
+		/**
+		 * add production start date to `projet`
+		 */
+		$fields->addExtraField('date_start_prod', 'DateStartProd', 'date', 1, 0, 'projet');
+
 	}
 
 }
