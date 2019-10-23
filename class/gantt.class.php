@@ -570,7 +570,7 @@ static function _getIdCommandeFournByOf(&$TCacheOFSupplierOrder, $fk_of){
             $TWS=array();
 
             $Tab = GanttPatern::get_better_task($TWS, $object,$t_start, $t_end);
-            var_dump($Tab);
+//            var_dump($Tab);
             if($Tab['start']>0 && $Tab['duration']>=1) {
 
                 $object->date_start = $Tab['start'];
