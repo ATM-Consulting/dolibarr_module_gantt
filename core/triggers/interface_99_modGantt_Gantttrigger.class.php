@@ -114,50 +114,6 @@ class InterfaceGantttrigger
     public function run_trigger($action,$object, $user, $langs, $conf)
     {
 
-    	if($action === 'TASK_CREATE') {
-			dol_include_once('/gantt/class/gantt.class.php');
-			dol_include_once('/projet/class/project.class.php');
-			$db = &$object->db;
-			$project = new Project($db);
-			$project->fetch($object->fk_project);
-
-			$t_current = time();
-			
-			if (!empty($object->fk_task_parent)) // si la tâche a un parent elle ne peut débuter qu'après la fin de celui-ci
-			{
-			    $parent = new Task($db);
-			    $parent->fetch($object->fk_task_parent);
-			    
-			    $t_current = $parent->date_end;
-			}
-// 			var_dump($t_current); 
-			$t_start =  max( $project->date_start, $t_current);
-			
-			$day_range = empty($conf->global->GANTT_DAY_RANGE_FROM_NOW) ? 90 : $conf->global->GANTT_DAY_RANGE_FROM_NOW;
-			
-			$t_end =  $project->date_end > $t_current ? $project->date_end : strtotime('+'.$day_range.' day', $t_start);
-
-			if($t_end>=$t_current) {
-				$TWS=array();
-
-				$Tab = GanttPatern::get_better_task($TWS, $object,$t_start, $t_end);
-				
-				if($Tab['start']>0 && $Tab['duration']>=1) {
-
-					$object->date_start = $Tab['start'];
-					$object->date_end = $object->date_start + ( $Tab['duration'] * 86400 ) - 1;
-
-					$res = $object->update($user);
-					if($res<=0) {
-
-						var_dump($object);exit;
-					}
-				}
-
-
-			}
-    	}
-
         return 0;
     }
 }

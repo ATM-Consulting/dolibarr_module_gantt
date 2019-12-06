@@ -265,7 +265,8 @@ else {
 														$linkId = count($TLink)+1;
 														//$TLink[$linkId] =' {id:'.$linkId.', source:"T'.$task->fk_task_parent.'", target:"'.$task->ganttid.'", type:"0"}';
 
-														$TLink[$linkId] = array('id'=>$linkId, 'source'=>'T'.$task->fk_task_parent, 'target'=>$task->ganttid, 'type'=>'0');
+//														$TLink[$linkId] = array('id'=>$linkId, 'source'=>'T'.$task->fk_task_parent, 'target'=>$task->ganttid, 'type'=>'0');
+														$TLink[$linkId] = array('id'=>$linkId, 'source'=>$task->ganttid, 'target'=>'T'.$task->fk_task_parent, 'type'=>'0');
 													}
 
 	                							}
@@ -1015,6 +1016,10 @@ if($move_projects_mode) {
 }
 
 ?>
+
+            // gantt.config.work_time = true;
+            // gantt.config.auto_scheduling = true;
+            // gantt.config.schedule_from_end = false;
 
 	gantt.init("gantt_here", new Date("<?php echo date('Y-m-d', $range->date_start) ?>"), new Date("<?php echo date('Y-m-d', $range->date_end) ?>"));
 	//modSampleHeight();
