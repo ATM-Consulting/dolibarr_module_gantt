@@ -1,16 +1,21 @@
 <?php
-chdir(__DIR__);
-define('INC_FROM_CRON_SCRIPT',true);
-require('../config.php');
 
-// Define javascript type
-top_httphead('text/javascript; charset=UTF-8');
-// Important: Following code is to avoid page request by browser and PHP CPU at each Dolibarr page access.
-if (empty($dolibarr_nocache)) {
-    header('Cache-Control: max-age=10800, public, must-revalidate');
-} else {
-    header('Cache-Control: no-cache');
-}
+/**
+ * THIS FILE IS INCLUDED AS IS IN AN OTHER PAGE SO DONT ADD HEADERS
+ */
+
+//chdir(__DIR__);
+//define('INC_FROM_CRON_SCRIPT',true);
+//require('../config.php');
+//
+//// Define javascript type
+//top_httphead('text/javascript; charset=UTF-8');
+//// Important: Following code is to avoid page request by browser and PHP CPU at each Dolibarr page access.
+//if (empty($dolibarr_nocache)) {
+//    header('Cache-Control: max-age=10800, public, must-revalidate');
+//} else {
+//    header('Cache-Control: no-cache');
+//}
 ?>
 function initTaskDrag(task) {
 	alertLimit = true;

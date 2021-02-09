@@ -989,10 +989,10 @@ function _loadOF(&$TCacheOF, $fk_of){
         $of=new TAssetOF();
 
         // object OF too heavy for that
-        $resof = $db->query("SELECT of.numero,p.label,l.qty_needed,of.status,of.fk_commande FROM ".MAIN_DB_PREFIX."assetOf of
-                            LEFT JOIN ".MAIN_DB_PREFIX."assetOf_line l ON (l.fk_assetOf=of.rowid)
+        $resof = $db->query("SELECT aof.numero,p.label,l.qty_needed,aof.status,aof.fk_commande FROM ".MAIN_DB_PREFIX."assetOf aof
+                            LEFT JOIN ".MAIN_DB_PREFIX."assetOf_line l ON (l.fk_assetOf=aof.rowid)
                                 LEFT JOIN ".MAIN_DB_PREFIX."product p ON (l.fk_product=p.rowid)
-                        WHERE of.rowid=".(int)$fk_of." AND l.type='TO_MAKE'
+                        WHERE aof.rowid=".(int)$fk_of." AND l.type='TO_MAKE'
 
                 ");
         if($resof===false) {

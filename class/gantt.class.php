@@ -32,20 +32,20 @@ class GanttPatern {
         else {
             if(!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)){
                 $sql = "SELECT t.rowid,wof.nb_days_before_beginning
-                FROM " . MAIN_DB_PREFIX . "projet_task t 
+                FROM " . MAIN_DB_PREFIX . "projet_task t
                 LEFT JOIN " . MAIN_DB_PREFIX . "element_element ee  ON (ee.fk_target=t.rowid AND ee.targettype='project_task' AND ee.sourcetype='tassetof')
                     LEFT JOIN " . MAIN_DB_PREFIX . "projet p ON (p.rowid=t.fk_projet)
-                        LEFT JOIN " . MAIN_DB_PREFIX . "assetOf of ON (of.rowid = ee.fk_source AND of.fk_project = t.fk_projet)
+                        LEFT JOIN " . MAIN_DB_PREFIX . "assetOf oft ON (oft.rowid = ee.fk_source AND oft.fk_project = t.fk_projet)
                             LEFT JOIN " . MAIN_DB_PREFIX . "asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
-                                LEFT JOIN " . MAIN_DB_PREFIX . "commande cmd ON (of.fk_commande=cmd.rowid)
+                                LEFT JOIN " . MAIN_DB_PREFIX . "commande cmd ON (oft.fk_commande=cmd.rowid)
                                 ";
             }else {
                 $sql = "SELECT t.rowid,wof.nb_days_before_beginning
                 FROM " . MAIN_DB_PREFIX . "projet_task t LEFT JOIN " . MAIN_DB_PREFIX . "projet_task_extrafields tex ON (tex.fk_object=t.rowid)
                     LEFT JOIN " . MAIN_DB_PREFIX . "projet p ON (p.rowid=t.fk_projet)
-                        LEFT JOIN " . MAIN_DB_PREFIX . "assetOf of ON (of.rowid = tex.fk_of AND of.fk_project = t.fk_projet)
+                        LEFT JOIN " . MAIN_DB_PREFIX . "assetOf oft ON (oft.rowid = tex.fk_of AND oft.fk_project = t.fk_projet)
                             LEFT JOIN " . MAIN_DB_PREFIX . "asset_workstation_of wof ON (t.rowid=wof.fk_project_task)
-                                LEFT JOIN " . MAIN_DB_PREFIX . "commande cmd ON (of.fk_commande=cmd.rowid)
+                                LEFT JOIN " . MAIN_DB_PREFIX . "commande cmd ON (oft.fk_commande=cmd.rowid)
                                 ";
             }
 
@@ -64,7 +64,7 @@ class GanttPatern {
             $sql.=" AND ec.fk_socpeople=".$fk_user." AND ec.fk_c_type_contact IN (180,181) ";
         }
 
-        if(!empty($ref_of)) { $sql.=" AND (of.numero LIKE '%".$ref_of."%' AND of.entity=".$conf->entity." ) "; }
+        if(!empty($ref_of)) { $sql.=" AND (oft.numero LIKE '%".$ref_of."%' AND oft.entity=".$conf->entity." ) "; }
         if(!empty($ref_cmd)) { $sql.=" AND (cmd.ref LIKE '%".$ref_cmd."%' AND cmd.entity=".$conf->entity.") "; }
 
         if($fk_project>0) $sql.= " AND t.fk_projet=".$fk_project;
@@ -75,11 +75,11 @@ class GanttPatern {
             if(!empty($conf->of->enabled)) {
                 if(!empty($conf->global->ASSET_CUMULATE_PROJECT_TASK)){
                     $sql .= " AND ee.fk_source IS NOT NULL AND ee.fk_source>0 AND (t.progress<100 OR t.progress IS NULL)
-                    AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
+                    AND oft.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
                     ";
                 }else {
                     $sql .= " AND tex.fk_of IS NOT NULL AND tex.fk_of>0 AND (t.progress<100 OR t.progress IS NULL)
-                    AND of.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
+                    AND oft.status IN ('VALID','OPEN','ONORDER','NEEDOFFER')
                     ";
                 }
             }
@@ -346,12 +346,12 @@ class GanttPatern {
 		$tolerance = empty($conf->global->GANTT_OVERLOAD_TOLERANCE) ? 0 : -(float)$conf->global->GANTT_OVERLOAD_TOLERANCE;
 
 		$row = array('start'=>-1, 'duration'=>ceil($task->planned_workload) / 86400);
-		
+
 		foreach($TDates as $date=>&$data) {
 
-		    $time = strtotime($date); 
+		    $time = strtotime($date);
 			if($time>$t_end || $time < $t_start) continue;
-			
+
 			$task->start = $time;
 			$task->end = $time + ($task->planned_workload) - 1;
 
@@ -367,7 +367,7 @@ class GanttPatern {
 				    $capacityLeft=min($capacityLeft,$data['nb_hour_capacity']);
 				    //var_dump('la',$datetest,$task->hour_needed,$data,$capacityLeft);exit;
 				}
-                
+
 				if(!empty($tolerance) && $capacityLeft - $task->hour_needed < $tolerance) {
 					$ok =false;
 					break;
@@ -384,7 +384,7 @@ class GanttPatern {
 					$data2 = &$TDates[$date];
 					$data2['capacityLeft'] -= $task->hour_needed;
 				}
-				
+
 				$row['start'] = $time;
 				$row['hour_needed'] = $task->hour_needed; //juste pour debug TODO remove
 				$row['date_start'] = date('Y-m-d H:i:s',$time); //juste pour debug TODO remove
@@ -419,9 +419,9 @@ if(GETPOST('_givemesolution')=='yes') {
 echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end).'<br />';
 }
 			$row = self::gb_search_days($TDates, $task, $t_start, $t_end);
-			
+
 			if($row['start'] == -1) $row = self::gb_search($TDates, $task, $t_start, $t_end, $duration + 1);
-			
+
 		}
 
 		return array_merge($row,$TInfo);
@@ -430,7 +430,7 @@ echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end)
 	static function get_better_task(&$TWS, &$task, $t_start, $t_end) {
 
 		$fk_workstation = (int)$task->array_options['options_fk_workstation'];
-		
+
 		if($fk_workstation>0 && $task->progress < 100) {
 		    if(empty($TWS[$fk_workstation])) $TWS[$fk_workstation] = self::get_ws_capacity($fk_workstation, $t_start, $t_end, $task->id);
 			return self::gb_search($TWS[$fk_workstation], $task, $t_start, $t_end);
