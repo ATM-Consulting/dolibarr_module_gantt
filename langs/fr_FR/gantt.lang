@@ -90,5 +90,5 @@ GoToToday=Aller à aujourd'hui
 AndSplitedChildTask=et les tâches enfants issues
 GANTT_ALLOW_DIRECT_PROGRESS_EDITING=Permettre l'édition directe du pourcentage de progression
 GANTT_DEFAULT_OPENTAB_STATUS=Ne pas dérouler par défaut les jalons liés aux postes de travail dans la vue Gantt
-
+BETTER_TASK_POSITION_INCLUDE_OF_PRIORITY = Prendre en compte la date de besoin des "Ordres de Fabrication" lors du repositionnement des tâches en automatique
  

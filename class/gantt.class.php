@@ -447,7 +447,7 @@ echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end)
 	}
 
 	static function get_better($TTaskId, $t_start, $t_end) {
-		global $db,$TCacheTask;
+		global $db,$TCacheTask, $TCacheOf, $conf;
 
 		if(GETPOST('_givemesolution')=='yes') {
 			echo date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end).'<br />';
@@ -457,6 +457,8 @@ echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end)
 
 		if(!is_array($TTaskId))$TTaskId=array($TTaskId);
 
+		$TTaskId = array_map('intval', $TTaskId);
+
 		$midnight = strtotime('midnight');
 		if($t_start < $midnight)$t_start = $midnight;
 
@@ -464,7 +466,40 @@ echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end)
 
 		if(!empty($TTaskId)) {
 
-			foreach($TTaskId as $fk_task) {
+			// PRISE EN COMPTE DES BESOINS D'OF POUR PRIORISATION DES TACHES
+			if (!empty($conf->of->enabled) && !empty($conf->global->BETTER_TASK_POSITION_INCLUDE_OF_PRIORITY)) {
+
+				// Init du cache
+				if (!is_array($TCacheOf)) { $TCacheOf = array(); }
+
+				$sql = "SELECT elel.fk_target as fk_of, elel.fk_source as fk_task, assetOf.date_besoin"
+						." FROM ".MAIN_DB_PREFIX."element_element elel"
+						." JOIN ".MAIN_DB_PREFIX."assetOf assetOf ON (elel.fk_source = assetOf.rowid) "
+						." WHERE elel.sourcetype = 'tassetof' "
+							." AND elel.targettype = 'project_task' "
+							." AND elel.fk_target IN (".implode(',', $TTaskId).") "
+						." ORDER BY assetOf.date_besoin ASC ";
+
+				$resql = $db->query($sql);
+				$TTaskOfInfos = array();
+				$NewTTaskId = array();
+				if ($resql) {
+					while ($obj = $db->fetch_object($resql)) {
+						$NewTTaskId[] = $obj->fk_task;
+					}
+				}
+
+				if ($NewTTaskId){
+					// les tâches sans of ne sont pas prioritaires dans la file de traitement
+					foreach ($TTaskId as $taskId){
+						if(!in_array($taskId, $NewTTaskId)){
+							$NewTTaskId[] = $NewTTaskId;
+						}
+					}
+				}
+			}
+
+			foreach ($TTaskId as $fk_task) {
 
 				$task = new Task($db);
 				$task->fetch($fk_task);
