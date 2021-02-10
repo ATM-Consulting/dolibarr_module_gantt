@@ -107,16 +107,41 @@ $form=new Form($db);
 $var=false;
 print '<table class="noborder" width="100%">';
 
-// **************************
-// CONFIGURATION NUMEROTATION
-// **************************
+// ********************
+// CONFIGURATION GLOBAL
+// ********************
 setup_print_title('Parameters');
+
+// Recalculer les dates de la tâche à sa création
+setup_print_on_off('GANTT_SET_TASK_DATES_ON_CREATE');
+
+// Permettre l'usage de tâches prévisionnelles
+setup_print_on_off('GANTT_ALLOW_PREVI_TASK');
+
+// La notion de délai se rapporte à la tâche parente si tâche enfant
+setup_print_on_off('GANTT_DELAY_IS_BETWEEN_TASK');
+
+// ***********************
+// CONFIGURATION AFFICHAGE
+// ***********************
+setup_print_title('ConfLinkedToDisplay');
 
 // Cacher les postes de charges dans l'arborescence du Prod Planning
 setup_print_on_off('GANTT_HIDE_WORKSTATION');
 
 // Cacher les parents inexistants
 setup_print_on_off('GANTT_HIDE_INEXISTANT_PARENT');
+
+// Cacher les détails (ref de tâche, état de l'of,...)
+setup_print_on_off('GANTT_HIDE_TASK_REF');
+
+// Afficher les tâches dans la vue agenda
+setup_print_on_off('GANTT_SHOW_TASK_INTO_CALENDAR_VIEW');
+
+// ****************************
+// CONFIGURATION JALON && EDGES
+// ****************************
+setup_print_title('ConfLinkedToMilstones');
 
 // Désactiver les jalons de commandes fournisseurs
 setup_print_on_off('GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE');
@@ -136,6 +161,11 @@ setup_print_on_off('GANTT_MODIFY_PARENT_DATES_AS_CHILD');
 // Déplacer les enfants avec le parent
 setup_print_on_off('GANTT_MOVE_CHILD_AS_PARENT');
 
+// **********************
+// CONFIGURATION PROJECTS
+// **********************
+setup_print_title('ConfLinkedToProject');
+
 // Voir les projets partagés entre entité
 setup_print_on_off('GANTT_MANAGE_SHARED_PROJECT');
 
@@ -148,24 +178,15 @@ setup_print_on_off('GANTT_SHOW_WORKSTATION_ON_1PROJECT');
 // Ne pas afficher l'entête projet
 setup_print_on_off('GANTT_DO_NOT_SHOW_PROJECTS');
 
-// Recalculer les dates de la tâche à sa création
-setup_print_on_off('GANTT_SET_TASK_DATES_ON_CREATE');
 
-// Permettre l'usage de tâches prévisionnelles
-setup_print_on_off('GANTT_ALLOW_PREVI_TASK');
+// *************************
+// CONFIGURATION WORKSTATION
+// *************************
+setup_print_title('ConfLinkedToWorkstation');
 
 // Surcharge allouée aux postes de charges
 $type = '<input type="number" step="0.1" name="GANTT_OVERLOAD_TOLERANCE" value="'.(float)$conf->global->GANTT_OVERLOAD_TOLERANCE.'" />';
 setup_print_input_form_part('GANTT_OVERLOAD_TOLERANCE', false, '', array(), $type);
-
-// Cacher les détails (ref de tâche, état de l'of,...)
-setup_print_on_off('GANTT_HIDE_TASK_REF');
-
-// Afficher les tâches dans la vue agenda
-setup_print_on_off('GANTT_SHOW_TASK_INTO_CALENDAR_VIEW');
-
-// La notion de délai se rapporte à la tâche parente si tâche enfant
-setup_print_on_off('GANTT_DELAY_IS_BETWEEN_TASK');
 
 // Ne pas rafraîchir automatique la capacité des postes de charges affichés
 setup_print_on_off('GANTT_DONT_AUTO_REFRESH_WS');
@@ -177,6 +198,13 @@ setup_print_on_off('GANTT_ALLOW_DIRECT_PROGRESS_EDITING');
 setup_print_on_off('GANTT_DEFAULT_OPENTAB_STATUS');
 
 if (!empty($conf->of->enabled)){
+
+	// ****************
+	// CONFIGURATION OF
+	// ****************
+
+	setup_print_title('ConfLinkedToOf');
+
 	// Prendre en compte la date de besoin des "Ordres de Fabrication" lors du repositionnement des tâches en automatique
 	setup_print_on_off('BETTER_TASK_POSITION_INCLUDE_OF_PRIORITY');
 }
@@ -196,16 +224,22 @@ print '</form>';
 print '</td></tr>';
 */
 
-// Example with a yes / no select
+print '</table>';
+
+print '<hr/>';
+
+// Dependency
+print '<table>';
 $var=!$var;
 print '<tr '.$bc[$var].'>';
 print '<td>'.$langs->trans("BasedOn").'</td>';
-print '<td align="center" colspan="3" style="background:rgb(10, 168, 203)"><img src="../img/twGantt.png" alt="Twproject jQuery Gantt" border="0" />';
+print '<td align="center" colspan="3" style="background:rgb(10, 168, 203)"><img src="../img/twGantt.png" alt="Twproject jQuery Gantt" border="0" height="50" />';
 
 print '</td></tr>';
 
 
 print '</table>';
+
 
 dol_fiche_end(-1);
 
