@@ -230,7 +230,7 @@ function moveTasks(tasksid) {
 
 				recursiveRefreshTask(t.id);
 				gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+t.start_date.toLocaleDateString());
-				saveTask(t);
+				//saveTask(t);
 
 			}
 			else {

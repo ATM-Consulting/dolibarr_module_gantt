@@ -128,7 +128,19 @@ class GanttPatern {
         return $Tab;
     }
 
-	static function get_ws_capacity($wsid, $t_start, $t_end, $fk_task = 0,$scale_unit='day') {
+
+
+
+	/**
+	 * @param int    $wsid
+	 * @param int    $t_start
+	 * @param int    $t_end
+	 * @param int    $fk_task
+	 * @param string $scale_unit
+	 * @param  array $TTaskCapacityExclude
+	 * @return array
+	 */
+	static function get_ws_capacity($wsid, $t_start, $t_end, $fk_task = 0,$scale_unit='day', $TTaskCapacityExclude = array()) {
 
 		global $conf;
 
@@ -145,8 +157,9 @@ class GanttPatern {
 		    $day_of_week = date('N',$t_start);
 		    $t_start=strtotime('-'.$day_of_week.'days + 1 day', $t_start);
 		}
-
-		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end, true, $fk_task,$scale_unit);
+		$TTaskCapacityExclude[] = $fk_task;
+		$TTaskCapacityExclude = array_unique($TTaskCapacityExclude);
+		$Tab = $ws->getCapacityLeftRange($PDOdb, $t_start, $t_end, true, $TTaskCapacityExclude,$scale_unit);
 
 		if($scale_unit == 'week') {
             $i = 0;
@@ -179,6 +192,119 @@ class GanttPatern {
 
 	}
 
+	/**
+	 * get task from cache
+	 *
+	 * @param int $fk_task
+	 * @param bool $cache
+	 * @return Task|false
+	 */
+	public static function loadTask($fk_task, $cache = true){
+		global $TCacheTask, $db;
+
+		/**
+		 * @var Task[] $TCacheTask
+		 */
+		if(!is_array($TCacheTask)) $TCacheTask = array();
+
+		if($cache && isset($TCacheTask[$task->fk_task_parent])) {
+			return $TCacheTask[$fk_task];
+		}
+		else {
+			$task = new Task($db);
+			if($task->fetch($fk_task)>0){
+				$TCacheTask[$fk_task] = $task;
+				return $task;
+			}
+		}
+
+		self::clearTaskCache($fk_task);
+		return false;
+	}
+
+	/**
+	 * clear task cache
+	 * @param int|false $fk_task if false delete all cache
+	 */
+	public static function clearTaskCache($fk_task = false){
+		global $TCacheTask;
+
+		if($fk_task === false){
+			$TCacheTask = array();
+		}
+		elseif (isset($TCacheTask[$fk_task])){
+			unset($TCacheTask[$fk_task]);
+		}
+
+	}
+
+	/**
+	 *    Return id of task children
+	 *
+	 * @param      $fk_task
+	 * @param bool $recursive
+	 * @param bool $cache
+	 * @return    int[]
+	 */
+	public static function getTaskChildren($fk_task, $recursive = false, $cache =true)
+	{
+		global $db, $TCacheGetTaskChildren;
+		if (empty($TCacheGetTaskChildren))$TCacheGetTaskChildren=array();
+
+		if ($cache && isset($TCacheGetTaskChildren[$fk_task])){
+
+			if($recursive){
+				$res = $TCacheGetTaskChildren[$fk_task];
+				foreach ($TCacheGetTaskChildren[$fk_task] as $fk_child){
+					$res = array_merge ($res, self::getTaskChildren($fk_child, $recursive, $cache));
+				}
+				return array_unique($res);
+			}
+			else{
+				return $TCacheGetTaskChildren[$fk_task];
+			}
+		}
+		elseif (!$cache && isset($TCacheGetTaskChildren[$fk_task])){
+			unset ($TCacheGetTaskChildren[$fk_task]);
+		}
+
+		$res = array();
+
+		$sql = "SELECT rowid as id";
+		$sql.= " FROM ".MAIN_DB_PREFIX."projet_task";
+		$sql.= " WHERE fk_task_parent=".intval($fk_task);
+
+		$resql = $db->query($sql);
+		if ($resql)
+		{
+			while($obj=$db->fetch_object($resql))
+			{
+				$res[] = $obj->id;
+			}
+
+			if ($cache){
+				$TCacheGetTaskChildren[$fk_task] = $res;
+			}
+
+			if($recursive){
+				foreach ($res as $fk_child){
+					$res = array_merge ($res, self::getTaskChildren($fk_child, $recursive, $cache));
+				}
+				$res = array_unique($res);
+			}
+
+			$db->free($resql);
+		}
+
+		return $res;
+	}
+
+	/**
+	 * @param Task $task
+	 * @param int $t_start timestamp
+	 * @param int $t_end 	timestamp
+	 * @param $TInfo
+	 */
 	static function gb_search_set_bound(&$task, &$t_start, &$t_end,&$TInfo) {
 		global $conf,$db, $TCacheProject,$TCacheTask, $TCacheOFSupplierOrder,$TCacheOFOrder;
 
@@ -189,30 +315,37 @@ class GanttPatern {
 
 		if(!empty($conf->of->enabled)) {
 		$res = $db->query("SELECT nb_days_before_beginning FROM ".MAIN_DB_PREFIX."asset_workstation_of WHERE fk_project_task=".$task->id);
-		if($res === false) {
-			var_dump($db);exit;
-		}
 		if($obj = $db->fetch_object($res)) {
 			if($obj->nb_days_before_beginning>0) {
 			    if(!empty($conf->global->GANTT_DELAY_IS_BETWEEN_TASK)) {
 			        $time_ref = time();
+			        if(!empty($conf->global->ASSET_TASK_HIERARCHIQUE_BY_RANK_REVERT)){
+			        	// DANS LE CAS OU LA HIERARCHIE DES TACHES EST INVERSE POUR LA PLANIF : LES ENFANTS SONT PRIORITAIRES
+						$taskChildren = self::getTaskChildren($task->id, true);
+						if(!empty($taskChildren)){
+							foreach ($taskChildren as $childid){
+								$child = self::loadTask($childid);
+								if($child
+									&& $child->progress<100
+									&& $time_ref < strtotime('midnight',$child->date_end))
+								{
+									$time_ref = strtotime('midnight', $child->date_end);
+									$TInfo[] = 'GANTT_DELAY_IS_BETWEEN_TASK '.date('Y-m-d H:i:s', $time_ref).' '.$obj->nb_days_before_beginning;
+								}
+							}
+						}
 
-			        if($task->fk_task_parent>0) { // s'il y a une tâche parente
-			            if(isset($TCacheTask[$task->fk_task_parent])) $parent = $TCacheTask[$task->fk_task_parent];
-			            else {
-			                $parent = new Task($db);
-			                $parent->fetch($task->fk_task_parent);
-			                $TCacheTask[$task->fk_task_parent] = $parent;
-			            }
-
-			            if($parent->progress<100) {
-			                $time_ref = strtotime('midnight',$parent->date_end);
-			                if(GETPOST('_givemesolution')=='yes') {
-			                    echo 'GANTT_DELAY_IS_BETWEEN_TASK '.date('Y-m-d H:i:s', $time_ref).' '.$obj->nb_days_before_beginning.'<br>';
-			                }
-			                $TInfo[] = 'GANTT_DELAY_IS_BETWEEN_TASK '.date('Y-m-d H:i:s', $time_ref).' '.$obj->nb_days_before_beginning;
-			            }
-			        }
+					}
+			        else{
+			        	//  LES PARENTS SONT PRIORITAIRES
+						if($task->fk_task_parent>0) { // s'il y a une tâche parente
+							$parent = self::loadTask($task->fk_task_parent);
+							if($parent && $parent->progress<100) {
+								$time_ref = strtotime('midnight',$parent->date_end);
+								$TInfo[] = 'GANTT_DELAY_IS_BETWEEN_TASK '.date('Y-m-d H:i:s', $time_ref).' '.$obj->nb_days_before_beginning;
+							}
+						}
+					}
 
 			        $t_start_bound=strtotime('+'.((int)$obj->nb_days_before_beginning).' days midnight', $time_ref);
 			    }
@@ -220,38 +353,47 @@ class GanttPatern {
 			        $t_start_bound=strtotime('+'.((int)$obj->nb_days_before_beginning+1).' days midnight');
 			    }
 
-    			if(GETPOST('_givemesolution')=='yes') {
-    				echo 'start bound delai '.date('Y-m-d H:i:s', $t_start_bound).' '.$obj->nb_days_before_beginning.'<br>';
-    			}
     			$TInfo[] = 'start bound delai '.date('Y-m-d', $t_start_bound);
 			}
 
-			if($t_start_bound>$t_start)$t_start = $t_start_bound;
+			if(isset($t_start_bound) && $t_start_bound>$t_start) $t_start = $t_start_bound;
 		}
 		}
 
-		if($task->fk_task_parent>0) { // s'il y a une tâche parente
-			if(isset($TCacheTask[$task->fk_task_parent])) $parent = $TCacheTask[$task->fk_task_parent];
-			else {
-				$parent = new Task($db);
-				$parent->fetch($task->fk_task_parent);
-				$TCacheTask[$task->fk_task_parent] = $parent;
+
+
+		if(!empty($conf->global->ASSET_TASK_HIERARCHIQUE_BY_RANK_REVERT)){
+			// DANS LE CAS OU LA HIERARCHIE DES TACHES EST INVERSE POUR LA PLANIF : LES ENFANTS SONT PRIORITAIRES
+			$taskChildren = self::getTaskChildren($task->id, true);
+
+			if(!empty($taskChildren)){
+				foreach ($taskChildren as $childId){
+					$child = self::loadTask($childId);
+					if($child && $child->progress<100)
+					{
+						$t_start_bound= $child->date_end; // où la fin de la tâche enfant
+						$t_start_bound=strtotime('midnight',$t_start_bound+86400 );
+						if($t_start_bound>$t_start) {
+							$t_start = $t_start_bound;
+							$TInfo[] = 'start bound fk_task_child ('.$child->id.' / '.$child->ref.') '.date('Y-m-d', $child->date_start).' - '.date('Y-m-d', $child->date_end).' --> '.date('Y-m-d', $t_start);
+						}
+					}
+				}
 			}
 
-			if($parent->progress < 100) {
+		}elseif ($task->fk_task_parent>0) { // s'il y a une tâche parente
+
+			$parent = self::loadTask($task->fk_task_parent);
+			if($parent && $parent->progress < 100) {
 
 				$parent_duration = floor(($parent->date_end - $parent->date_start) / 86400 ) + 1;
 
-				if($parent_duration>$duration) $t_start_bound = $parent->date_end - ($duration * 86400); // alors le début est soit la durée de la tâche en partant de la fin de la tâche parente
+				if($parent_duration>$task->duration_effective) $t_start_bound = $parent->date_end - ($task->duration_effective * 86400); // alors le début est soit la durée de la tâche en partant de la fin de la tâche parente
 				else $t_start_bound= $parent->date_start; // où le début de la tâche parente
 
 				$t_start_bound=strtotime('midnight',$t_start_bound);
 				if($t_start_bound>$t_start) {
 					$t_start = $t_start_bound;
-					if(GETPOST('_givemesolution')=='yes') {
-						echo 'start bound fk_task_parent ('.$parent->id.' / '.$parent->ref.') '.date('Y-m-d', $parent->date_start).' - '.date('Y-m-d', $parent->date_end).' --> '.date('Y-m-d', $t_start).'<br />';
-					}
-
 					$TInfo[] = 'start bound fk_task_parent ('.$parent->id.' / '.$parent->ref.') '.date('Y-m-d', $parent->date_start).' - '.date('Y-m-d', $parent->date_end).' --> '.date('Y-m-d', $t_start);
 				}
 			}
@@ -337,7 +479,6 @@ class GanttPatern {
                 }
             }
 		}
-
 	}
 
 	static function gb_search_days(&$TDates, &$task, $t_start, $t_end ) {
@@ -368,7 +509,7 @@ class GanttPatern {
 				    //var_dump('la',$datetest,$task->hour_needed,$data,$capacityLeft);exit;
 				}
 
-				if(!empty($tolerance) && $capacityLeft - $task->hour_needed < $tolerance) {
+				if(!empty($tolerance) && doubleval($capacityLeft) - doubleval($task->hour_needed) < $tolerance) {
 					$ok =false;
 					break;
 				}
@@ -408,16 +549,18 @@ class GanttPatern {
 		$task->hour_needed = $task->planned_workload * $needed_ressource* ((100 - $task->progress) / 100) / 3600 / $duration;
 		$task->duration = $duration;
 
-		if($task->hour_needed<=0) $row['note']=$langs->trans('NoHourPlanned');
+		if($task->hour_needed<=0){
+			$row['note']=$langs->trans('NoHourPlanned');
+		}
 
-if(GETPOST('_givemesolution')=='yes') {
-	echo ' task : '.$task->id.'('.$task->ref.') '.$task->duration.' '.$task->hour_needed.'<br />';
-}
+
+		$row['debugInfo'][] = ' task : '.$task->id.'('.$task->ref.') '.$task->duration.' '.$task->hour_needed;
+
 		if($duration<50 && $task->hour_needed>0) {
 			self::gb_search_set_bound($task, $t_start, $t_end, $TInfo);
-if(GETPOST('_givemesolution')=='yes') {
-echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end).'<br />';
-}
+
+			$row['debugInfo'][] = 'Bounds '.date('Y-m-d H:i:s', intval($t_start)).' --> '.date('Y-m-d H:i:s', intval($t_end));
+
 			$row = self::gb_search_days($TDates, $task, $t_start, $t_end);
 
 			if($row['start'] == -1) $row = self::gb_search($TDates, $task, $t_start, $t_end, $duration + 1);
@@ -446,12 +589,62 @@ echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end)
 		}
 	}
 
+	/**
+	 * @deprecated see set_better_task_ordo
+	 */
 	static function get_better($TTaskId, $t_start, $t_end) {
-		global $db,$TCacheTask, $TCacheOf, $conf;
+		global $db,$TCacheTask;
 
 		if(GETPOST('_givemesolution')=='yes') {
 			echo date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end).'<br />';
 		}
+
+		if(empty($TCacheTask))$TCacheTask=array();
+
+		if(!is_array($TTaskId))$TTaskId=array($TTaskId);
+
+		$midnight = strtotime('midnight');
+		if($t_start < $midnight)$t_start = $midnight;
+
+		$TWS = $Tab = array();
+
+		if(!empty($TTaskId)) {
+
+			foreach($TTaskId as $fk_task) {
+
+				$task = new Task($db);
+				$task->fetch($fk_task);
+				if($task->id>0) {
+					$fk_workstation = (int)$task->array_options['options_fk_workstation'];
+					if(empty($TWS[$fk_workstation])) $TWS[$fk_workstation] = self::get_ws_capacity($fk_workstation, $t_start, $t_end, $TTaskId);
+					$Tab[$task->id] = self::get_better_task($TWS, $task, $t_start, $t_end);
+
+					if( $Tab[$task->id]['start']> 0) {
+						$task->date_start = $Tab[$task->id]['start'];
+						$task->date_end = $Tab[$task->id]['start'] + ($Tab[$task->id]['duration']*86400 ) - 1;
+					}
+
+					$TCacheTask[$task->id] = $task;
+				}
+			}
+
+		}
+
+		return $Tab;
+
+	}
+
+
+	/**
+	 * based on get_better
+	 * search and set best start date for plan
+	 * @param       $TTaskId
+	 * @param       $t_start
+	 * @param       $t_end
+	 * @return array
+	 */
+	static function set_better_task_ordo($TTaskId, $t_start, $t_end) {
+		global $db,$TCacheTask, $TCacheOf, $conf, $user;
 
 		if(empty($TCacheTask))$TCacheTask=array();
 
@@ -472,49 +665,105 @@ echo 'Bounds '.date('Y-m-d H:i:s', $t_start).' --> '.date('Y-m-d H:i:s', $t_end)
 				// Init du cache
 				if (!is_array($TCacheOf)) { $TCacheOf = array(); }
 
-				$sql = "SELECT elel.fk_target as fk_of, elel.fk_source as fk_task, assetOf.date_besoin"
-						." FROM ".MAIN_DB_PREFIX."element_element elel"
-						." JOIN ".MAIN_DB_PREFIX."assetOf assetOf ON (elel.fk_source = assetOf.rowid) "
-						." WHERE elel.sourcetype = 'tassetof' "
-							." AND elel.targettype = 'project_task' "
-							." AND elel.fk_target IN (".implode(',', $TTaskId).") "
-						." ORDER BY assetOf.date_besoin ASC ";
+				// Pre-tri des tâches par date de besoin de l'OF pour priorisation de la liste de traitement
+				$sql = "SELECT elel.fk_target as fk_task, elel.fk_source as fk_of, assetOf.date_besoin"
+					." FROM ".MAIN_DB_PREFIX."element_element elel"
+					." JOIN ".MAIN_DB_PREFIX."assetOf assetOf ON (elel.fk_source = assetOf.rowid) "
+					." WHERE elel.sourcetype = 'tassetof' "
+					." AND elel.targettype = 'project_task' "
+					." AND elel.fk_target IN (".implode(',', $TTaskId).") "
+					." ORDER BY assetOf.date_besoin ASC ";
 
 				$resql = $db->query($sql);
-				$TTaskOfInfos = array();
-				$NewTTaskId = array();
 				if ($resql) {
 					while ($obj = $db->fetch_object($resql)) {
 						$NewTTaskId[] = $obj->fk_task;
-					}
-				}
-
-				if ($NewTTaskId){
-					// les tâches sans of ne sont pas prioritaires dans la file de traitement
-					foreach ($TTaskId as $taskId){
-						if(!in_array($taskId, $NewTTaskId)){
-							$NewTTaskId[] = $NewTTaskId;
+						$task = self::loadTask($obj->fk_task);
+						if($task){
+							$TCacheTask[$obj->fk_task]->of_date_besoin = $db->jdate($obj->date_besoin);
 						}
 					}
 				}
 			}
 
+			// DETECTION DES ENFANTS COURANT
 			foreach ($TTaskId as $fk_task) {
+				$task = self::loadTask($fk_task);
+				if($task){
+					$TCacheTask[$fk_task]->TChildren = self::getTaskChildren($fk_task);
+					$TCacheTask[$fk_task]->TChildrenRecursive = self::getTaskChildren($fk_task, true);
+				}
+			}
 
-				$task = new Task($db);
-				$task->fetch($fk_task);
-				if($task->id>0) {
+			// TRI DES PRIORITE DE TACHES DANS LA FILE DE TRAITEMENT
+			$resSort = uasort ( $TTaskId , function ($a, $b){
+					global $conf;
+					$taskA = GanttPatern::loadTask($a);
+					$taskB = GanttPatern::loadTask($b);
+
+					$rank = 0;
+					$multiplePow = 0;
+					// rappel si a prioritaire -1 si b prio 1 si a et b sont equivalent 0
+
+					// PRIORISATION OF SUR DATE DE BESOIN
+					$multiplePow++;
+					$multiple = pow(10, $multiplePow);
+					if (!empty($taskA->of_date_besoin) && !empty($taskB->of_date_besoin)) {
+						$rank+= $multiple*(($taskA->of_date_besoin < $taskB->of_date_besoin) ? -1 : 1);
+					}
+					elseif (!empty($taskA->of_date_besoin)) {
+						$rank+= -1*$multiple;
+					}
+					elseif (!empty($taskB->of_date_besoin)) {
+						$rank+= 1*$multiple;
+					}
+
+					// PRIORISATION ENFANT / PARENTS dans la file de traitement
+					// Une tâche parent ne peut pas commencer avant une tache enfant si la cong OF ASSET_TASK_HIERARCHIQUE_BY_RANK_REVERT est active
+					// Dans le cas contraire une tâche enfant ne peut pas commencer avant une tache Parent
+					$multiplePow++;
+					$multiple = pow(10, $multiplePow)*(empty($conf->global->ASSET_TASK_HIERARCHIQUE_BY_RANK_REVERT)?-1:1);
+					if ($taskB->fk_task_parent == $taskA->id){ // quick test for perf to detech first ancestor
+						$rank+= 1*$multiple; // B est un enfant de A
+					}
+					elseif ($taskA->fk_task_parent == $taskB->id){ // quick test for perf to detech first ancestor
+						$rank+= -1*$multiple; // A est un enfant de B
+					}
+					elseif (is_array($taskA->TChildrenRecursive) && in_array($taskB->id, $taskA->TChildrenRecursive)){  // quick test not detect parent ancestor so perform an slow test to be sure
+						$rank+= 1*$multiple; // B est un enfant de A
+					}
+					elseif (is_array($taskB->TChildrenRecursive) && in_array($taskA->id, $taskB->TChildrenRecursive)){  // quick test not detect parent ancestor so perform an slow test to be sure
+						$rank+= 1*$multiple; // A est un enfant de B
+					}
+
+					return $rank;
+				}
+			);
+
+			$TCapacityExclude = $TTaskId; // ne pas prendre en compte l'impacte des taches en attentes d'attribution
+
+			foreach ($TTaskId as $fk_task) {
+				$task = self::loadTask($fk_task);
+
+				if($task && $task->id>0) {
+
 					$fk_workstation = (int)$task->array_options['options_fk_workstation'];
-					if(empty($TWS[$fk_workstation])) $TWS[$fk_workstation] = self::get_ws_capacity($fk_workstation, $t_start, $t_end, $TTaskId);
+					if(empty($TWS[$fk_workstation])) $TWS[$fk_workstation] = self::get_ws_capacity($fk_workstation, $t_start, $t_end, $TTaskId, 'day', $TCapacityExclude);
+
 					$Tab[$task->id] = self::get_better_task($TWS, $task, $t_start, $t_end);
 
 					if( $Tab[$task->id]['start']> 0) {
 						$task->date_start = $Tab[$task->id]['start'];
-						$task->date_end = $Tab[$task->id]['start'] + ($Tab[$task->id]['duration']*86400 ) - 1;
+						$task->date_end = $Tab[$task->id]['start'] + $Tab[$task->id]['duration'];
+
+						// BUG FIX : Because workstation execute sql query to check charge it's important to save the task position
+						$task->update($user);
+						self::clearTaskCache($task->id); // because workstation execute sql query to check charge
 					}
 
-					$TCacheTask[$task->id] = $task;
+					unset ($TCapacityExclude[$task->id]); // maintenant l'impact de cette tâche doit être pris en compte je la retire de l'exclusion
 				}
+
 			}
 
 		}

@@ -60,7 +60,14 @@
 			break;
 
 		case 'better-pattern':
+			// déprécié
 			__out(_get_better_pattern(  GETPOST('tasksid'),GETPOST('t_start'),GETPOST('t_end') ),'json' );
+			break;
+
+		case 'set-better-pattern':
+			$tasksid = explode(',', GETPOST('tasksid', 'none'));
+			$tab = GanttPatern::set_better_task_ordo($tasksid, GETPOST('t_start'),GETPOST('t_end'),true );
+			__out($tab,'json' );
 			break;
 
 		case 'keep-alive':
