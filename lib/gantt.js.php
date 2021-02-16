@@ -245,7 +245,12 @@ function moveTasks(tasksid) {
 
 				t.duration = item.duration;
 				t.start_date = new Date(item.start * 1000);
-				t.end_date = new Date((item.start + (86400 * t.duration ) - 1) * 1000 );
+				if(item.end != undefined && item.end > item.start){
+					t.end_date = new Date(item.end * 1000);
+				}
+				else{
+					t.end_date = new Date((item.start + (86400 * t.duration ) - 1) * 1000 );
+				}
 
 				//recursiveRefreshTask(t.id); // ce truc fonctionne mais le soucis c'est qu'il n'affiche pas la même vue que à si l'on charge la page
 				gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+t.start_date.toLocaleDateString());

@@ -373,7 +373,7 @@ class GanttPatern {
 					{
 						$t_start_bound= $child->date_end; // où la fin de la tâche enfant
 						if(!empty($conf->global->GANTT_DELAY_IS_BETWEEN_TASK)) {
-							$t_start_bound=strtotime('midnight',$t_start_bound + 86400);
+							$t_start_bound=strtotime('midnight',$t_start_bound + 86400)-1;
 						}
 						else{
 							$t_start_bound=strtotime('midnight',$t_start_bound);
