@@ -241,7 +241,7 @@ class GanttPatern {
 	/**
 	 *    Return id of task children
 	 *
-	 * @param      $fk_task
+	 * @param int $fk_task
 	 * @param bool $recursive
 	 * @param bool $cache
 	 * @return    int[]
