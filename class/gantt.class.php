@@ -372,7 +372,13 @@ class GanttPatern {
 					if($child && $child->progress<100)
 					{
 						$t_start_bound= $child->date_end; // où la fin de la tâche enfant
-						$t_start_bound=strtotime('midnight',$t_start_bound+86400 );
+						if(!empty($conf->global->GANTT_DELAY_IS_BETWEEN_TASK)) {
+							$t_start_bound=strtotime('midnight',$t_start_bound + 86400);
+						}
+						else{
+							$t_start_bound=strtotime('midnight',$t_start_bound);
+						}
+
 						if($t_start_bound>$t_start) {
 							$t_start = $t_start_bound;
 							$TInfo[] = 'start bound fk_task_child ('.$child->id.' / '.$child->ref.') '.date('Y-m-d', $child->date_start).' - '.date('Y-m-d', $child->date_end).' --> '.date('Y-m-d', $t_start);
@@ -538,6 +544,14 @@ class GanttPatern {
 		return $row;
 	}
 
+	/**
+	 * @param array $TDates
+	 * @param Task $task
+	 * @param int    $t_start
+	 * @param int   $t_end
+	 * @param int $duration
+	 * @return array
+	 */
 	static function gb_search(&$TDates, &$task, $t_start, $t_end, $duration = 1) {
 		global $conf,$db, $langs;
 
@@ -552,7 +566,6 @@ class GanttPatern {
 		if($task->hour_needed<=0){
 			$row['note']=$langs->trans('NoHourPlanned');
 		}
-
 
 		$row['debugInfo'][] = ' task : '.$task->id.'('.$task->ref.') '.$task->duration.' '.$task->hour_needed;
 
@@ -754,7 +767,48 @@ class GanttPatern {
 
 					if( $Tab[$task->id]['start']> 0) {
 						$task->date_start = $Tab[$task->id]['start'];
-						$task->date_end = $Tab[$task->id]['start'] + $Tab[$task->id]['duration'];
+						$task->date_end = ceil($Tab[$task->id]['start'] + $Tab[$task->id]['duration']*86400);
+
+						// une date de début à été trouvé, reste à étendre la tâche pour quel couvre ces besoins (charge)
+						$date_start_key = date('Y-m-d', $task->date_start);
+						$curDateToTest = $task->date_start;
+
+						$needed_ressource = intval($task->array_options['options_needed_ressource']);
+
+						$needToAssign = $task->planned_workload * $needed_ressource / 3600;
+						$needToAssign = $needToAssign * (100 - $task->progress)/100;
+
+						while ($needToAssign > 0){
+
+							if(!empty($TWS[$fk_workstation][$date_start_key])){
+								// Bon le syteme est de base mal pensé car il n'est pas possible de savoir avec capacityLeft le nombre de ressources correspondantes
+								// par conséquent à defaut d'une bonne info je me base sur le capacityLeft tout court
+								// TODO : voir aussi pour la gestion du is_parallele
+
+								if($TWS[$fk_workstation][$date_start_key]['capacityLeft'] > 0){
+									if(($TWS[$fk_workstation][$date_start_key]['capacityLeft'] - $needToAssign) >= 0){
+										$needToAssign = 0;
+										break;
+									}
+									else{
+										$needToAssign = abs($needToAssign - $TWS[$fk_workstation][$date_start_key]['capacityLeft']);
+									}
+								}
+
+								// Test du jour suivant
+								$curDateToTest+=86400;
+								$date_start_key = date('Y-m-d', $curDateToTest);
+							}
+							else{
+								// c'est mort...
+								break;
+							}
+						}
+
+						if( $curDateToTest > $task->date_end){
+							$task->date_end = strtotime('midnight', $curDateToTest)-1; // 23h59:59
+						}
+						$Tab[$task->id]['end'] = $task->date_end;
 
 						// BUG FIX : Because workstation execute sql query to check charge it's important to save the task position
 						$task->update($user);

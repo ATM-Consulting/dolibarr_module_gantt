@@ -829,8 +829,7 @@ function updateWSRangeCapacity(sl, forceRefresh) {
 				TPosition.push([$item, position.left]);
 
 			});
-
-			for(x in TPosition) {
+			for(var x in TPosition) {
 				var $item =TPosition[x][0];
 				$item.css({
 					'position':'absolute'
