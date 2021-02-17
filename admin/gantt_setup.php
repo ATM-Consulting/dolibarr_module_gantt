@@ -31,6 +31,7 @@ if (! $res) {
 // Libraries
 require_once DOL_DOCUMENT_ROOT . "/core/lib/admin.lib.php";
 require_once '../lib/gantt.lib.php';
+dol_include_once('abricot/includes/lib/admin.lib.php');
 
 // Translations
 $langs->load("gantt@gantt");
@@ -91,278 +92,122 @@ dol_fiche_head(
     $head,
     'settings',
     $langs->trans("Module104039Name"),
-    0,
+    -1,
     "gantt@gantt"
 );
+
+// Check abricot version
+if(!function_exists('setup_print_title') || !function_exists('isAbricotMinVersion') || isAbricotMinVersion('3.1.0') < 0 ){
+	print '<div class="error" >'.$langs->trans('AbricotNeedUpdate').' : <a href="http://wiki.atm-consulting.fr/index.php/Accueil#Abricot" target="_blank"><i class="fa fa-info"></i> Wiki</a></div>';
+	exit;
+}
 
 // Setup page goes here
 $form=new Form($db);
 $var=false;
 print '<table class="noborder" width="100%">';
-print '<tr class="liste_titre">';
-print '<td>'.$langs->trans("Parameters").'</td>'."\n";
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="center" width="100">'.$langs->trans("Value").'</td>'."\n";
+
+// ********************
+// CONFIGURATION GLOBAL
+// ********************
+setup_print_title('Parameters');
+
+// Recalculer les dates de la tâche à sa création
+setup_print_on_off('GANTT_SET_TASK_DATES_ON_CREATE');
+
+// Permettre l'usage de tâches prévisionnelles
+setup_print_on_off('GANTT_ALLOW_PREVI_TASK');
+
+// La notion de délai se rapporte à la tâche parente si tâche enfant
+setup_print_on_off('GANTT_DELAY_IS_BETWEEN_TASK');
+
+// ***********************
+// CONFIGURATION AFFICHAGE
+// ***********************
+setup_print_title('ConfLinkedToDisplay');
+
+// Cacher les postes de charges dans l'arborescence du Prod Planning
+setup_print_on_off('GANTT_HIDE_WORKSTATION');
+
+// Cacher les parents inexistants
+setup_print_on_off('GANTT_HIDE_INEXISTANT_PARENT');
+
+// Cacher les détails (ref de tâche, état de l'of,...)
+setup_print_on_off('GANTT_HIDE_TASK_REF');
+
+// Afficher les tâches dans la vue agenda
+setup_print_on_off('GANTT_SHOW_TASK_INTO_CALENDAR_VIEW');
+
+// ****************************
+// CONFIGURATION JALON && EDGES
+// ****************************
+setup_print_title('ConfLinkedToMilstones');
+
+// Désactiver les jalons de commandes fournisseurs
+setup_print_on_off('GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE');
+
+// Désactiver la limite de fin et début de projet
+setup_print_on_off('GANTT_DISABLE_PROJECT_MILESTONE');
+
+// Désactiver le jalon de livraison de la commande client
+setup_print_on_off('GANTT_DISABLE_ORDER_MILESTONE');
+
+// Les jalons ne sont que des alertes
+setup_print_on_off('GANTT_BOUND_ARE_JUST_ALERT');
+
+// Repousser les dates de début des tâches parentes si hors bornes
+setup_print_on_off('GANTT_MODIFY_PARENT_DATES_AS_CHILD');
+
+// Déplacer les enfants avec le parent
+setup_print_on_off('GANTT_MOVE_CHILD_AS_PARENT');
+
+// **********************
+// CONFIGURATION PROJECTS
+// **********************
+setup_print_title('ConfLinkedToProject');
+
+// Voir les projets partagés entre entité
+setup_print_on_off('GANTT_MANAGE_SHARED_PROJECT');
+
+// Inclure les projets sans tâche sur la plage mais dans les bornes
+setup_print_on_off('GANTT_INCLUDE_PROJECT_WIHOUT_TASK');
+
+// Voir la capacité des postes de charge aussi sur la vue d'un projet
+setup_print_on_off('GANTT_SHOW_WORKSTATION_ON_1PROJECT');
+
+// Ne pas afficher l'entête projet
+setup_print_on_off('GANTT_DO_NOT_SHOW_PROJECTS');
 
 
-// Example with a yes / no select
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_HIDE_WORKSTATION").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_HIDE_WORKSTATION">';
-echo ajax_constantonoff('GANTT_HIDE_WORKSTATION');
-print '</form>';
-print '</td></tr>';
+// *************************
+// CONFIGURATION WORKSTATION
+// *************************
+setup_print_title('ConfLinkedToWorkstation');
 
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_HIDE_INEXISTANT_PARENT").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_HIDE_INEXISTANT_PARENT">';
-echo ajax_constantonoff('GANTT_HIDE_INEXISTANT_PARENT');
-print '</form>';
-print '</td></tr>';
+// Surcharge allouée aux postes de charges
+$type = '<input type="number" step="0.1" name="GANTT_OVERLOAD_TOLERANCE" value="'.(float)$conf->global->GANTT_OVERLOAD_TOLERANCE.'" />';
+setup_print_input_form_part('GANTT_OVERLOAD_TOLERANCE', false, '', array(), $type);
 
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE">';
-echo ajax_constantonoff('GANTT_DISABLE_SUPPLIER_ORDER_MILESTONE');
-print '</form>';
-print '</td></tr>';
+// Ne pas rafraîchir automatique la capacité des postes de charges affichés
+setup_print_on_off('GANTT_DONT_AUTO_REFRESH_WS');
 
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_DISABLE_PROJECT_MILESTONE").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_DISABLE_PROJECT_MILESTONE">';
-echo ajax_constantonoff('GANTT_DISABLE_PROJECT_MILESTONE');
-print '</form>';
-print '</td></tr>';
+// Permettre l'édition directe du pourcentage de progression
+setup_print_on_off('GANTT_ALLOW_DIRECT_PROGRESS_EDITING');
 
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_DISABLE_ORDER_MILESTONE").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_DISABLE_ORDER_MILESTONE">';
-echo ajax_constantonoff('GANTT_DISABLE_ORDER_MILESTONE');
-print '</form>';
-print '</td></tr>';
+// Ne pas dérouler par défaut les jalons liés aux postes de travail dans la vue Gantt
+setup_print_on_off('GANTT_DEFAULT_OPENTAB_STATUS');
 
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_BOUND_ARE_JUST_ALERT").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_BOUND_ARE_JUST_ALERT">';
-echo ajax_constantonoff('GANTT_BOUND_ARE_JUST_ALERT');
-print '</form>';
-print '</td></tr>';
+if (!empty($conf->of->enabled)){
 
+	// ****************
+	// CONFIGURATION OF
+	// ****************
 
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_MODIFY_PARENT_DATES_AS_CHILD").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_MODIFY_PARENT_DATES_AS_CHILD">';
-echo ajax_constantonoff('GANTT_MODIFY_PARENT_DATES_AS_CHILD');
-print '</form>';
-print '</td></tr>';
+	setup_print_title('ConfLinkedToOf');
 
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_MOVE_CHILD_AS_PARENT").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_MOVE_CHILD_AS_PARENT">';
-echo ajax_constantonoff('GANTT_MOVE_CHILD_AS_PARENT');
-print '</form>';
-print '</td></tr>';
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_MANAGE_SHARED_PROJECT").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_MANAGE_SHARED_PROJECT">';
-echo ajax_constantonoff('GANTT_MANAGE_SHARED_PROJECT');
-print '</form>';
-print '</td></tr>';
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_INCLUDE_PROJECT_WIHOUT_TASK").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_INCLUDE_PROJECT_WIHOUT_TASK">';
-echo ajax_constantonoff('GANTT_INCLUDE_PROJECT_WIHOUT_TASK');
-print '</form>';
-print '</td></tr>';
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_SHOW_WORKSTATION_ON_1PROJECT").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_SHOW_WORKSTATION_ON_1PROJECT">';
-echo ajax_constantonoff('GANTT_SHOW_WORKSTATION_ON_1PROJECT');
-print '</form>';
-print '</td></tr>';
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_DO_NOT_SHOW_PROJECTS").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_DO_NOT_SHOW_PROJECTS">';
-echo ajax_constantonoff('GANTT_DO_NOT_SHOW_PROJECTS');
-print '</form>';
-print '</td></tr>';
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_SET_TASK_DATES_ON_CREATE").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_SET_TASK_DATES_ON_CREATE">';
-echo ajax_constantonoff('GANTT_SET_TASK_DATES_ON_CREATE');
-print '</form>';
-print '</td></tr>';
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_ALLOW_PREVI_TASK").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_ALLOW_PREVI_TASK">';
-echo ajax_constantonoff('GANTT_ALLOW_PREVI_TASK');
-print '</form>';
-print '</td></tr>';
-
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_OVERLOAD_TOLERANCE").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_OVERLOAD_TOLERANCE">';
-print '<input type="number" step="0.1" name="GANTT_OVERLOAD_TOLERANCE" value="'.(float)$conf->global->GANTT_OVERLOAD_TOLERANCE.'" />';
-print '<input type="submit" value="'.$langs->trans('Ok').'" />';
-print '</form>';
-print '</td></tr>';
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_HIDE_TASK_REF").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_HIDE_TASK_REF">';
-echo ajax_constantonoff('GANTT_HIDE_TASK_REF');
-print '</form>';
-print '</td></tr>';
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_SHOW_TASK_INTO_CALENDAR_VIEW").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_SHOW_TASK_INTO_CALENDAR_VIEW">';
-echo ajax_constantonoff('GANTT_SHOW_TASK_INTO_CALENDAR_VIEW');
-print '</form>';
-print '</td></tr>';
-
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_DELAY_IS_BETWEEN_TASK").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_DELAY_IS_BETWEEN_TASK">';
-echo ajax_constantonoff('GANTT_DELAY_IS_BETWEEN_TASK');
-print '</form>';
-print '</td></tr>';
-
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_DONT_AUTO_REFRESH_WS").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_DONT_AUTO_REFRESH_WS">';
-echo ajax_constantonoff('GANTT_DONT_AUTO_REFRESH_WS');
-print '</form>';
-print '</td></tr>';
-
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_ALLOW_DIRECT_PROGRESS_EDITING").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_ALLOW_DIRECT_PROGRESS_EDITING">';
-echo ajax_constantonoff('GANTT_ALLOW_DIRECT_PROGRESS_EDITING');
-print '</form>';
-print '</td></tr>';
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("GANTT_DEFAULT_OPENTAB_STATUS").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="right" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_GANTT_DEFAULT_OPENTAB_STATUS">';
-echo ajax_constantonoff('GANTT_DEFAULT_OPENTAB_STATUS');
-print '</form>';
-print '</td></tr>';
+	// Prendre en compte la date de besoin des "Ordres de Fabrication" lors du repositionnement des tâches en automatique
+	setup_print_on_off('BETTER_TASK_POSITION_INCLUDE_OF_PRIORITY');
+}
 
 /*
 $var=!$var;
@@ -379,16 +224,24 @@ print '</form>';
 print '</td></tr>';
 */
 
-// Example with a yes / no select
+print '</table>';
+
+print '<hr/>';
+
+// Dependency
+print '<table>';
 $var=!$var;
 print '<tr '.$bc[$var].'>';
 print '<td>'.$langs->trans("BasedOn").'</td>';
-print '<td align="center" colspan="3" style="background:rgb(10, 168, 203)"><img src="../img/twGantt.png" alt="Twproject jQuery Gantt" border="0" />';
+print '<td align="center" colspan="3" style="background:rgb(10, 168, 203)"><img src="../img/twGantt.png" alt="Twproject jQuery Gantt" border="0" height="50" />';
 
 print '</td></tr>';
 
 
 print '</table>';
+
+
+dol_fiche_end(-1);
 
 llxFooter();
 

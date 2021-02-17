@@ -228,7 +228,7 @@ function moveTasks(tasksid) {
 	$.ajax({
 		url:"script/interface.php"
 		,data:{
-			get:"better-pattern"
+			get:"set-better-pattern"
 			,tasksid:tasksid
 			,t_start : t_start
 			,t_end : t_end
@@ -245,12 +245,16 @@ function moveTasks(tasksid) {
 
 				t.duration = item.duration;
 				t.start_date = new Date(item.start * 1000);
-				t.end_date = new Date((item.start + (86400 * t.duration ) - 1) * 1000 );
+				if(item.end != undefined && item.end > item.start){
+					t.end_date = new Date(item.end * 1000);
+				}
+				else{
+					t.end_date = new Date((item.start + (86400 * t.duration ) - 1) * 1000 );
+				}
 
-				recursiveRefreshTask(t.id);
+				recursiveRefreshTask(t.id); // ce truc fonctionne mais le soucis c'est qu'il n'affiche pas la même vue que à si l'on charge la page
 				gantt.message('<?php echo $langs->trans('TaskMovedTo') ?> '+t.start_date.toLocaleDateString());
-				saveTask(t);
-
+				//saveTask(t);
 			}
 			else {
 				gantt.message(t.ref
@@ -259,8 +263,10 @@ function moveTasks(tasksid) {
 				,'error');
 
 			}
-
 		});
+
+		// Recharge la page actuelle
+		document.location.reload();
 
 	});
 
@@ -828,8 +834,7 @@ function updateWSRangeCapacity(sl, forceRefresh) {
 				TPosition.push([$item, position.left]);
 
 			});
-
-			for(x in TPosition) {
+			for(var x in TPosition) {
 				var $item =TPosition[x][0];
 				$item.css({
 					'position':'absolute'

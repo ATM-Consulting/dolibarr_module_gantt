@@ -83,12 +83,17 @@ BasedOn=Basé sur
 GANTT_USE_CACHE_FOR_X_MINUTES=Utiliser un cache de X minutes pour fluidifier l'affichage
 OFFilter= - OF :
 CMDFilter= - Commande :
-GANTT_DELAY_IS_BETWEEN_TASK=La notion de délai se rapporte à la tâche parente si tâche enfant
+GANTT_DELAY_IS_BETWEEN_TASK=Les tâches dépendantes d'autres tâches sont créées le jour suivant la tâche dont elles dépendent
 GANTT_DONT_AUTO_REFRESH_WS=Ne pas rafraîchir automatique la capacité des postes de charges affichés
 RefreshWS=Rafraîchir les capacités
 GoToToday=Aller à aujourd'hui
 AndSplitedChildTask=et les tâches enfants issues
 GANTT_ALLOW_DIRECT_PROGRESS_EDITING=Permettre l'édition directe du pourcentage de progression
 GANTT_DEFAULT_OPENTAB_STATUS=Ne pas dérouler par défaut les jalons liés aux postes de travail dans la vue Gantt
-
+BETTER_TASK_POSITION_INCLUDE_OF_PRIORITY = Prendre en compte la date de besoin des "Ordres de Fabrication" lors du repositionnement des tâches en automatique
  
+ConfLinkedToDisplay = Paramètres liés à l'affichage
+ConfLinkedToMilstones = Paramètres liés aux jalons et bornes
+ConfLinkedToProject = Paramètres liés aux projets
+ConfLinkedToWorkstation = Paramètres liés aux postes de charges
+ConfLinkedToOf = Paramètres liés aux Ordres de Fabrications
