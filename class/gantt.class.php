@@ -207,7 +207,7 @@ class GanttPatern {
 		 */
 		if(!is_array($TCacheTask)) $TCacheTask = array();
 
-		if($cache && isset($TCacheTask[$task->fk_task_parent])) {
+		if($cache && isset($TCacheTask[$fk_task])) {
 			return $TCacheTask[$fk_task];
 		}
 		else {
@@ -545,6 +545,7 @@ class GanttPatern {
 	}
 
 	/**
+	 * Return time range available for task
 	 * @param array $TDates
 	 * @param Task $task
 	 * @param int    $t_start
@@ -603,7 +604,7 @@ class GanttPatern {
 	}
 
 	/**
-	 * @deprecated see set_better_task_ordo
+	 * @deprecated see set_optimal_task_order
 	 */
 	static function get_better($TTaskId, $t_start, $t_end) {
 		global $db,$TCacheTask;
@@ -656,7 +657,7 @@ class GanttPatern {
 	 * @param       $t_end
 	 * @return array
 	 */
-	static function set_better_task_ordo($TTaskId, $t_start, $t_end) {
+	static function set_optimal_task_order($TTaskId, $t_start, $t_end) {
 		global $db,$TCacheTask, $TCacheOf, $conf, $user;
 
 		if(empty($TCacheTask))$TCacheTask=array();
