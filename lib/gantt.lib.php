@@ -337,7 +337,7 @@ function _adding_task_order(&$order,&$TData) {
 		$object=new stdClass();
 		$object->element = 'milestone';
 		$object->title = $object->text = $langs->trans('EndOfOrder', $order->ref, dol_print_date($order->date_livraison));
-		$object->date= $order->date_livraison+ 84399; //23:59:59
+		$object->date= $order->date_livraison+ 86399; //23:59:59
 		$object->ganttid = 'JS'.$order->id;
 		$object->bound='after';
 		$object->visible = 1;
@@ -376,7 +376,7 @@ function _adding_task_project_end(&$project,&$TData) {
 		$object=new stdClass();
 		$object->element = 'milestone';
 		$object->title = $object->text = $langs->trans('EndOfProject', $project->ref, dol_print_date($project->date_end));
-		$object->date= $project->date_end + 84399; //23:59:59
+		$object->date= $project->date_end + 86399; //23:59:59
 		$object->ganttid = 'JPE'.$project->id;
 		$object->bound='after';
 
@@ -496,7 +496,6 @@ function _adding_task_supplier_order(&$PDOdb, &$assetOf,&$TData) {
 
 			}
 
-
 		}
 	}
 
@@ -570,7 +569,6 @@ function _load_child_tasks(&$TData, $gantt_parent_objet = false, $level = 0, $ma
 			$TData['PREVI'.$task->id]['object']->element = ( $level==0 ? 'project' : 'commande');
 
 		}
-
 
 	}
 
@@ -969,8 +967,6 @@ function checkDataGantt(&$TData, &$TLink ) {
 				unset($TLink[$k], $TData[$link['source']]);
 
 			}
-
-
 
 		}
 
